@@ -38,7 +38,7 @@ export const DatabaseTool = {
     return prisma.qSReport.findUnique({
       where: { id },
       include: {
-        baurundgang: true,
+        baurundgang: { include: { fotos: true } },
         objekt: true,
         kunde: true,
         projektleiter: true,
