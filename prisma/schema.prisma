@@ -1,0 +1,311 @@
+// 1. Definiert den Prisma Client (Standard)
+generator client {
+  provider = "prisma-client-js"
+}
+
+// 2. Definiert die Datenbankverbindung
+datasource db {
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+// 3. Unser erstes "Modell" (unsere erste Tabelle)
+// Basierend auf deinem Diagramm (Input/Output)
+model ReportRequest {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+
+  // Input (1)
+  rawInputText String? // z.B. "Foto von Haus..."
+  filePaths    String[] // Eine Liste von Dateipfaden (Fotos, etc.)
+
+  // Output (5)
+  draftReport String? // Der Entwurf für den Mensch
+  isApproved  Boolean @default(false) // Für den QS-Schritt
+}
+
+model Projektleiter {
+  id      Int     @id @default(autoincrement())
+  name    String
+  email   String
+  telefon String?
+  aktiv   Boolean @default(true)
+
+  kunden    Kunde[]
+  objekte   Objekt[]
+  qsReports QSReport[]
+}
+
+model Kontakt {
+  id    Int     @id @default(autoincrement())
+  name  String
+  email String
+  aktiv Boolean @default(true)
+
+  kunden             Kunde[]
+  objekte            Objekt[]
+  verteiler          Verteiler[]
+  qsReports          QSReport[]
+  qsReportTeilnahmen QSReportTeilnehmer[]
+}
+
+model Objekttyp {
+  id          Int     @id @default(autoincrement())
+  bezeichnung String
+  aktiv       Boolean @default(true)
+
+  objekte   Objekt[]
+  qsReports QSReport[]
+}
+
+model Kunde {
+  id              Int       @id @default(autoincrement())
+  kontaktId       Int?
+  projektleiterId Int?
+  name            String
+  adresse         String?
+  plz             String?
+  ort             String?
+  status          String?
+  erstelldatum    DateTime? @default(now())
+
+  kontakt       Kontakt?       @relation(fields: [kontaktId], references: [id])
+  projektleiter Projektleiter? @relation(fields: [projektleiterId], references: [id])
+  objekte       Objekt[]
+  verteiler     Verteiler[]
+  qsReports     QSReport[]
+}
+
+model Verteiler {
+  id        Int @id @default(autoincrement())
+  kundeId   Int
+  kontaktId Int
+
+  kunde   Kunde   @relation(fields: [kundeId], references: [id])
+  kontakt Kontakt @relation(fields: [kontaktId], references: [id])
+
+  @@unique([kundeId, kontaktId])
+}
+
+model Objekt {
+  id                 Int       @id @default(autoincrement())
+  kundeId            Int
+  kontaktId          Int?
+  projektleiterId    Int?
+  objekttypId        Int?
+  bezeichnung        String
+  erstellungsjahr    Int?
+  egid               Int?
+  adresse            String?
+  plz                String?
+  ort                String?
+  terminStartsitzung DateTime?
+  protokollURL       String?
+  status             Boolean?
+  notiz              String?
+  erstelltAm         DateTime? @default(now())
+  titelbildURL       String?
+
+  kunde         Kunde          @relation(fields: [kundeId], references: [id])
+  kontakt       Kontakt?       @relation(fields: [kontaktId], references: [id])
+  projektleiter Projektleiter? @relation(fields: [projektleiterId], references: [id])
+  objekttyp     Objekttyp?     @relation(fields: [objekttypId], references: [id])
+
+  baurundgaenge Baurundgang[]
+  qsReports     QSReport[]
+}
+
+model BaurundgangTyp {
+  id          Int     @id @default(autoincrement())
+  nummer      Int
+  name        String
+  reihenfolge Int?
+  aktiv       Boolean @default(true)
+
+  baurundgaenge Baurundgang[]
+}
+
+model Baurundgang {
+  id                 Int       @id @default(autoincrement())
+  objektId           Int
+  baurundgangTypId   Int
+  datumGeplant       DateTime?
+  datumDurchgefuehrt DateTime?
+  status             String?
+  notiz              String?
+  erstelltAm         DateTime? @default(now())
+
+  objekt Objekt         @relation(fields: [objektId], references: [id])
+  typ    BaurundgangTyp @relation(fields: [baurundgangTypId], references: [id])
+
+  pruefpunkte Pruefpunkt[]
+  bauteile    Bauteil[]
+  fotos       Foto[]
+  qsReport    QSReport?
+}
+
+model Pruefpunkt {
+  id            Int     @id @default(autoincrement())
+  baurundgangId Int
+  bezeichnung   String
+  erledigt      Boolean @default(false)
+  notiz         String?
+  reihenfolge   Int?
+
+  baurundgang Baurundgang @relation(fields: [baurundgangId], references: [id])
+}
+
+model BauteilTemplate {
+  id          Int     @id @default(autoincrement())
+  name        String
+  reihenfolge Int?
+  aktiv       Boolean @default(true)
+
+  materialisierungen MaterialisierungTemplate[]
+  bauteile           Bauteil[]
+}
+
+model MaterialisierungTemplate {
+  id                Int     @id @default(autoincrement())
+  bauteilTemplateId Int
+  name              String
+  reihenfolge       Int?
+  aktiv             Boolean @default(true)
+
+  bauteilTemplate BauteilTemplate @relation(fields: [bauteilTemplateId], references: [id])
+  bauteile        Bauteil[]
+}
+
+model BauteilRisiko {
+  id          Int     @id @default(autoincrement())
+  name        String
+  reihenfolge Int?
+  aktiv       Boolean @default(true)
+
+  bauteile Bauteil[]
+}
+
+model Bauteil {
+  id                         Int  @id @default(autoincrement())
+  baurundgangId              Int
+  bauteilTemplateId          Int?
+  materialisierungTemplateId Int?
+  bauteilRisikoId            Int?
+  reihenfolge                Int?
+
+  baurundgang      Baurundgang               @relation(fields: [baurundgangId], references: [id])
+  template         BauteilTemplate?          @relation(fields: [bauteilTemplateId], references: [id])
+  materialisierung MaterialisierungTemplate? @relation(fields: [materialisierungTemplateId], references: [id])
+  risiko           BauteilRisiko?            @relation(fields: [bauteilRisikoId], references: [id])
+
+  bereiche   Bereich[]
+  positionen Position[]
+}
+
+model Bereich {
+  id           Int     @id @default(autoincrement())
+  bauteilId    Int
+  name         String
+  bereichstext String?
+
+  bauteil    Bauteil    @relation(fields: [bauteilId], references: [id])
+  fotos      Foto[]
+  positionen Position[]
+}
+
+model Foto {
+  id                Int       @id @default(autoincrement())
+  baurundgangId     Int
+  bereichId         Int?
+  dateiURL          String
+  hinweisMarkierung String?
+  erstelltAm        DateTime? @default(now())
+
+  baurundgang Baurundgang @relation(fields: [baurundgangId], references: [id])
+  bereich     Bereich?    @relation(fields: [bereichId], references: [id])
+
+  positionVerknuepfungen PositionFoto[]
+}
+
+model Rueckmeldungstyp {
+  id      Int    @id @default(autoincrement())
+  typCode String
+  name    String
+
+  positionen Position[]
+}
+
+model QSReport {
+  id              Int       @id @default(autoincrement())
+  baurundgangId   Int       @unique
+  objektId        Int
+  kundeId         Int
+  projektleiterId Int?
+  kontaktId       Int?
+  objekttypId     Int?
+  titelbildURL    String?
+  zusammenfassung String?
+  diverses        String?
+  erstelltAm      DateTime? @default(now())
+
+  baurundgang   Baurundgang    @relation(fields: [baurundgangId], references: [id])
+  objekt        Objekt         @relation(fields: [objektId], references: [id])
+  kunde         Kunde          @relation(fields: [kundeId], references: [id])
+  projektleiter Projektleiter? @relation(fields: [projektleiterId], references: [id])
+  kontakt       Kontakt?       @relation(fields: [kontaktId], references: [id])
+  objekttyp     Objekttyp?     @relation(fields: [objekttypId], references: [id])
+
+  positionen Position[]
+  teilnehmer QSReportTeilnehmer[]
+
+  @@index([objektId])
+  @@index([kundeId])
+}
+
+model QSReportTeilnehmer {
+  id         Int @id @default(autoincrement())
+  qsreportId Int
+  kontaktId  Int
+
+  qsreport QSReport @relation(fields: [qsreportId], references: [id])
+  kontakt  Kontakt  @relation(fields: [kontaktId], references: [id])
+
+  @@unique([qsreportId, kontaktId])
+}
+
+model Position {
+  id                    Int       @id @default(autoincrement())
+  qsreportId            Int
+  bauteilId             Int?
+  bereichId             Int?
+  rueckmeldungstypId    Int?
+  positionsnummer       Int
+  bereichstitel         String?
+  bemerkung             String?
+  loeschbar             Boolean?  @default(true)
+  frist                 DateTime?
+  erledigtAm            DateTime?
+  erledigt              Boolean?  @default(false)
+  rueckmeldungBemerkung String?
+
+  qsreport         QSReport          @relation(fields: [qsreportId], references: [id])
+  bauteil          Bauteil?          @relation(fields: [bauteilId], references: [id])
+  bereich          Bereich?          @relation(fields: [bereichId], references: [id])
+  rueckmeldungstyp Rueckmeldungstyp? @relation(fields: [rueckmeldungstypId], references: [id])
+
+  fotos PositionFoto[]
+
+  @@unique([qsreportId, positionsnummer])
+}
+
+model PositionFoto {
+  id         Int @id @default(autoincrement())
+  positionId Int
+  fotoId     Int
+
+  position Position @relation(fields: [positionId], references: [id])
+  foto     Foto     @relation(fields: [fotoId], references: [id])
+
+  @@unique([positionId, fotoId])
+}
