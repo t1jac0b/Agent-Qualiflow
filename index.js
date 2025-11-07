@@ -1,9 +1,11 @@
 // In: index.js
+import 'dotenv/config';
 import fs from 'node:fs/promises';
 import { runAgentCore } from './src/core/AgentCore.js';
 import { renderMarkdown } from './src/render/ReportRenderer.js';
 import { renderHtml } from './src/render/ReportHtmlRenderer.js';
 import { DatabaseTool } from './src/tools/DatabaseTool.js';
+import { makeOpenAIClient, generateExecutiveSummary } from './src/llm/OpenAIClient.js';
 
 console.log("--- PROZESS START ---");
 
@@ -13,17 +15,23 @@ const getArg = (name) => {
   const i = argv.indexOf(`--${name}`);
   return i >= 0 ? argv[i + 1] : undefined;
 };
+const hasFlag = (name) => argv.includes(`--${name}`);
 
 const reportArg = getArg('report');
 const noteArg = getArg('note');
 const formatArg = getArg('format')?.toLowerCase();
 const outArg = getArg('out');
+const useLlm = hasFlag('llm');
+const llmModel = getArg('llm-model') || process.env.OPENAI_MODEL || 'gpt-4o';
 const qsReportId = reportArg ? Number(reportArg) : undefined;
 
 (async () => {
   if (formatArg === 'md') {
     const reportObj = await loadReport(qsReportId);
     if (!reportObj) return;
+    if (useLlm) {
+      await enrichWithLlmSummary(reportObj, { llmModel });
+    }
     const md = renderMarkdown(reportObj);
     console.log("--- PROZESS ENDE ---");
     console.log("\n--- Markdown Report ---\n");
@@ -31,6 +39,9 @@ const qsReportId = reportArg ? Number(reportArg) : undefined;
   } else if (formatArg === 'html') {
     const reportObj = await loadReport(qsReportId);
     if (!reportObj) return;
+    if (useLlm) {
+      await enrichWithLlmSummary(reportObj, { llmModel });
+    }
     const html = renderHtml(reportObj);
     console.log("--- PROZESS ENDE ---");
     if (outArg) {
@@ -46,6 +57,9 @@ const qsReportId = reportArg ? Number(reportArg) : undefined;
     if (!outArg) {
       console.error('Bitte mit --out <pfad.pdf> den Zielpfad für das PDF angeben.');
       return;
+    }
+    if (useLlm) {
+      await enrichWithLlmSummary(reportObj, { llmModel });
     }
     const html = renderHtml(reportObj);
     console.log("[PDF Export] Starte Playwright...");
@@ -92,4 +106,16 @@ async function loadReport(passedId) {
     return null;
   }
   return reportObj;
+}
+
+async function enrichWithLlmSummary(reportObj, { llmModel }) {
+  try {
+    const client = makeOpenAIClient({});
+    const summary = await generateExecutiveSummary({ client, model: llmModel, report: reportObj });
+    if (summary) {
+      reportObj.zusammenfassung = summary;
+    }
+  } catch (err) {
+    console.error('[LLM] Zusammenfassung fehlgeschlagen:', err.message || err);
+  }
 }
