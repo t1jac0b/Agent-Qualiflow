@@ -163,6 +163,7 @@ model BauteilTemplate {
   aktiv       Boolean @default(true)
 
   materialisierungen MaterialisierungTemplate[]
+  bereichTemplates   BereichTemplate[]
   bauteile           Bauteil[]
 }
 
@@ -175,6 +176,36 @@ model MaterialisierungTemplate {
 
   bauteilTemplate BauteilTemplate @relation(fields: [bauteilTemplateId], references: [id])
   bauteile        Bauteil[]
+}
+
+model BereichTemplate {
+  id                Int @id @default(autoincrement())
+  bauteilTemplateId Int
+  name              String
+  reihenfolge       Int?
+  aktiv             Boolean @default(true)
+
+  bauteilTemplate BauteilTemplate       @relation(fields: [bauteilTemplateId], references: [id])
+  kapitel         BereichKapitelTemplate[]
+}
+
+model BereichKapitelTemplate {
+  id               Int @id @default(autoincrement())
+  bereichTemplateId Int
+  name             String
+  reihenfolge      Int?
+
+  bereichTemplate BereichTemplate            @relation(fields: [bereichTemplateId], references: [id])
+  texte           BereichKapitelTextTemplate[]
+}
+
+model BereichKapitelTextTemplate {
+  id                       Int @id @default(autoincrement())
+  bereichKapitelTemplateId Int
+  text                     String
+  reihenfolge              Int?
+
+  kapitelTemplate BereichKapitelTemplate @relation(fields: [bereichKapitelTemplateId], references: [id])
 }
 
 model BauteilRisiko {
