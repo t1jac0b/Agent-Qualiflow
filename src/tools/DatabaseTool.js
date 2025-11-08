@@ -65,6 +65,10 @@ export const DatabaseTool = {
     plz,
     ort,
     objekttypId,
+    projektleiterId,
+    kontaktId,
+    titelbildURL,
+    notiz,
   }) {
     if (!kundeId) {
       throw new Error("createObjektForKunde: 'kundeId' ist erforderlich.");
@@ -91,6 +95,10 @@ export const DatabaseTool = {
         plz: plz || undefined,
         ort: ort || undefined,
         objekttyp: objekttypId ? { connect: { id: objekttypId } } : undefined,
+        projektleiter: projektleiterId ? { connect: { id: projektleiterId } } : undefined,
+        kontakt: kontaktId ? { connect: { id: kontaktId } } : undefined,
+        titelbildURL: titelbildURL || undefined,
+        notiz: notiz || undefined,
       },
     });
   },
