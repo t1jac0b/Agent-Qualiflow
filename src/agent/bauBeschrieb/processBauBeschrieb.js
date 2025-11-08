@@ -278,20 +278,63 @@ function collectMissingMandatory({ kunde, objekt, objekttyp }) {
   return missing;
 }
 
-export async function processBauBeschriebUpload({ buffer, filePath, originalFilename, uploadedBy }) {
-  const ingestion = await ingestBauBeschrieb({ buffer, filePath, originalFilename, uploadedBy });
-  const extracted = extractMetadata(ingestion.extractedText);
-  const missingMandatory = collectMissingMandatory(extracted);
+function deepClone(value) {
+  return value == null ? value : JSON.parse(JSON.stringify(value));
+}
 
-  if (missingMandatory.length > 0) {
-    return {
-      status: "needs_input",
-      ingestion,
-      extracted,
-      missingMandatory,
-    };
+function mergeManualOverrides(extracted, overrides = {}) {
+  const merged = deepClone(extracted) ?? {};
+  merged.kunde = { ...(merged.kunde ?? {}), ...(overrides.kunde ?? {}) };
+  merged.objekt = { ...(merged.objekt ?? {}), ...(overrides.objekt ?? {}) };
+
+  if (overrides.objekttyp !== undefined) {
+    merged.objekttyp = overrides.objekttyp;
   }
 
+  if (overrides.projektleiter !== undefined) {
+    merged.projektleiter = overrides.projektleiter;
+  }
+
+  merged.pendingFields = Array.isArray(merged.pendingFields) ? merged.pendingFields : [];
+
+  return merged;
+}
+
+function valueForField(extracted, field) {
+  if (!field) return undefined;
+  const path = field.split(".");
+  let current = extracted;
+  for (const key of path) {
+    if (current == null) return undefined;
+    current = current[key];
+  }
+  return current;
+}
+
+function hasResolvedField(extracted, field, overrides = {}) {
+  if (field === "projektleiter") {
+    return Boolean(overrides.projektleiter);
+  }
+
+  const value = valueForField(extracted, field);
+  if (value === null || value === undefined) return false;
+  if (typeof value === "string") {
+    return value.trim().length > 0;
+  }
+  return true;
+}
+
+function filterPendingFields(pendingFields = [], extracted, overrides = {}, missingMandatory = []) {
+  return pendingFields.filter((item) => {
+    if (!item?.field) return false;
+    if (missingMandatory.includes(item.field)) {
+      return true;
+    }
+    return !hasResolvedField(extracted, item.field, overrides);
+  });
+}
+
+async function persistBauBeschrieb({ extracted }) {
   const kunde = await DatabaseTool.ensureKunde({
     name: extracted.kunde.name,
     adresse: extracted.kunde.adresse,
@@ -312,13 +355,39 @@ export async function processBauBeschriebUpload({ buffer, filePath, originalFile
     erstellungsjahr: extracted.objekt.erstellungsjahr,
   });
 
+  return { kunde, objekttyp, objekt };
+}
+
+export async function finalizeBauBeschrieb({ ingestion, extracted, overrides }) {
+  const merged = mergeManualOverrides(extracted, overrides);
+  const missingMandatory = collectMissingMandatory(merged);
+  const pendingFields = filterPendingFields(merged.pendingFields, merged, overrides, missingMandatory);
+
+  if (missingMandatory.length > 0) {
+    return {
+      status: "needs_input",
+      ingestion,
+      extracted: merged,
+      missingMandatory,
+      pendingFields,
+    };
+  }
+
+  const { kunde, objekttyp, objekt } = await persistBauBeschrieb({ extracted: merged });
+
   return {
     status: "created",
     ingestion,
-    extracted,
+    extracted: merged,
     kunde,
     objekttyp,
     objekt,
-    pendingFields: extracted.pendingFields,
+    pendingFields,
   };
+}
+
+export async function processBauBeschriebUpload({ buffer, filePath, originalFilename, uploadedBy }) {
+  const ingestion = await ingestBauBeschrieb({ buffer, filePath, originalFilename, uploadedBy });
+  const extracted = extractMetadata(ingestion.extractedText);
+  return finalizeBauBeschrieb({ ingestion, extracted });
 }
