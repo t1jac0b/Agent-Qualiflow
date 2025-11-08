@@ -17,6 +17,10 @@ function normalizeText(text) {
     .filter(Boolean);
 }
 
+export const __test__ = {
+  extractMetadata,
+};
+
 function parseAddressFromLine(line, { stripLeadingIndex = false } = {}) {
   if (!line) return {};
   let raw = line.replace(/\s+/g, " ").trim();
@@ -203,14 +207,14 @@ function extractMetadata(rawText) {
     }
   }
 
-  if (!objektPlz && objektPlzLine) {
+  if (objektPlzLine) {
     const plzMatch = /(\d{4,5})/.exec(objektPlzLine);
     if (plzMatch) {
       objektPlz = plzMatch[1];
     }
   }
 
-  if (!objektOrt && objektOrtLine) {
+  if (objektOrtLine) {
     const cleanedOrt = objektOrtLine.replace(/^ort\s*[:\-]\s*/i, "").replace(/["“”]/g, "").trim();
     if (cleanedOrt) {
       objektOrt = cleanedOrt;
