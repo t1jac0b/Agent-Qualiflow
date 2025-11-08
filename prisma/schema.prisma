@@ -212,6 +212,26 @@ model Bereich {
   bauteil    Bauteil    @relation(fields: [bauteilId], references: [id])
   fotos      Foto[]
   positionen Position[]
+  kapitel    BereichKapitel[]
+}
+
+model BereichKapitel {
+  id          Int  @id @default(autoincrement())
+  bereichId   Int
+  name        String
+  reihenfolge Int?
+
+  bereich Bereich @relation(fields: [bereichId], references: [id])
+  texte   BereichKapitelText[]
+}
+
+model BereichKapitelText {
+  id               Int @id @default(autoincrement())
+  bereichKapitelId Int
+  text             String
+  reihenfolge      Int?
+
+  kapitel BereichKapitel @relation(fields: [bereichKapitelId], references: [id])
 }
 
 model Foto {
