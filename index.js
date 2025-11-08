@@ -57,7 +57,7 @@ const qsReportId = reportArg ? Number(reportArg) : undefined;
       await page.pdf({
         path: outArg,
         format: 'A4',
-        margin: { top: '16mm', right: '12mm', bottom: '16mm', left: '16mm' },
+        margin: { top: '0', right: '0', bottom: '0', left: '0' },
         printBackground: true,
       });
       console.log("--- PROZESS ENDE ---");
