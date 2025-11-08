@@ -812,9 +812,7 @@ function renderMetaGrid(entries) {
         <span class="meta-value">${escapeHtml(entry.value)}</span>
       </div>`
       )
-      .join("
-
-")}
+      .join("\n    ")}
   </div>`;
 }
 
@@ -835,9 +833,7 @@ function renderParagraphs(text) {
   }
 
   return `<div class="paragraphs">
-    ${paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join("
-
-")}
+    ${paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join("\n    ")}
   </div>`;
 }
 
@@ -853,7 +849,7 @@ function renderToc(structure) {
                     child.number
                   )}</span>${escapeHtml(child.title)}</a></li>`
                 )
-                .join("")}
+                .join("\n              ")}
             </ul>`
           : "";
 
@@ -862,9 +858,10 @@ function renderToc(structure) {
             <span class="toc-number">${escapeHtml(item.number)}</span>
             ${escapeHtml(item.title)}
           </a>
-        </li>${children}`;
+          ${children}
+        </li>`;
       })
-      .join("")}
+      .join("\n    ")}
   </ul>`;
 }
 
@@ -917,7 +914,7 @@ function renderTeilnehmer(report) {
       const details = [kontakt.email, kontakt.telefon].filter(Boolean).join(" · ");
       return `<li><strong>${escapeHtml(kontakt.name)}</strong>${details ? ` – ${escapeHtml(details)}` : ""}</li>`;
     })
-    .join("");
+    .join("\n      ");
 
   return `<div class="content-card">
     <h3>Teilnehmer</h3>
@@ -947,32 +944,3 @@ function escapeHtml(value) {
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
 }
-import { readFileSync } from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import { formatDateISO } from "./ReportRenderer.js";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const ASSETS_DIR = path.join(__dirname, "..", "assets");
-
-const assetCache = new Map();
-
-function getAssetDataUri(filename) {
-  if (!filename) return null;
-  if (assetCache.has(filename)) return assetCache.get(filename);
-
-  try {
-    const filePath = path.join(ASSETS_DIR, filename);
-    const svg = readFileSync(filePath, "utf8");
-    const base64 = Buffer.from(svg, "utf8").toString("base64");
-    const dataUri = `data:image/svg+xml;base64,${base64}`;
-    assetCache.set(filename, dataUri);
-    return dataUri;
-  } catch (err) {
-    console.warn(`[ReportHtmlRenderer] Asset '${filename}' konnte nicht geladen werden:`, err.message);
-    assetCache.set(filename, null);
-    return null;
-  }
-}
-
