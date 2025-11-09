@@ -55,6 +55,22 @@ Im Prompt stehen folgende Kommandos zur Verfügung:
 
 Normale Texteingaben werden als Chat-Messages interpretiert, z. B. `Projektleiter: Max Beispiel`.
 
+### HTTP Chat-Server
+
+Zum Testen aus Frontend- oder API-Clients steht ein leichter HTTP-Server bereit:
+
+```powershell
+npm run chat:server
+```
+
+Endpoints (Standard-Port `3001`, konfigurierbar via `CHAT_SERVER_PORT`):
+
+- `POST /chat/upload` – Multipart-Upload (`file` Feld) für Bau-Beschrieb-PDFs. Optional `chatId` übergeben.
+- `POST /chat/message` – JSON-Body `{ chatId, message }` für Folge-Nachrichten.
+- `GET /health` – einfacher Health-Check.
+
+Antworten enthalten `status`, `message` und `context`, identisch zum CLI-Verhalten.
+
 ## Tests & Entwicklung
 
 - **Unit Tests**: `npm test`
