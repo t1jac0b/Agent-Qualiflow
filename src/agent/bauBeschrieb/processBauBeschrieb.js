@@ -338,12 +338,25 @@ function filterPendingFields(pendingFields = [], extracted, overrides = {}, miss
 }
 
 async function persistBauBeschrieb({ extracted }) {
-  const kunde = await DatabaseTool.ensureKunde({
+  const projektleiterName = extracted.projektleiter?.trim();
+  let projektleiter = null;
+  if (projektleiterName) {
+    projektleiter = await DatabaseTool.ensureProjektleiter({ name: projektleiterName });
+  }
+
+  let kunde = await DatabaseTool.ensureKunde({
     name: extracted.kunde.name,
     adresse: extracted.kunde.adresse,
     plz: extracted.kunde.plz,
     ort: extracted.kunde.ort,
   });
+
+  if (projektleiter && kunde.projektleiterId !== projektleiter.id) {
+    kunde = await DatabaseTool.client.kunde.update({
+      where: { id: kunde.id },
+      data: { projektleiter: { connect: { id: projektleiter.id } } },
+    });
+  }
 
   const objekttyp = await DatabaseTool.ensureObjekttyp(extracted.objekttyp);
 
@@ -354,11 +367,12 @@ async function persistBauBeschrieb({ extracted }) {
     plz: extracted.objekt.plz,
     ort: extracted.objekt.ort,
     objekttypId: objekttyp?.id,
+    projektleiterId: projektleiter?.id,
     notiz: extracted.objekt.notiz,
     erstellungsjahr: extracted.objekt.erstellungsjahr,
   });
 
-  return { kunde, objekttyp, objekt };
+  return { kunde, objekttyp, objekt, projektleiter };
 }
 
 export async function finalizeBauBeschrieb({ ingestion, extracted, overrides }) {
@@ -377,7 +391,7 @@ export async function finalizeBauBeschrieb({ ingestion, extracted, overrides }) 
     };
   }
 
-  const { kunde, objekttyp, objekt } = await persistBauBeschrieb({ extracted: merged });
+  const { kunde, objekttyp, objekt, projektleiter } = await persistBauBeschrieb({ extracted: merged });
 
   let reportPath = null;
   try {
@@ -399,6 +413,7 @@ export async function finalizeBauBeschrieb({ ingestion, extracted, overrides }) 
     kunde,
     objekttyp,
     objekt,
+    projektleiter,
     pendingFields,
     reportPath,
   };
