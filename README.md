@@ -66,10 +66,41 @@ npm run chat:server
 Endpoints (Standard-Port `3001`, konfigurierbar via `CHAT_SERVER_PORT`):
 
 - `POST /chat/upload` – Multipart-Upload (`file` Feld) für Bau-Beschrieb-PDFs. Optional `chatId` übergeben.
+  - Unterstützt optionale Felder `message` und `projektleiter`; wenn ausgefüllt, wird automatisch eine Folge-Nachricht gesendet.
 - `POST /chat/message` – JSON-Body `{ chatId, message }` für Folge-Nachrichten.
 - `GET /health` – einfacher Health-Check.
 
 Antworten enthalten `status`, `message` und `context`, identisch zum CLI-Verhalten.
+
+**Beispiele:**
+
+- PowerShell (Empfehlung, nutzt `Invoke-RestMethod`):
+  ```powershell
+  # Upload + Projektleiter in einem Schritt
+  Invoke-RestMethod `
+    -Uri "http://localhost:3001/chat/upload" `
+    -Method Post `
+    -Form @{
+      file = Get-Item 'C:\Users\tinon\Downloads\Baubeschrieb.pdf'
+      projektleiter = 'Max Beispiel'
+    }
+  ```
+
+  ```powershell
+  # Folge-Nachricht
+  Invoke-RestMethod `
+    -Uri "http://localhost:3001/chat/message" `
+    -Method Post `
+    -ContentType "application/json" `
+    -Body (@{ chatId = 'chat-…'; message = 'Projektleiter: Max Beispiel' } | ConvertTo-Json)
+  ```
+
+- `curl` (Git Bash / WSL):
+  ```bash
+  curl -F "file=@/path/to/Baubeschrieb.pdf" \
+       -F "projektleiter=Max Beispiel" \
+       http://localhost:3001/chat/upload
+  ```
 
 ## Tests & Entwicklung
 
