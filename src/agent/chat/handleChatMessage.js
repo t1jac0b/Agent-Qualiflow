@@ -1,5 +1,9 @@
-import { handleBauBeschriebUpload, formatMissingMessage, formatSuccessMessage } from "./handleBauBeschriebUpload.js";
-import { finalizeBauBeschrieb } from "../bauBeschrieb/processBauBeschrieb.js";
+import {
+  handleBauBeschriebUpload,
+  formatMissingMessage,
+  formatSuccessMessage,
+  finalizeBauBeschriebAgent,
+} from "./handleBauBeschriebUpload.js";
 import { getSession, upsertSession, clearSession, pruneSessions } from "./sessionStore.js";
 
 function isPdfAttachment(attachment) {
@@ -199,7 +203,7 @@ export async function handleChatMessage({ chatId, message = "", attachments = []
 
   const mergedOverrides = mergeOverrides(session.overrides, overrides);
 
-  const result = await finalizeBauBeschrieb({
+  const result = await finalizeBauBeschriebAgent({
     ingestion: session.ingestion,
     extracted: session.baseExtracted,
     overrides: mergedOverrides,

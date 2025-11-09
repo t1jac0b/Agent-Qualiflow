@@ -8,6 +8,7 @@ const MANDATORY_FIELDS = [
   "objekt.plz",
   "objekt.ort",
   "objekttyp",
+  "projektleiter",
 ];
 
 function normalizeText(text) {
@@ -269,13 +270,14 @@ function extractMetadata(rawText) {
   };
 }
 
-function collectMissingMandatory({ kunde, objekt, objekttyp }) {
+function collectMissingMandatory({ kunde, objekt, objekttyp, projektleiter }) {
   const missing = [];
   if (!kunde?.name) missing.push("kunde.name");
   if (!objekt?.adresse) missing.push("objekt.adresse");
   if (!objekt?.plz) missing.push("objekt.plz");
   if (!objekt?.ort) missing.push("objekt.ort");
   if (!objekttyp) missing.push("objekttyp");
+  if (!projektleiter) missing.push("projektleiter");
   return missing;
 }
 
