@@ -1,6 +1,6 @@
 import { processBauBeschriebUpload } from "../bauBeschrieb/processBauBeschrieb.js";
 
-export function formatSuccessMessage({ kunde, objekt, objekttyp, pendingFields }) {
+export function formatSuccessMessage({ kunde, objekt, objekttyp, pendingFields, reportPath }) {
   const lines = [
     `✅ Bau-Beschrieb verarbeitet.`,
     `• Kunde: ${kunde.name}`,
@@ -10,6 +10,10 @@ export function formatSuccessMessage({ kunde, objekt, objekttyp, pendingFields }
 
   if (objekttyp?.bezeichnung) {
     lines.push(`• Objekttyp: ${objekttyp.bezeichnung}`);
+  }
+
+  if (reportPath) {
+    lines.push(`• Report: ${reportPath}`);
   }
 
   const openPrompts = pendingFields

@@ -1,5 +1,6 @@
 import { ingestBauBeschrieb } from "./ingestBauBeschrieb.js";
 import { DatabaseTool } from "../../tools/DatabaseTool.js";
+import { generateBauBeschriebReport } from "./renderBauBeschriebReport.js";
 
 const MANDATORY_FIELDS = [
   "kunde.name",
@@ -370,10 +371,24 @@ export async function finalizeBauBeschrieb({ ingestion, extracted, overrides }) 
       extracted: merged,
       missingMandatory,
       pendingFields,
+      reportPath: null,
     };
   }
 
   const { kunde, objekttyp, objekt } = await persistBauBeschrieb({ extracted: merged });
+
+  let reportPath = null;
+  try {
+    reportPath = await generateBauBeschriebReport({
+      kunde,
+      objekt,
+      objekttyp,
+      ingestion,
+      extracted: merged,
+    });
+  } catch (error) {
+    console.warn("[finalizeBauBeschrieb] Report konnte nicht erzeugt werden:", error.message);
+  }
 
   return {
     status: "created",
@@ -383,6 +398,7 @@ export async function finalizeBauBeschrieb({ ingestion, extracted, overrides }) 
     objekttyp,
     objekt,
     pendingFields,
+    reportPath,
   };
 }
 

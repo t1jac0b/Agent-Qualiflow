@@ -1,6 +1,9 @@
 import { PrismaClient } from "@prisma/client";
 
+import { attachBauteilInstantiationHook } from "../agent/bauteil/instantiateFromTemplate.js";
+
 const prisma = globalThis.prisma ?? new PrismaClient();
+attachBauteilInstantiationHook(prisma);
 if (process.env.NODE_ENV !== "production") globalThis.prisma = prisma;
 
 export const DatabaseTool = {
@@ -69,6 +72,7 @@ export const DatabaseTool = {
     kontaktId,
     titelbildURL,
     notiz,
+    erstellungsjahr,
   }) {
     if (!kundeId) {
       throw new Error("createObjektForKunde: 'kundeId' ist erforderlich.");
@@ -99,6 +103,7 @@ export const DatabaseTool = {
         kontakt: kontaktId ? { connect: { id: kontaktId } } : undefined,
         titelbildURL: titelbildURL || undefined,
         notiz: notiz || undefined,
+        erstellungsjahr: erstellungsjahr ?? undefined,
       },
     });
   },
