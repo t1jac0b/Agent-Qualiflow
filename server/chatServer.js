@@ -3,11 +3,17 @@ import multer from "multer";
 import process from "node:process";
 
 import { handleChatMessage } from "../src/agent/chat/handleChatMessage.js";
+import { getAgentOrchestrator } from "../src/agent/index.js";
 import { createLogger } from "../src/utils/logger.js";
 
 const app = express();
 const upload = multer({ storage: multer.memoryStorage() });
 const log = createLogger("http:chat");
+const orchestrator = getAgentOrchestrator();
+const qsUpload = upload.fields([
+  { name: "archive", maxCount: 1 },
+  { name: "photos", maxCount: 20 },
+]);
 
 app.use(express.json({ limit: "5mb" }));
 
@@ -101,6 +107,57 @@ app.post("/chat/upload", upload.single("file"), async (req, res) => {
   } catch (error) {
     log.error("Fehler beim Upload", { chatId, error });
     res.status(500).json({ error: "Fehler beim Verarbeiten des Bau-Beschriebs." });
+  }
+});
+
+app.post("/qs-rundgang/upload", qsUpload, async (req, res) => {
+  const parseId = (value) => {
+    if (value === undefined || value === null || value === "") return undefined;
+    const parsed = Number.parseInt(value, 10);
+    return Number.isNaN(parsed) ? undefined : parsed;
+  };
+
+  const archiveFile = req.files?.archive?.[0];
+  const photoFiles = Array.isArray(req.files?.photos) ? req.files.photos : [];
+
+  const payload = {
+    buffer: archiveFile?.buffer,
+    filePath: archiveFile?.path,
+    originalFilename: archiveFile?.originalname,
+    uploadedBy: req.body?.uploadedBy ?? "http-qs",
+    kundeId: parseId(req.body?.kundeId),
+    objektId: parseId(req.body?.objektId),
+    baurundgangId: parseId(req.body?.baurundgangId),
+    notesText: req.body?.notes ?? req.body?.notizen ?? "",
+    photos: photoFiles.map((file) => ({
+      buffer: file.buffer,
+      originalFilename: file.originalname,
+      mimetype: file.mimetype,
+    })),
+  };
+
+  try {
+    log.info("QS-Rundgang Upload", {
+      hasArchive: Boolean(archiveFile),
+      photoCount: photoFiles.length,
+      hasNotes: Boolean(payload.notesText?.trim()),
+      kundeId: payload.kundeId,
+      objektId: payload.objektId,
+      baurundgangId: payload.baurundgangId,
+    });
+
+    const result = await orchestrator.handleTask({ type: "qsRundgang.upload", payload });
+
+    log.info("QS-Rundgang Upload verarbeitet", {
+      status: result?.status,
+      reportId: result?.context?.reportId,
+      positionId: result?.context?.positionId,
+    });
+
+    res.json(serializeResult(result));
+  } catch (error) {
+    log.error("QS-Rundgang Upload fehlgeschlagen", { error });
+    res.status(500).json({ error: "Fehler beim Verarbeiten des QS-Rundgang-Uploads." });
   }
 });
 
