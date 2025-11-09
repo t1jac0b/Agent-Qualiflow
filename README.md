@@ -28,16 +28,32 @@ Simuliere den Chatbot-Ablauf via CLI:
 
 ```powershell
 # 1) Upload, erwartet ggf. weitere Angaben (Status: needs_input)
-node scripts/testChatFlow.js "C:\\Pfad\\zu\\bau-beschrieb.pdf"
+node scripts/testChatFlow.js "C:\Pfad\zu\bau-beschrieb.pdf"
 
 # 2) Upload + Follow-up in einem Schritt (Projektleiter-Angabe etc.)
-node scripts/testChatFlow.js "C:\\Pfad\\zu\\bau-beschrieb.pdf" "Projektleiter: Max Beispiel"
+node scripts/testChatFlow.js "C:\Pfad\zu\bau-beschrieb.pdf" "Projektleiter: Max Beispiel"
 ```
 
 Hinweise:
 
 - Wird der Projektleiter nicht im PDF gefunden, muss er als Follow-up nachgereicht werden (Pflichtfeld).
 - Powershell interpretiert spitze Klammern (`<…>`) als Redirection; daher Pfade ohne Klammern angeben.
+
+### Interaktiver Chat (Konsole)
+
+Für einen kontinuierlichen Testlauf steht ein interaktives CLI bereit:
+
+```powershell
+node scripts/chatConsole.js
+```
+
+Im Prompt stehen folgende Kommandos zur Verfügung:
+
+- `/upload <pfad-zur-pdf>` – lädt einen Bau-Beschrieb hoch.
+- `/help` – zeigt verfügbare Befehle an.
+- `/quit` – beendet die Sitzung.
+
+Normale Texteingaben werden als Chat-Messages interpretiert, z. B. `Projektleiter: Max Beispiel`.
 
 ## Tests & Entwicklung
 
