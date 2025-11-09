@@ -98,6 +98,40 @@ export const bereichTemplateData = [
           },
         ],
       },
+      {
+        name: "Rohbau allgemein",
+        kapitel: [
+          {
+            name: "Allgemeines",
+            texte: [
+              "Allgemeine Hinweise zur Ausführung und Koordination der Rohbauarbeiten.",
+            ],
+          },
+          {
+            name: "Ausführung",
+            texte: [
+              "Ausführung gemäss gültigen Normen und anerkannten Regeln der Baukunst.",
+            ],
+          },
+        ],
+      },
+      {
+        name: "Baustoffe und Materialien",
+        kapitel: [
+          {
+            name: "Materialanforderungen",
+            texte: [
+              "Materialien gemäss Ausschreibung/Planspezifikation; Gleichwertigkeit vorgängig schriftlich genehmigen lassen.",
+            ],
+          },
+          {
+            name: "Nachweise/Prüfungen",
+            texte: [
+              "Nachweise (z. B. Lieferscheine, Prüfprotokolle) sind der Bauleitung vorzulegen.",
+            ],
+          },
+        ],
+      },
     ],
   },
 ];
