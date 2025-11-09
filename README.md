@@ -66,7 +66,7 @@ npm run chat:server
 Endpoints (Standard-Port `3001`, konfigurierbar via `CHAT_SERVER_PORT`):
 
 - `POST /chat/upload` – Multipart-Upload (`file` Feld) für Bau-Beschrieb-PDFs. Optional `chatId` übergeben.
-  - Unterstützt optionale Felder `message` und `projektleiter`; wenn ausgefüllt, wird automatisch eine Folge-Nachricht gesendet.
+  - Unterstützt optionale Felder `message`, `projektleiter`, `projektleiter_email`, `projektleiter_telefon`; wenn ausgefüllt, wird automatisch eine Folge-Nachricht gesendet.
 - `POST /chat/message` – JSON-Body `{ chatId, message }` für Folge-Nachrichten.
 - `GET /health` – einfacher Health-Check.
 
@@ -83,6 +83,8 @@ Antworten enthalten `status`, `message` und `context`, identisch zum CLI-Verhalt
     -Form @{
       file = Get-Item 'C:\Users\tinon\Downloads\Baubeschrieb.pdf'
       projektleiter = 'Max Beispiel'
+      projektleiter_email = 'max.beispiel@example.com'
+      projektleiter_telefon = '+41 31 000 00 00'
     }
   ```
 
@@ -99,6 +101,8 @@ Antworten enthalten `status`, `message` und `context`, identisch zum CLI-Verhalt
   ```bash
   curl -F "file=@/path/to/Baubeschrieb.pdf" \
        -F "projektleiter=Max Beispiel" \
+       -F "projektleiter_email=max.beispiel@example.com" \
+       -F "projektleiter_telefon=+41 31 000 00 00" \
        http://localhost:3001/chat/upload
   ```
 

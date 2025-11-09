@@ -298,6 +298,14 @@ function mergeManualOverrides(extracted, overrides = {}) {
     merged.projektleiter = overrides.projektleiter;
   }
 
+  if (overrides.projektleiterEmail !== undefined) {
+    merged.projektleiterEmail = overrides.projektleiterEmail;
+  }
+
+  if (overrides.projektleiterTelefon !== undefined) {
+    merged.projektleiterTelefon = overrides.projektleiterTelefon;
+  }
+
   merged.pendingFields = Array.isArray(merged.pendingFields) ? merged.pendingFields : [];
 
   return merged;
@@ -339,9 +347,15 @@ function filterPendingFields(pendingFields = [], extracted, overrides = {}, miss
 
 async function persistBauBeschrieb({ extracted }) {
   const projektleiterName = extracted.projektleiter?.trim();
+  const projektleiterEmail = extracted.projektleiterEmail?.trim()?.toLowerCase?.() ?? extracted.projektleiterEmail?.trim();
+  const projektleiterTelefon = extracted.projektleiterTelefon?.trim();
   let projektleiter = null;
   if (projektleiterName) {
-    projektleiter = await DatabaseTool.ensureProjektleiter({ name: projektleiterName });
+    projektleiter = await DatabaseTool.ensureProjektleiter({
+      name: projektleiterName,
+      email: projektleiterEmail,
+      telefon: projektleiterTelefon,
+    });
   }
 
   let kunde = await DatabaseTool.ensureKunde({

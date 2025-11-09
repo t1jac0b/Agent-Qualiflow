@@ -71,14 +71,17 @@ export const DatabaseTool = {
       throw new Error("ensureProjektleiter: 'name' darf nicht leer sein.");
     }
 
+    const normalizedEmail = email ? email.trim().toLowerCase() : undefined;
+    const normalizedTelefon = telefon ? telefon.trim() : undefined;
+
     const existing = await prisma.projektleiter.findFirst({
       where: { name: { equals: trimmed, mode: "insensitive" } },
     });
 
     if (existing) {
       const patch = {
-        email: existing.email || email || undefined,
-        telefon: existing.telefon || telefon || undefined,
+        email: existing.email || normalizedEmail || undefined,
+        telefon: existing.telefon || normalizedTelefon || undefined,
       };
 
       if (patch.email || patch.telefon) {
@@ -91,8 +94,8 @@ export const DatabaseTool = {
     return prisma.projektleiter.create({
       data: {
         name: trimmed,
-        email: email || undefined,
-        telefon: telefon || undefined,
+        email: normalizedEmail,
+        telefon: normalizedTelefon,
       },
     });
   },

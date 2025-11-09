@@ -1,8 +1,14 @@
+import { createLogger } from "../utils/logger.js";
+
 export class AgentOrchestrator {
-  constructor({ tools = {} } = {}) {
+  constructor({ tools = {}, logger = createLogger("agent:orchestrator") } = {}) {
     this.tools = tools;
     this.capabilities = new Map();
     this.subAgents = new Map();
+    this.logger = logger;
+    this.logger.info("AgentOrchestrator initialisiert", {
+      toolKeys: Object.keys(tools),
+    });
   }
 
   registerSubAgent(name, agent) {
@@ -36,6 +42,10 @@ export class AgentOrchestrator {
     }
 
     this.subAgents.set(name, agent);
+    this.logger.info("Sub-Agent registriert", {
+      agent: name,
+      capabilities: Object.keys(capabilities),
+    });
   }
 
   getTool(name) {
@@ -57,9 +67,51 @@ export class AgentOrchestrator {
 
     const entry = this.capabilities.get(type);
     if (!entry) {
+      this.logger.error("Capability nicht gefunden", { type });
       throw new Error(`No agent registered for capability '${type}'.`);
     }
 
-    return entry.handler(payload ?? {});
+    this.logger.info("Starte Task", { type, agent: entry.name });
+    const startedAt = Date.now();
+    try {
+      const result = entry.handler(payload ?? {});
+      if (result?.then) {
+        return result
+          .then((resolved) => {
+            this.logger.info("Task abgeschlossen", {
+              type,
+              agent: entry.name,
+              durationMs: Date.now() - startedAt,
+              status: resolved?.status ?? "unknown",
+            });
+            return resolved;
+          })
+          .catch((error) => {
+            this.logger.error("Task fehlgeschlagen", {
+              type,
+              agent: entry.name,
+              durationMs: Date.now() - startedAt,
+              error,
+            });
+            throw error;
+          });
+      }
+
+      this.logger.info("Task abgeschlossen", {
+        type,
+        agent: entry.name,
+        durationMs: Date.now() - startedAt,
+        status: result?.status ?? "unknown",
+      });
+      return result;
+    } catch (error) {
+      this.logger.error("Task fehlgeschlagen", {
+        type,
+        agent: entry.name,
+        durationMs: Date.now() - startedAt,
+        error,
+      });
+      throw error;
+    }
   }
 }

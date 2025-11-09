@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { finalizeBauBeschrieb } from "../src/agent/bauBeschrieb/processBauBeschrieb.js";
 import { DatabaseTool } from "../src/tools/DatabaseTool.js";
 
-function createExtracted({ projektleiter }) {
+function createExtracted({ projektleiter, projektleiterEmail, projektleiterTelefon }) {
   return {
     kunde: {
       name: "ImmoVision AG",
@@ -22,6 +22,8 @@ function createExtracted({ projektleiter }) {
     },
     objekttyp: "Mehrfamilienhaus Einfach",
     projektleiter,
+    projektleiterEmail,
+    projektleiterTelefon,
     pendingFields: [],
   };
 }
@@ -32,14 +34,17 @@ test("finalizeBauBeschrieb persists projektleiter and links objekt", async () =>
   const originalEnsureObjekttyp = DatabaseTool.ensureObjekttyp;
   const originalCreateObjektForKunde = DatabaseTool.createObjektForKunde;
 
-  const projektleiterStub = { id: 42, name: "Marius Projektim" };
+  const projektleiterStub = { id: 42, name: "Marius Projektim", email: "marius@example.com" };
   const kundeStub = { id: 1, projektleiterId: 42, name: "ImmoVision AG" };
   const objekttypStub = { id: 2, bezeichnung: "Mehrfamilienhaus Einfach" };
   const objektStub = { id: 3, bezeichnung: "Neubau Wohn- und Geschäftshaus" };
   let capturedObjektInput = null;
+  let ensureProjektleiterInput = null;
 
-  DatabaseTool.ensureProjektleiter = async ({ name }) => {
+  DatabaseTool.ensureProjektleiter = async ({ name, email }) => {
+    ensureProjektleiterInput = { name, email };
     assert.equal(name, projektleiterStub.name);
+    assert.equal(email, projektleiterStub.email);
     return projektleiterStub;
   };
   DatabaseTool.ensureKunde = async () => kundeStub;
@@ -52,7 +57,11 @@ test("finalizeBauBeschrieb persists projektleiter and links objekt", async () =>
   try {
     const result = await finalizeBauBeschrieb({
       ingestion: { storedPath: "storage/uploads/mock.pdf" },
-      extracted: createExtracted({ projektleiter: projektleiterStub.name }),
+      extracted: createExtracted({
+        projektleiter: projektleiterStub.name,
+        projektleiterEmail: projektleiterStub.email,
+        projektleiterTelefon: "+41 31 000 00 00",
+      }),
       overrides: {},
     });
 
@@ -60,6 +69,10 @@ test("finalizeBauBeschrieb persists projektleiter and links objekt", async () =>
     assert.deepEqual(result.projektleiter, projektleiterStub);
     assert.ok(capturedObjektInput, "Objekt wurde nicht angelegt");
     assert.equal(capturedObjektInput.projektleiterId, projektleiterStub.id);
+    assert.deepEqual(ensureProjektleiterInput, {
+      name: projektleiterStub.name,
+      email: projektleiterStub.email,
+    });
   } finally {
     DatabaseTool.ensureProjektleiter = originalEnsureProjektleiter;
     DatabaseTool.ensureKunde = originalEnsureKunde;
