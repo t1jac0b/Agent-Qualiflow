@@ -26,6 +26,22 @@ function serializeResult(result) {
   };
 }
 
+function buildFollowUpMessage(body) {
+  if (!body) return null;
+
+  const lines = [];
+
+  if (typeof body.message === "string" && body.message.trim()) {
+    lines.push(body.message.trim());
+  }
+
+  if (typeof body.projektleiter === "string" && body.projektleiter.trim()) {
+    lines.push(`Projektleiter: ${body.projektleiter.trim()}`);
+  }
+
+  return lines.length ? lines.join("\n") : null;
+}
+
 app.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
@@ -38,7 +54,7 @@ app.post("/chat/upload", upload.single("file"), async (req, res) => {
 
   const chatId = normalizeChatId(req.body?.chatId);
   try {
-    const result = await handleChatMessage({
+    let result = await handleChatMessage({
       chatId,
       attachments: [
         {
@@ -49,6 +65,15 @@ app.post("/chat/upload", upload.single("file"), async (req, res) => {
       ],
       uploadedBy: req.body?.uploadedBy ?? "http-chat",
     });
+
+    const followUpMessage = buildFollowUpMessage(req.body);
+    if (result.status === "needs_input" && followUpMessage) {
+      result = await handleChatMessage({
+        chatId,
+        message: followUpMessage,
+        uploadedBy: req.body?.uploadedBy ?? "http-chat",
+      });
+    }
 
     res.json({ chatId, ...serializeResult(result) });
   } catch (error) {
