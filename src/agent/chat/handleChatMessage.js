@@ -1,5 +1,9 @@
-import { handleBauBeschriebUpload, formatMissingMessage, formatSuccessMessage } from "./handleBauBeschriebUpload.js";
-import { finalizeBauBeschrieb } from "../bauBeschrieb/processBauBeschrieb.js";
+import {
+  handleBauBeschriebUpload,
+  formatMissingMessage,
+  formatSuccessMessage,
+  finalizeBauBeschriebAgent,
+} from "./handleBauBeschriebUpload.js";
 import { getSession, upsertSession, clearSession, pruneSessions } from "./sessionStore.js";
 
 function isPdfAttachment(attachment) {
@@ -25,6 +29,16 @@ function assignOverride(overrides, field, rawValue) {
     return;
   }
 
+  if (field === "projektleiterEmail") {
+    overrides.projektleiterEmail = value;
+    return;
+  }
+
+  if (field === "projektleiterTelefon") {
+    overrides.projektleiterTelefon = value;
+    return;
+  }
+
   const [scope, key] = field.split(".");
   if (!scope || !key) return;
   overrides[scope] ||= {};
@@ -45,11 +59,19 @@ function mergeOverrides(base = {}, update = {}) {
   if (update.projektleiter !== undefined) {
     merged.projektleiter = update.projektleiter;
   }
+  if (update.projektleiterEmail !== undefined) {
+    merged.projektleiterEmail = update.projektleiterEmail;
+  }
+  if (update.projektleiterTelefon !== undefined) {
+    merged.projektleiterTelefon = update.projektleiterTelefon;
+  }
   return merged;
 }
 
 function hasOverrides(update = {}) {
   if (update.projektleiter) return true;
+  if (update.projektleiterEmail) return true;
+  if (update.projektleiterTelefon) return true;
   if (update.objekttyp) return true;
   if (update.kunde && Object.keys(update.kunde).length > 0) return true;
   if (update.objekt && Object.keys(update.objekt).length > 0) return true;
@@ -79,6 +101,18 @@ function parseOverridesFromMessage(message = "", pendingFields = []) {
     const projektleiterMatch = line.match(/projektleiter\s*[:\-]\s*([^]+)/i);
     if (projektleiterMatch) {
       assignOverride(overrides, "projektleiter", projektleiterMatch[1]);
+      continue;
+    }
+
+    const projektleiterEmailMatch = line.match(/projektleiter\s*(?:e-?mail|email)\s*[:\-]\s*([^]+)/i);
+    if (projektleiterEmailMatch) {
+      assignOverride(overrides, "projektleiterEmail", projektleiterEmailMatch[1]);
+      continue;
+    }
+
+    const projektleiterTelefonMatch = line.match(/projektleiter\s*(?:telefon|tel)\s*[:\-]\s*([^]+)/i);
+    if (projektleiterTelefonMatch) {
+      assignOverride(overrides, "projektleiterTelefon", projektleiterTelefonMatch[1]);
       continue;
     }
 
@@ -199,7 +233,7 @@ export async function handleChatMessage({ chatId, message = "", attachments = []
 
   const mergedOverrides = mergeOverrides(session.overrides, overrides);
 
-  const result = await finalizeBauBeschrieb({
+  const result = await finalizeBauBeschriebAgent({
     ingestion: session.ingestion,
     extracted: session.baseExtracted,
     overrides: mergedOverrides,

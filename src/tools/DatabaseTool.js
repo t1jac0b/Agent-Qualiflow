@@ -58,6 +58,49 @@ export const DatabaseTool = {
   },
 
   /**
+   * Sucht oder erstellt einen Projektleiter anhand des Namens.
+   * Ergänzt fehlende Kontaktinformationen ohne bestehende Werte zu überschreiben.
+   */
+  async ensureProjektleiter({ name, email, telefon } = {}) {
+    if (!name) {
+      throw new Error("ensureProjektleiter: 'name' ist erforderlich.");
+    }
+
+    const trimmed = name.trim();
+    if (!trimmed) {
+      throw new Error("ensureProjektleiter: 'name' darf nicht leer sein.");
+    }
+
+    const normalizedEmail = email ? email.trim().toLowerCase() : undefined;
+    const normalizedTelefon = telefon ? telefon.trim() : undefined;
+
+    const existing = await prisma.projektleiter.findFirst({
+      where: { name: { equals: trimmed, mode: "insensitive" } },
+    });
+
+    if (existing) {
+      const patch = {
+        email: existing.email || normalizedEmail || undefined,
+        telefon: existing.telefon || normalizedTelefon || undefined,
+      };
+
+      if (patch.email || patch.telefon) {
+        return prisma.projektleiter.update({ where: { id: existing.id }, data: patch });
+      }
+
+      return existing;
+    }
+
+    return prisma.projektleiter.create({
+      data: {
+        name: trimmed,
+        email: normalizedEmail,
+        telefon: normalizedTelefon,
+      },
+    });
+  },
+
+  /**
    * Erstellt ein Objekt für einen Kunden. Falls unter gleichem Kunden bereits
    * Objekte mit identischer Bezeichnung existieren, wird ein Zähler angehängt.
    */

@@ -165,6 +165,16 @@ export function attachBauteilInstantiationHook(prisma, options = {}) {
     logger = console,
   } = options;
 
+  if (typeof prisma.$use !== 'function') {
+    if (logger && typeof logger.warn === 'function') {
+      logger.warn('Prisma middleware API ($use) not available; skipping Bauteil instantiation hook.');
+    } else {
+      console.warn('Prisma middleware API ($use) not available; skipping Bauteil instantiation hook.');
+    }
+    prisma[HOOK_FLAG] = true;
+    return;
+  }
+
   prisma.$use(async (params, next) => {
     const result = await next(params);
 

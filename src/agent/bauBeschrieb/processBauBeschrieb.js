@@ -8,6 +8,7 @@ const MANDATORY_FIELDS = [
   "objekt.plz",
   "objekt.ort",
   "objekttyp",
+  "projektleiter",
 ];
 
 function normalizeText(text) {
@@ -269,13 +270,14 @@ function extractMetadata(rawText) {
   };
 }
 
-function collectMissingMandatory({ kunde, objekt, objekttyp }) {
+function collectMissingMandatory({ kunde, objekt, objekttyp, projektleiter }) {
   const missing = [];
   if (!kunde?.name) missing.push("kunde.name");
   if (!objekt?.adresse) missing.push("objekt.adresse");
   if (!objekt?.plz) missing.push("objekt.plz");
   if (!objekt?.ort) missing.push("objekt.ort");
   if (!objekttyp) missing.push("objekttyp");
+  if (!projektleiter) missing.push("projektleiter");
   return missing;
 }
 
@@ -294,6 +296,14 @@ function mergeManualOverrides(extracted, overrides = {}) {
 
   if (overrides.projektleiter !== undefined) {
     merged.projektleiter = overrides.projektleiter;
+  }
+
+  if (overrides.projektleiterEmail !== undefined) {
+    merged.projektleiterEmail = overrides.projektleiterEmail;
+  }
+
+  if (overrides.projektleiterTelefon !== undefined) {
+    merged.projektleiterTelefon = overrides.projektleiterTelefon;
   }
 
   merged.pendingFields = Array.isArray(merged.pendingFields) ? merged.pendingFields : [];
@@ -336,12 +346,31 @@ function filterPendingFields(pendingFields = [], extracted, overrides = {}, miss
 }
 
 async function persistBauBeschrieb({ extracted }) {
-  const kunde = await DatabaseTool.ensureKunde({
+  const projektleiterName = extracted.projektleiter?.trim();
+  const projektleiterEmail = extracted.projektleiterEmail?.trim()?.toLowerCase?.() ?? extracted.projektleiterEmail?.trim();
+  const projektleiterTelefon = extracted.projektleiterTelefon?.trim();
+  let projektleiter = null;
+  if (projektleiterName) {
+    projektleiter = await DatabaseTool.ensureProjektleiter({
+      name: projektleiterName,
+      email: projektleiterEmail,
+      telefon: projektleiterTelefon,
+    });
+  }
+
+  let kunde = await DatabaseTool.ensureKunde({
     name: extracted.kunde.name,
     adresse: extracted.kunde.adresse,
     plz: extracted.kunde.plz,
     ort: extracted.kunde.ort,
   });
+
+  if (projektleiter && kunde.projektleiterId !== projektleiter.id) {
+    kunde = await DatabaseTool.client.kunde.update({
+      where: { id: kunde.id },
+      data: { projektleiter: { connect: { id: projektleiter.id } } },
+    });
+  }
 
   const objekttyp = await DatabaseTool.ensureObjekttyp(extracted.objekttyp);
 
@@ -352,11 +381,12 @@ async function persistBauBeschrieb({ extracted }) {
     plz: extracted.objekt.plz,
     ort: extracted.objekt.ort,
     objekttypId: objekttyp?.id,
+    projektleiterId: projektleiter?.id,
     notiz: extracted.objekt.notiz,
     erstellungsjahr: extracted.objekt.erstellungsjahr,
   });
 
-  return { kunde, objekttyp, objekt };
+  return { kunde, objekttyp, objekt, projektleiter };
 }
 
 export async function finalizeBauBeschrieb({ ingestion, extracted, overrides }) {
@@ -375,7 +405,7 @@ export async function finalizeBauBeschrieb({ ingestion, extracted, overrides }) 
     };
   }
 
-  const { kunde, objekttyp, objekt } = await persistBauBeschrieb({ extracted: merged });
+  const { kunde, objekttyp, objekt, projektleiter } = await persistBauBeschrieb({ extracted: merged });
 
   let reportPath = null;
   try {
@@ -397,6 +427,7 @@ export async function finalizeBauBeschrieb({ ingestion, extracted, overrides }) 
     kunde,
     objekttyp,
     objekt,
+    projektleiter,
     pendingFields,
     reportPath,
   };

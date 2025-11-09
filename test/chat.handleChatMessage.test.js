@@ -5,8 +5,14 @@ import { __test__ as chatTestUtils } from "../src/agent/chat/handleChatMessage.j
 
 const { parseOverridesFromMessage, mergeOverrides } = chatTestUtils;
 
-test("parseOverridesFromMessage extracts projektleiter and adressdaten", () => {
-  const message = `Projektleiter: Peter Beispiel\nPLZ: 3013 Ort: Bern\nAdresse: Seeweg 10-14`;
+test("parseOverridesFromMessage extracts projektleiter and contact data", () => {
+  const message = [
+    "Projektleiter: Peter Beispiel",
+    "Projektleiter Email: peter.beispiel@example.com",
+    "Projektleiter Tel: +41 31 000 00 00",
+    "PLZ: 3013 Ort: Bern",
+    "Adresse: Seeweg 10-14",
+  ].join("\n");
   const overrides = parseOverridesFromMessage(message, [
     { field: "objekt.plz" },
     { field: "objekt.ort" },
@@ -16,6 +22,8 @@ test("parseOverridesFromMessage extracts projektleiter and adressdaten", () => {
 
   assert.deepEqual(overrides, {
     projektleiter: "Peter Beispiel",
+    projektleiterEmail: "peter.beispiel@example.com",
+    projektleiterTelefon: "+41 31 000 00 00",
     objekt: {
       plz: "3013",
       ort: "Bern",
@@ -31,6 +39,7 @@ test("mergeOverrides keeps existing values and extends", () => {
   const update = {
     objekt: { ort: "Bern" },
     projektleiter: "Jasmin Hirt",
+    projektleiterEmail: "jasmin.hirt@example.com",
   };
 
   const merged = mergeOverrides(base, update);
@@ -40,6 +49,7 @@ test("mergeOverrides keeps existing values and extends", () => {
       ort: "Bern",
     },
     projektleiter: "Jasmin Hirt",
+    projektleiterEmail: "jasmin.hirt@example.com",
   });
 
   // Base object must remain unchanged
