@@ -1,4 +1,5 @@
 import { AgentOrchestrator } from "./AgentOrchestrator.js";
+import { QsRundgangAgent } from "./qsRundgang/QsRundgangAgent.js";
 import { ReportAgent } from "./report/ReportAgent.js";
 import { databaseTool, fileTool, mailTool, reportTool } from "./tools/index.js";
 
@@ -17,7 +18,9 @@ function createOrchestrator() {
   const tools = createTools();
   const orchestrator = new AgentOrchestrator({ tools });
   const reportAgent = new ReportAgent();
+  const qsRundgangAgent = new QsRundgangAgent();
   orchestrator.registerSubAgent("report", reportAgent);
+  orchestrator.registerSubAgent("qsRundgang", qsRundgangAgent);
   return orchestrator;
 }
 
