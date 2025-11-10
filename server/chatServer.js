@@ -14,6 +14,7 @@ const qsUpload = upload.fields([
   { name: "archive", maxCount: 1 },
   { name: "photos", maxCount: 20 },
 ]);
+const qsPositionUpload = upload.single("photo");
 
 app.use(express.json({ limit: "5mb" }));
 
@@ -107,6 +108,65 @@ app.post("/chat/upload", upload.single("file"), async (req, res) => {
   } catch (error) {
     log.error("Fehler beim Upload", { chatId, error });
     res.status(500).json({ error: "Fehler beim Verarbeiten des Bau-Beschriebs." });
+  }
+});
+
+app.post("/qs-rundgang/position-erfassen", qsPositionUpload, async (req, res) => {
+  const parseId = (value) => {
+    if (value === undefined || value === null || value === "") return undefined;
+    const parsed = Number.parseInt(value, 10);
+    return Number.isNaN(parsed) ? undefined : parsed;
+  };
+
+  const baurundgangId = parseId(req.body?.baurundgangId);
+  const rawNote = req.body?.note ?? req.body?.notiz ?? "";
+  const note = typeof rawNote === "string" ? rawNote.trim() : "";
+  const photo = req.file
+    ? {
+        buffer: req.file.buffer,
+        originalFilename: req.file.originalname,
+        mimetype: req.file.mimetype,
+      }
+    : null;
+
+  const missing = [];
+  if (!baurundgangId) missing.push("baurundgangId");
+  if (!note) missing.push("note");
+  if (!photo) missing.push("photo");
+
+  if (missing.length) {
+    log.warn("QS-Rundgang Position fehlende Felder", { baurundgangId, missing });
+    res.status(400).json({ status: "ERROR", message: "Erforderliche Felder fehlen.", missing });
+    return;
+  }
+
+  try {
+    log.info("QS-Rundgang Position", {
+      baurundgangId,
+      hasPhoto: true,
+      hasNote: true,
+    });
+
+    const result = await orchestrator.handleTask({
+      type: "qsRundgang.positionCapture",
+      payload: {
+        baurundgangId,
+        note,
+        photo,
+        uploadedBy: req.body?.uploadedBy ?? "http-qs",
+      },
+    });
+
+    if (result?.status === "ERROR") {
+      res.status(400).json(result);
+      return;
+    }
+
+    const statusCode = result?.status === "NEEDS_INPUT" ? 200 : 201;
+    res.status(statusCode).json(serializeResult(result));
+  } catch (error) {
+    log.error("QS-Rundgang Position fehlgeschlagen", { error, baurundgangId });
+    res.status(500).json({ error: "Fehler beim Erfassen der QS-Position." });
   }
 });
 
