@@ -9,15 +9,56 @@ const NOTE_FILENAME_REGEX = /notizen?\.txt$/i;
 const IMAGE_FILENAME_REGEX = /\.(?:png|jpe?g|webp|heic)$/i;
 
 const KEYWORD_RULES = [
+  { pattern: /strangabsperr\w*/i, bauteil: "Sanitär", label: "Strangabsperrventile" },
+  { pattern: /entleer(?:ventil|ung)/i, bauteil: "Sanitär", label: "Entleerung" },
+  { pattern: /sanit[äa]r/i, bauteil: "Sanitär", label: "Sanitär" },
+  { pattern: /trinkwasser/i, bauteil: "Sanitär", label: "Trinkwasser" },
+  { pattern: /leitung/i, bauteil: "Sanitär", label: "Leitung" },
+  { pattern: /wasser/i, bauteil: "Sanitär", label: "Wasser" },
   { pattern: /xps\s*d[äa]mmung/i, bauteil: "Rohbau", label: "XPS Dämmung" },
   { pattern: /abdichtung/i, bauteil: "Rohbau", label: "Abdichtung" },
   { pattern: /beton/i, bauteil: "Rohbau", label: "Beton" },
 ];
 
+const STOP_WORDS = new Set([
+  "und",
+  "oder",
+  "ohne",
+  "mit",
+  "ein",
+  "eine",
+  "einer",
+  "einem",
+  "der",
+  "die",
+  "das",
+  "den",
+  "dem",
+  "des",
+  "auf",
+  "aus",
+  "im",
+  "in",
+  "ins",
+  "vom",
+  "von",
+  "zur",
+  "zum",
+  "für",
+  "bei",
+  "nach",
+  "als",
+  "ist",
+  "sind",
+]);
+
 function extractKeywords(notesText = "") {
-  return Array.from(
-    new Set((notesText.toLowerCase().match(/[a-z0-9äöüß]{3,}/gi) ?? []).map((token) => token.trim())),
-  );
+  const rawTokens = notesText.toLowerCase().match(/[a-z0-9äöüß]{3,}/gi) ?? [];
+  const filtered = rawTokens
+    .map((token) => token.trim())
+    .filter((token) => token && token.length >= 3 && !STOP_WORDS.has(token));
+
+  return Array.from(new Set(filtered));
 }
 
 function formatOptionsMessage(options = []) {
@@ -32,35 +73,77 @@ function formatOptionsMessage(options = []) {
   return `Ich bin unsicher. Meinst du ${quoted.join(", ")} oder ${last}?`;
 }
 
+const EXPLICIT_TEMPLATE_HINTS = [
+  // Strongest: both tokens present in template text
+  {
+    pattern: /(?:strangabsperr.*entleer|entleer.*strangabsperr)/i,
+    filter: (template) => template.textLower.includes("strangabsperr") && template.textLower.includes("entleer"),
+  },
+  // Fallbacks
+  {
+    pattern: /strangabsperr\w*/i,
+    filter: (template) => template.textLower.includes("strangabsperr"),
+  },
+  {
+    pattern: /entleer(?:ventil|ung)/i,
+    filter: (template) => template.textLower.includes("entleer"),
+  },
+];
+
 function rankTemplateMatches(notesText = "", templates = []) {
   const normalizedNote = notesText.toLowerCase();
   const keywords = extractKeywords(normalizedNote);
   const ruleMatches = KEYWORD_RULES.filter((rule) => rule.pattern.test(normalizedNote));
+
+  for (const hint of EXPLICIT_TEMPLATE_HINTS) {
+    if (!hint.pattern.test(normalizedNote)) continue;
+    const directMatches = templates.filter((template) => hint.filter(template));
+    if (directMatches.length === 1) {
+      const direct = { ...directMatches[0], score: 100 };
+      return { keywords, matches: [direct], ruleMatches };
+    }
+    if (directMatches.length > 1) {
+      for (const template of templates) {
+        if (directMatches.some((match) => match.id === template.id)) {
+          template.__hintPriority = Math.max(template.__hintPriority ?? 0, 50);
+        }
+      }
+    }
+  }
 
   const matches = [];
 
   for (const template of templates) {
     const textLower = template.textLower ?? template.text.toLowerCase();
     const bauteilLower = template.bauteilNameLower ?? template.bauteilName?.toLowerCase() ?? "";
-    const bereichLower = template.bereichNameLower ?? template.bereichName?.toLowerCase() ?? "";
     const kapitelLower = template.kapitelNameLower ?? template.kapitelName?.toLowerCase() ?? "";
 
     let score = 0;
     for (const keyword of keywords) {
       if (!keyword) continue;
       if (textLower.includes(keyword)) score += 2;
-      if (bauteilLower.includes(keyword)) score += 1;
-      if (bereichLower.includes(keyword)) score += 0.5;
-      if (kapitelLower.includes(keyword)) score += 0.5;
+      if (bauteilLower.includes(keyword)) score += 3;
+      if (kapitelLower.includes(keyword)) score += 1;
     }
 
     for (const rule of ruleMatches) {
+      const { pattern } = rule;
       if (rule.bauteil && bauteilLower.includes(rule.bauteil.toLowerCase())) {
+        score += 3.5;
+      }
+      const patternMatchesText = pattern ? pattern.test(textLower) : false;
+      if (patternMatchesText) {
         score += 3;
+      } else if (rule.label && textLower.includes(rule.label.toLowerCase())) {
+        score += 2.5;
       }
-      if (rule.label && textLower.includes(rule.label.toLowerCase())) {
-        score += 2;
+      if (pattern?.global) {
+        pattern.lastIndex = 0;
       }
+    }
+
+    if (template.__hintPriority) {
+      score += template.__hintPriority;
     }
 
     if (score > 0) {
@@ -83,7 +166,45 @@ function determineMatchOutcome(notesText = "", templates = []) {
   }
 
   const bestScore = ranking.matches[0].score;
-  const bestMatches = ranking.matches.filter((match) => match.score === bestScore);
+  let bestMatches = ranking.matches.filter((match) => match.score === bestScore);
+
+  // Low-confidence: for very short/unspecific notes, return ambiguous and propose diverse options
+  if (bestScore < 4) {
+    const seenBauteile = new Set();
+    const diverse = [];
+    for (const m of ranking.matches) {
+      const key = m.bauteilTemplateId ?? m.bauteilName ?? m.kapitelName ?? m.id;
+      if (seenBauteile.has(key)) continue;
+      seenBauteile.add(key);
+      diverse.push(m);
+      if (diverse.length >= 5) break;
+    }
+    return { ...ranking, bestMatches: diverse, outcome: "ambiguous" };
+  }
+
+  // Tie-breaker: if multiple best matches remain, prefer those that include both key tokens
+  if (bestMatches.length > 1) {
+    const bothToken = bestMatches.filter(
+      (m) => (m.textLower ?? m.text.toLowerCase()).includes("strangabsperr") && (m.textLower ?? m.text.toLowerCase()).includes("entleer"),
+    );
+    if (bothToken.length === 1) {
+      bestMatches = bothToken;
+    } else if (bothToken.length > 1) {
+      // Prefer shortest text (more specific standardtext)
+      bothToken.sort((a, b) => (a.text?.length ?? Infinity) - (b.text?.length ?? Infinity));
+      bestMatches = [bothToken[0]];
+    }
+  }
+
+  // Tie-breaker: if still ambiguous and all share same bauteil, pick lowest id deterministically
+  if (bestMatches.length > 1) {
+    const allSameBauteil = bestMatches.every((m) => m.bauteilTemplateId === bestMatches[0].bauteilTemplateId);
+    if (allSameBauteil) {
+      bestMatches.sort((a, b) => (a.id ?? 0) - (b.id ?? 0));
+      bestMatches = [bestMatches[0]];
+    }
+  }
+
   const outcome = bestMatches.length === 1 ? "clear" : "ambiguous";
 
   return { ...ranking, bestMatches, outcome };
@@ -121,12 +242,10 @@ function classifyNotes(notesText = "") {
 }
 
 function mapTemplateRecord(record) {
-  const bauteilTemplate = record?.kapitelTemplate?.bereichTemplate?.bauteilTemplate;
-  const bereichTemplate = record?.kapitelTemplate?.bereichTemplate;
   const kapitelTemplate = record?.kapitelTemplate;
+  const bauteilTemplate = kapitelTemplate?.bauteilTemplate;
 
   const bauteilName = bauteilTemplate?.name ?? null;
-  const bereichName = bereichTemplate?.name ?? null;
   const kapitelName = kapitelTemplate?.name ?? null;
 
   const text = record.text ?? "";
@@ -138,8 +257,6 @@ function mapTemplateRecord(record) {
     bauteilTemplateId: bauteilTemplate?.id ?? null,
     bauteilName,
     bauteilNameLower: bauteilName?.toLowerCase() ?? "",
-    bereichName,
-    bereichNameLower: bereichName?.toLowerCase() ?? "",
     kapitelName,
     kapitelNameLower: kapitelName?.toLowerCase() ?? "",
   };
@@ -150,11 +267,7 @@ async function fetchTemplateIndex(prisma) {
     include: {
       kapitelTemplate: {
         include: {
-          bereichTemplate: {
-            include: {
-              bauteilTemplate: true,
-            },
-          },
+          bauteilTemplate: true,
         },
       },
     },
@@ -169,21 +282,15 @@ async function pickTemplateForBauteil(prisma, bauteilName) {
   return prisma.bereichKapitelTextTemplate.findFirst({
     where: {
       kapitelTemplate: {
-        bereichTemplate: {
-          bauteilTemplate: {
-            name: { equals: bauteilName, mode: "insensitive" },
-          },
+        bauteilTemplate: {
+          name: { equals: bauteilName, mode: "insensitive" },
         },
       },
     },
     include: {
       kapitelTemplate: {
         include: {
-          bereichTemplate: {
-            include: {
-              bauteilTemplate: true,
-            },
-          },
+          bauteilTemplate: true,
         },
       },
     },
@@ -242,7 +349,7 @@ async function ensurePosition(
       positionsnummer: existingCount + 1,
       bauteilId: bauteilId ?? bauteil?.id ?? null,
       bemerkung,
-      bereichstitel: template?.bereichName ?? bauteilName ?? undefined,
+      bereichstitel: template?.kapitelName ?? bauteilName ?? undefined,
       frist: frist ?? undefined,
     },
   });
@@ -481,41 +588,85 @@ export class QsRundgangAgent {
       };
     }
 
-    const classification = classifyNotes(processed.notes);
-    if (!classification.bauteilName) {
+    // Direct matching against catalog templates
+    const templates = await fetchTemplateIndex(prisma);
+    const decision = determineMatchOutcome(processed.notes, templates);
+
+    const bucket = decision.outcome === "clear" ? "qs-rundgang/photos" : "qs-rundgang/pending";
+    const storedPhoto = await this.fileInvoker("storeUpload", {
+      buffer,
+      filePath,
+      originalFilename: originalFilename ?? "qs-foto.jpg",
+      bucket,
+    });
+
+    if (decision.outcome !== "clear") {
+      const options = decision.bestMatches.length
+        ? Array.from(new Set(decision.bestMatches.map((item) => item.bauteilName).filter(Boolean)))
+        : [];
+
       return {
-        status: "needs_input",
-        message: "Die Notizen konnten keinem Bauteil zugeordnet werden.",
-        context: { storedArchive },
+        status: "NEEDS_INPUT",
+        message: formatOptionsMessage(options),
+        options,
+        context: {
+          storedArchive,
+          storedPhoto,
+          photos: processed.photos,
+          keywords: decision.keywords,
+          outcome: decision.outcome,
+        },
       };
     }
 
-    const template = await pickTemplateForBauteil(prisma, classification.bauteilName);
+    const match = decision.bestMatches[0];
+
+    let bauteil = null;
+    if (match.bauteilTemplateId) {
+      bauteil = await prisma.bauteil.findFirst({
+        where: { baurundgangId, bauteilTemplateId: match.bauteilTemplateId },
+      });
+      if (!bauteil) {
+        bauteil = await prisma.bauteil.create({
+          data: {
+            baurundgang: { connect: { id: baurundgangId } },
+            template: { connect: { id: match.bauteilTemplateId } },
+          },
+        });
+      }
+    }
 
     const report = await ensureReportDraft(prisma, { kundeId, objektId, baurundgangId });
+    const frist = computeFristDate(baurundgang);
 
     const position = await ensurePosition(prisma, {
       qsReportId: report.id,
       baurundgangId,
-      bauteilName: classification.bauteilName,
-      template: template
-        ? {
-            id: template.id,
-            text: template.text,
-            bereichName: template.kapitelTemplate?.bereichTemplate?.name,
-          }
-        : null,
+      bauteilId: bauteil?.id ?? null,
+      bauteilName: match.bauteilName,
+      template: match,
       originalNote: processed.notes,
+      frist,
     });
 
+    const foto = await prisma.foto.create({
+      data: {
+        baurundgang: { connect: { id: baurundgangId } },
+        dateiURL: storedPhoto.storedPath,
+        hinweisMarkierung: processed.notes,
+      },
+    });
+
+    await prisma.positionFoto.create({ data: { positionId: position.id, fotoId: foto.id } });
+
     return {
-      status: "success",
-      message: "QS-Rundgang-Daten verarbeitet (Stub)",
+      status: "SUCCESS",
+      message: "QS-Rundgang-Daten verarbeitet",
       context: {
         storedArchive,
+        storedPhoto,
         photos: processed.photos,
-        classification,
-        templateId: template?.id ?? null,
+        templateId: match.id,
         reportId: report.id,
         positionId: position.id,
         uploadedBy,

@@ -163,7 +163,7 @@ model BauteilTemplate {
   aktiv       Boolean @default(true)
 
   materialisierungen MaterialisierungTemplate[]
-  bereichTemplates   BereichTemplate[]
+  kapitelTemplates   BereichKapitelTemplate[]
   bauteile           Bauteil[]
 }
 
@@ -178,24 +178,14 @@ model MaterialisierungTemplate {
   bauteile        Bauteil[]
 }
 
-model BereichTemplate {
-  id                Int @id @default(autoincrement())
-  bauteilTemplateId Int
-  name              String
-  reihenfolge       Int?
-  aktiv             Boolean @default(true)
-
-  bauteilTemplate BauteilTemplate       @relation(fields: [bauteilTemplateId], references: [id])
-  kapitel         BereichKapitelTemplate[]
-}
-
 model BereichKapitelTemplate {
   id               Int @id @default(autoincrement())
-  bereichTemplateId Int
+  bauteilTemplateId Int
   name             String
+  bkp              String?
   reihenfolge      Int?
 
-  bereichTemplate BereichTemplate            @relation(fields: [bereichTemplateId], references: [id])
+  bauteilTemplate BauteilTemplate            @relation(fields: [bauteilTemplateId], references: [id])
   texte           BereichKapitelTextTemplate[]
 }
 

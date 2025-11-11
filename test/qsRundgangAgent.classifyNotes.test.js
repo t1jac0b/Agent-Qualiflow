@@ -24,7 +24,6 @@ test("determineMatchOutcome returns clear outcome for unique best match", () => 
       text: "Kratzer an der Fensterbank ausbessern",
       bauteilTemplateId: 101,
       bauteilName: "Fenster",
-      bereichName: "Fensterbank",
       kapitelName: "Mängel",
     },
     {

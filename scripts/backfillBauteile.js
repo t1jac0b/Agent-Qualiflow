@@ -119,19 +119,18 @@ async function resolveTargets({ bauteilIds, baurundgangIds }) {
 }
 
 async function fetchBauteilState(id) {
-  return prisma.bauteil.findUnique({
+  const bauteil = await prisma.bauteil.findUnique({
     where: { id },
     include: {
       template: {
         include: {
-          bereichTemplates: {
-            select: { id: true },
-          },
+          kapitelTemplates: { select: { id: true } },
         },
       },
       bereiche: { select: { id: true } },
     },
   });
+  return bauteil;
 }
 
 function summarizeDryRunEntry(bauteil, force) {
@@ -141,8 +140,8 @@ function summarizeDryRunEntry(bauteil, force) {
   if (!bauteil.template) {
     return { status: "skipped", reason: "no_template" };
   }
-  if ((bauteil.template.bereichTemplates?.length ?? 0) === 0) {
-    return { status: "skipped", reason: "template_without_bereiche" };
+  if ((bauteil.template.kapitelTemplates?.length ?? 0) === 0) {
+    return { status: "skipped", reason: "template_without_kapitel" };
   }
   if (!force && bauteil.bereiche.length > 0) {
     return { status: "skipped", reason: "already_has_bereiche" };
@@ -200,13 +199,13 @@ async function main() {
       continue;
     }
 
-    const templateBereiche = bauteil.template.bereichTemplates?.length ?? 0;
-    if (templateBereiche === 0) {
-      console.warn(`Template for Bauteil ${bauteilId} has no BereichTemplates – skipping.`);
+    const templateKapitel = bauteil.template.kapitelTemplates?.length ?? 0;
+    if (templateKapitel === 0) {
+      console.warn(`Template for Bauteil ${bauteilId} has no KapitelTemplates – skipping.`);
       results.push({
-        status: "skipped",
-        reason: "template_without_bereiche",
         bauteilId,
+        status: "skipped",
+        reason: "template_without_kapitel",
       });
       continue;
     }

@@ -34,13 +34,8 @@ export async function instantiateBauteilFromTemplate(prisma, bauteilId, options 
       include: {
         template: {
           include: {
-            bereichTemplates: {
-              include: {
-                kapitel: {
-                  include: { texte: true },
-                  orderBy: { reihenfolge: 'asc' },
-                },
-              },
+            kapitelTemplates: {
+              include: { texte: true },
               orderBy: { reihenfolge: 'asc' },
             },
           },
@@ -73,48 +68,44 @@ export async function instantiateBauteilFromTemplate(prisma, bauteilId, options 
     }
 
     const counts = { bereiche: 0, kapitel: 0, texte: 0 };
-    const { bereichTemplates = [] } = sanitizeTemplateNode(bauteil.template);
+    const { kapitelTemplates = [] } = sanitizeTemplateNode(bauteil.template);
 
-    for (const [bereichIndex, rawBereichTemplate] of bereichTemplates.entries()) {
-      const bereichTemplate = sanitizeTemplateNode(rawBereichTemplate);
+    for (const [kapitelIndex, rawKapitelTemplate] of kapitelTemplates.entries()) {
+      const kapitelTemplate = sanitizeTemplateNode(rawKapitelTemplate);
+
       const bereichRecord = await tx.bereich.create({
         data: {
           bauteilId: id,
-          name: bereichTemplate.name ?? `Bereich ${bereichIndex + 1}`,
+          name: kapitelTemplate.name ?? `Kapitel ${kapitelIndex + 1}`,
           bereichstext: null,
         },
       });
 
       counts.bereiche += 1;
 
-      const kapitelTemplates = Array.isArray(bereichTemplate.kapitel) ? bereichTemplate.kapitel : [];
+      const kapitelRecord = await tx.bereichKapitel.create({
+        data: {
+          bereichId: bereichRecord.id,
+          name: kapitelTemplate.name ?? `Kapitel ${kapitelIndex + 1}`,
+          reihenfolge: resolveOrder(kapitelTemplate.reihenfolge, kapitelIndex),
+        },
+      });
 
-      for (const [kapitelIndex, rawKapitelTemplate] of kapitelTemplates.entries()) {
-        const kapitelTemplate = sanitizeTemplateNode(rawKapitelTemplate);
-        const kapitelRecord = await tx.bereichKapitel.create({
+      counts.kapitel += 1;
+
+      const textTemplates = Array.isArray(kapitelTemplate.texte) ? kapitelTemplate.texte : [];
+
+      for (const [textIndex, rawTextTemplate] of textTemplates.entries()) {
+        const textTemplate = sanitizeTemplateNode(rawTextTemplate);
+        await tx.bereichKapitelText.create({
           data: {
-            bereichId: bereichRecord.id,
-            name: kapitelTemplate.name ?? `Kapitel ${kapitelIndex + 1}`,
-            reihenfolge: resolveOrder(kapitelTemplate.reihenfolge, kapitelIndex),
+            bereichKapitelId: kapitelRecord.id,
+            text: textTemplate.text ?? '',
+            reihenfolge: resolveOrder(textTemplate.reihenfolge, textIndex),
           },
         });
 
-        counts.kapitel += 1;
-
-        const textTemplates = Array.isArray(kapitelTemplate.texte) ? kapitelTemplate.texte : [];
-
-        for (const [textIndex, rawTextTemplate] of textTemplates.entries()) {
-          const textTemplate = sanitizeTemplateNode(rawTextTemplate);
-          await tx.bereichKapitelText.create({
-            data: {
-              bereichKapitelId: kapitelRecord.id,
-              text: textTemplate.text ?? '',
-              reihenfolge: resolveOrder(textTemplate.reihenfolge, textIndex),
-            },
-          });
-
-          counts.texte += 1;
-        }
+        counts.texte += 1;
       }
     }
 
