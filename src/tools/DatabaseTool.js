@@ -216,6 +216,48 @@ export const DatabaseTool = {
     });
   },
 
+  async listKunden() {
+    return prisma.kunde.findMany({
+      orderBy: { name: "asc" },
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+  },
+
+  async listObjekteByKunde(kundeId) {
+    if (!kundeId) {
+      throw new Error("listObjekteByKunde: 'kundeId' ist erforderlich.");
+    }
+
+    return prisma.objekt.findMany({
+      where: { kundeId },
+      orderBy: { bezeichnung: "asc" },
+      select: {
+        id: true,
+        bezeichnung: true,
+      },
+    });
+  },
+
+  async listBaurundgaengeByObjekt(objektId) {
+    if (!objektId) {
+      throw new Error("listBaurundgaengeByObjekt: 'objektId' ist erforderlich.");
+    }
+
+    return prisma.baurundgang.findMany({
+      where: { objektId },
+      orderBy: { id: "asc" },
+      select: {
+        id: true,
+        datumGeplant: true,
+        datumDurchgefuehrt: true,
+        notiz: true,
+      },
+    });
+  },
+
   async disconnect() {
     await prisma.$disconnect();
   },
