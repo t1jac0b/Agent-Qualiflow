@@ -179,18 +179,18 @@ model MaterialisierungTemplate {
 }
 
 model BereichKapitelTemplate {
-  id               Int @id @default(autoincrement())
+  id                Int     @id @default(autoincrement())
   bauteilTemplateId Int
-  name             String
-  bkp              String?
-  reihenfolge      Int?
+  name              String
+  bkp               String?
+  reihenfolge       Int?
 
-  bauteilTemplate BauteilTemplate            @relation(fields: [bauteilTemplateId], references: [id])
+  bauteilTemplate BauteilTemplate              @relation(fields: [bauteilTemplateId], references: [id])
   texte           BereichKapitelTextTemplate[]
 }
 
 model BereichKapitelTextTemplate {
-  id                       Int @id @default(autoincrement())
+  id                       Int    @id @default(autoincrement())
   bereichKapitelTemplateId Int
   text                     String
   reihenfolge              Int?
@@ -219,22 +219,23 @@ model Bauteil {
   template         BauteilTemplate?          @relation(fields: [bauteilTemplateId], references: [id])
   materialisierung MaterialisierungTemplate? @relation(fields: [materialisierungTemplateId], references: [id])
   risiko           BauteilRisiko?            @relation(fields: [bauteilRisikoId], references: [id])
-  kapitel    BereichKapitel[]
-  positionen Position[]
+  kapitel          BereichKapitel[]
+  positionen       Position[]
 }
 
 model BereichKapitel {
-  id          Int  @id @default(autoincrement())
+  id          Int    @id @default(autoincrement())
   bauteilId   Int
   name        String
   reihenfolge Int?
 
-  bauteil Bauteil @relation(fields: [bauteilId], references: [id])
-  texte   BereichKapitelText[]
+  bauteil    Bauteil              @relation(fields: [bauteilId], references: [id])
+  positionen Position[]
+  texte      BereichKapitelText[]
 }
 
 model BereichKapitelText {
-  id               Int @id @default(autoincrement())
+  id               Int    @id @default(autoincrement())
   bereichKapitelId Int
   text             String
   reihenfolge      Int?
