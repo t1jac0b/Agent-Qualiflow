@@ -374,6 +374,7 @@ export class QsRundgangAgent {
     return {
       "qsRundgang.upload": (payload) => this.handleUpload(payload),
       "qsRundgang.positionCapture": (payload) => this.handlePositionCapture(payload),
+      "qsRundgang.positionClarify": (payload) => this.handlePositionClarify(payload),
     };
   }
 
@@ -508,6 +509,92 @@ export class QsRundgangAgent {
         bauteilId: bauteil?.id ?? null,
         templateId: match.id,
         storedPhoto,
+        frist,
+        uploadedBy,
+      },
+    };
+  }
+
+  async handlePositionClarify({ baurundgangId, note, option, storedPhotoPath, uploadedBy = "qs-mobile" }) {
+    if (!this.fileInvoker || !this.databaseInvoker) {
+      throw new Error("QsRundgangAgent: Tools sind nicht initialisiert.");
+    }
+
+    const errors = [];
+    if (!baurundgangId) errors.push("baurundgangId");
+    if (!note || typeof note !== "string" || !note.trim()) errors.push("note");
+    if (!option || typeof option !== "string" || !option.trim()) errors.push("option");
+    if (errors.length) {
+      return { status: "ERROR", message: `Folgende Felder fehlen oder sind ungültig: ${errors.join(", ")}` };
+    }
+
+    const prisma = this.databaseInvoker("rawClient");
+    const baurundgang = await prisma.baurundgang.findUnique({
+      where: { id: baurundgangId },
+      include: { objekt: { select: { id: true, kundeId: true } } },
+    });
+    if (!baurundgang) {
+      return { status: "ERROR", message: "Baurundgang wurde nicht gefunden.", context: { baurundgangId } };
+    }
+
+    const allTemplates = await fetchTemplateIndex(prisma);
+    const filtered = allTemplates.filter((t) => (t.bauteilName ?? "").toLowerCase() === option.toLowerCase());
+    const pool = filtered.length ? filtered : allTemplates.filter((t) => (t.bauteilName ?? "").toLowerCase().includes(option.toLowerCase()));
+
+    if (pool.length === 0) {
+      return { status: "ERROR", message: `Kein Template für Option '${option}' gefunden.` };
+    }
+
+    const decision = determineMatchOutcome(note, pool);
+    const match = decision.bestMatches[0] ?? pool[0];
+
+    let bauteil = null;
+    if (match.bauteilTemplateId) {
+      bauteil = await prisma.bauteil.findFirst({ where: { baurundgangId, bauteilTemplateId: match.bauteilTemplateId } });
+      if (!bauteil) {
+        bauteil = await prisma.bauteil.create({
+          data: {
+            baurundgang: { connect: { id: baurundgangId } },
+            template: { connect: { id: match.bauteilTemplateId } },
+          },
+        });
+      }
+    }
+
+    const report = await ensureReportDraft(prisma, { kundeId: baurundgang.objekt?.kundeId, objektId: baurundgang.objektId, baurundgangId });
+    const frist = computeFristDate(baurundgang);
+
+    const position = await ensurePosition(prisma, {
+      qsReportId: report.id,
+      baurundgangId,
+      bauteilId: bauteil?.id ?? null,
+      bauteilName: match.bauteilName,
+      template: match,
+      originalNote: note,
+      frist,
+    });
+
+    let foto = null;
+    if (storedPhotoPath) {
+      foto = await prisma.foto.create({
+        data: {
+          baurundgang: { connect: { id: baurundgangId } },
+          dateiURL: storedPhotoPath,
+          hinweisMarkierung: note,
+        },
+      });
+      await prisma.positionFoto.create({ data: { positionId: position.id, fotoId: foto.id } });
+    }
+
+    return {
+      status: "SUCCESS",
+      message: "Position erfolgreich erfasst.",
+      context: {
+        reportId: report.id,
+        positionId: position.id,
+        bauteilId: bauteil?.id ?? null,
+        templateId: match.id,
+        storedPhoto: foto ? { storedPath: storedPhotoPath } : undefined,
         frist,
         uploadedBy,
       },

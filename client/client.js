@@ -57,13 +57,13 @@ async function sendPositionCapture({ baurundgangId, note, photo }) {
   return response.json();
 }
 
-async function sendClarification({ contextId, selection }) {
+async function sendClarification({ baurundgangId, note, option, storedPhotoPath }) {
   const response = await fetch("/qs-rundgang/position-clarify", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ contextId, selection }),
+    body: JSON.stringify({ baurundgangId, note, option, storedPhotoPath }),
   });
 
   if (!response.ok) {
@@ -74,17 +74,17 @@ async function sendClarification({ contextId, selection }) {
   return response.json();
 }
 
-function renderClarificationOptions({ contextId, options }) {
+function renderClarificationOptions({ baurundgangId, note, storedPhotoPath, options }) {
   const optionEntries = options.map((label) => ({
     label,
     onSelect: async () => {
       createLogEntry({
         title: "➡️ Auswahl gesendet",
-        payload: { contextId, selection: label },
+        payload: { baurundgangId, note, option: label },
       });
 
       try {
-        const result = await sendClarification({ contextId, selection: label });
+        const result = await sendClarification({ baurundgangId, note, option: label, storedPhotoPath });
         createLogEntry({ title: "✅ Ergebnis", payload: result });
       } catch (error) {
         createLogEntry({ title: "❌ Fehler", payload: error.message });
@@ -94,7 +94,7 @@ function renderClarificationOptions({ contextId, options }) {
 
   createLogEntry({
     title: "ℹ️ Bitte Auswahl treffen",
-    payload: { contextId, options },
+    payload: { baurundgangId, options },
     options: optionEntries,
   });
 }
@@ -134,8 +134,11 @@ form.addEventListener("submit", async (event) => {
     createLogEntry({ title: "✅ Antwort", payload: result });
 
     if (result?.status === "NEEDS_INPUT" && Array.isArray(result.options)) {
+      const storedPhotoPath = result?.context?.storedPhoto?.storedPath;
       renderClarificationOptions({
-        contextId: result.contextId,
+        baurundgangId,
+        note,
+        storedPhotoPath,
         options: result.options,
       });
     }

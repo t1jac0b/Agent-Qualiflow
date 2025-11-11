@@ -1,6 +1,7 @@
 import express from "express";
 import multer from "multer";
 import process from "node:process";
+import path from "node:path";
 
 import { handleChatMessage } from "../src/agent/chat/handleChatMessage.js";
 import { getAgentOrchestrator } from "../src/agent/index.js";
@@ -17,6 +18,8 @@ const qsUpload = upload.fields([
 const qsPositionUpload = upload.single("photo");
 
 app.use(express.json({ limit: "5mb" }));
+// Serve static UI from /client
+app.use(express.static("client"));
 
 function normalizeChatId(requestedId) {
   if (requestedId && typeof requestedId === "string" && requestedId.trim()) {
@@ -27,10 +30,11 @@ function normalizeChatId(requestedId) {
 
 function serializeResult(result) {
   if (!result) return { status: "unknown" };
-  const { status, message, context } = result;
+  const { status, message, context, options } = result;
   return {
     status,
     message,
+    options,
     context,
   };
 }

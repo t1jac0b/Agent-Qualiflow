@@ -169,12 +169,12 @@ async function run() {
     }
 
     const options = Array.isArray(resultB.json?.options) ? resultB.json.options : [];
-    const hasElektro = options.some((label) => label.match(/elektro/i));
-    const hasInnenausbau = options.some((label) => label.match(/innenausbau/i));
+    const hasRohbau = options.some((label) => label.match(/rohbau/i));
+    const hasWaermeverteilung = options.some((label) => label.match(/wärmeverteilung|waermeverteilung/i));
 
-    if (!hasElektro || !hasInnenausbau) {
+    if (!hasRohbau || !hasWaermeverteilung) {
       throw new Error(
-        `Testfall B: Erwartete Optionen 'Elektro' und 'Übriger Innenausbau' nicht gefunden. Optionen: ${JSON.stringify(options)}`,
+        `Testfall B: Erwartete Optionen 'Rohbau' und 'Wärmeverteilung' nicht gefunden. Optionen: ${JSON.stringify(options)}`,
       );
     }
 
