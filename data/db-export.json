@@ -1,0 +1,5760 @@
+{
+  "reportRequests": [],
+  "projektleiter": [
+    {
+      "id": 1,
+      "name": "PL Müller",
+      "email": "pl.mueller@example.com",
+      "telefon": null,
+      "aktiv": true
+    },
+    {
+      "id": 3,
+      "name": "Jasmin Hirt",
+      "email": "jasmin.hirt@qualicasa.ch",
+      "telefon": "+41 44 000 00 01",
+      "aktiv": true
+    },
+    {
+      "id": 2,
+      "name": "Max Beispiel",
+      "email": "max.beispiel@qualicasa.ch",
+      "telefon": "+41 44 000 00 00",
+      "aktiv": true
+    },
+    {
+      "id": 4,
+      "name": "Chris Dosch",
+      "email": "projektleiter1@qualicasa.ch",
+      "telefon": null,
+      "aktiv": true
+    },
+    {
+      "id": 5,
+      "name": "Andre Wenger",
+      "email": "projektleiter2@qualicasa.ch",
+      "telefon": null,
+      "aktiv": true
+    },
+    {
+      "id": 6,
+      "name": "Pascal Nägeli",
+      "email": "projektleiter3@qualicasa.ch",
+      "telefon": null,
+      "aktiv": true
+    },
+    {
+      "id": 7,
+      "name": "Markus Vogt",
+      "email": "projektleiter4@qualicasa.ch",
+      "telefon": null,
+      "aktiv": true
+    },
+    {
+      "id": 8,
+      "name": "Nick Frosch",
+      "email": "projektleiter5@qualicasa.ch",
+      "telefon": null,
+      "aktiv": true
+    },
+    {
+      "id": 9,
+      "name": "Otavio Andrade Souza",
+      "email": "projektleiter6@qualicasa.ch",
+      "telefon": null,
+      "aktiv": true
+    },
+    {
+      "id": 10,
+      "name": "Patrick Schneider",
+      "email": "projektleiter7@qualicasa.ch",
+      "telefon": null,
+      "aktiv": true
+    },
+    {
+      "id": 11,
+      "name": "Philipp Locher",
+      "email": "projektleiter8@qualicasa.ch",
+      "telefon": null,
+      "aktiv": true
+    },
+    {
+      "id": 12,
+      "name": "Ralph Weidmann",
+      "email": "projektleiter9@qualicasa.ch",
+      "telefon": null,
+      "aktiv": true
+    },
+    {
+      "id": 13,
+      "name": "Sima Asani",
+      "email": "projektleiter10@qualicasa.ch",
+      "telefon": null,
+      "aktiv": true
+    }
+  ],
+  "kontakte": [
+    {
+      "id": 1,
+      "name": "Max Beispiel",
+      "email": "max@example.com",
+      "aktiv": true
+    },
+    {
+      "id": 2,
+      "name": "Qualicasa Support",
+      "email": "support@qualicasa.ch",
+      "aktiv": true
+    },
+    {
+      "id": 3,
+      "name": "Eva Muster",
+      "email": "eva.muster@testkunden.ch",
+      "aktiv": true
+    },
+    {
+      "id": 4,
+      "name": "Peter Beispiel",
+      "email": "peter.beispiel@testkunden.ch",
+      "aktiv": true
+    },
+    {
+      "id": 5,
+      "name": "Claudia Meier",
+      "email": "claudia.meier@testkunden.ch",
+      "aktiv": true
+    },
+    {
+      "id": 6,
+      "name": "Martin Keller",
+      "email": "martin.keller@testkunden.ch",
+      "aktiv": true
+    }
+  ],
+  "objekttypen": [
+    {
+      "id": 1,
+      "bezeichnung": "Wohnhaus",
+      "aktiv": true
+    },
+    {
+      "id": 2,
+      "bezeichnung": "Mehrfamilienhaus Einfach",
+      "aktiv": true
+    },
+    {
+      "id": 3,
+      "bezeichnung": "Mehrfamilienhaus Komplex",
+      "aktiv": true
+    },
+    {
+      "id": 5,
+      "bezeichnung": "Gewerbe",
+      "aktiv": true
+    },
+    {
+      "id": 6,
+      "bezeichnung": "Industrie",
+      "aktiv": true
+    },
+    {
+      "id": 7,
+      "bezeichnung": "Öffentliches Gebäude",
+      "aktiv": true
+    },
+    {
+      "id": 8,
+      "bezeichnung": "Hallenbad",
+      "aktiv": true
+    },
+    {
+      "id": 10,
+      "bezeichnung": "EFH",
+      "aktiv": true
+    },
+    {
+      "id": 11,
+      "bezeichnung": "Bürobau oder Verwaltungsbau",
+      "aktiv": true
+    },
+    {
+      "id": 12,
+      "bezeichnung": "Warenhaus",
+      "aktiv": true
+    },
+    {
+      "id": 13,
+      "bezeichnung": "Schulgebäude",
+      "aktiv": true
+    },
+    {
+      "id": 14,
+      "bezeichnung": "Turnhalle",
+      "aktiv": true
+    },
+    {
+      "id": 15,
+      "bezeichnung": "Parkhaus",
+      "aktiv": true
+    },
+    {
+      "id": 16,
+      "bezeichnung": "Gewerbebau",
+      "aktiv": true
+    },
+    {
+      "id": 17,
+      "bezeichnung": "Tiefgarage",
+      "aktiv": true
+    },
+    {
+      "id": 18,
+      "bezeichnung": "MFH Gemischt",
+      "aktiv": true
+    },
+    {
+      "id": 9,
+      "bezeichnung": "MFH Einfach",
+      "aktiv": true
+    },
+    {
+      "id": 19,
+      "bezeichnung": "MFH Gemischt (Wohnen/Gewerbe)",
+      "aktiv": true
+    },
+    {
+      "id": 20,
+      "bezeichnung": "Geschäftshaus",
+      "aktiv": true
+    },
+    {
+      "id": 21,
+      "bezeichnung": "Garagenbox",
+      "aktiv": true
+    },
+    {
+      "id": 22,
+      "bezeichnung": "Sakralbau",
+      "aktiv": true
+    },
+    {
+      "id": 23,
+      "bezeichnung": "Lagerschuppen",
+      "aktiv": true
+    },
+    {
+      "id": 24,
+      "bezeichnung": "Schulhaus",
+      "aktiv": true
+    },
+    {
+      "id": 25,
+      "bezeichnung": "Labor- und Forschungsgebäude",
+      "aktiv": true
+    },
+    {
+      "id": 26,
+      "bezeichnung": "Werkhof",
+      "aktiv": true
+    },
+    {
+      "id": 27,
+      "bezeichnung": "Gewächshaus",
+      "aktiv": true
+    },
+    {
+      "id": 28,
+      "bezeichnung": "Polizei- und Feuerwehrgebäude",
+      "aktiv": true
+    },
+    {
+      "id": 29,
+      "bezeichnung": "Kulturgebäude",
+      "aktiv": true
+    },
+    {
+      "id": 30,
+      "bezeichnung": "Restaurationsbetrieb",
+      "aktiv": true
+    },
+    {
+      "id": 31,
+      "bezeichnung": "Bankfiliale",
+      "aktiv": true
+    },
+    {
+      "id": 32,
+      "bezeichnung": "Bankgebäude",
+      "aktiv": true
+    },
+    {
+      "id": 33,
+      "bezeichnung": "Mieterausbau",
+      "aktiv": true
+    },
+    {
+      "id": 34,
+      "bezeichnung": "Verwaltungsgebäude",
+      "aktiv": true
+    },
+    {
+      "id": 35,
+      "bezeichnung": "Viersternehotel",
+      "aktiv": true
+    },
+    {
+      "id": 36,
+      "bezeichnung": "Mehrfamilienhaus",
+      "aktiv": true
+    },
+    {
+      "id": 37,
+      "bezeichnung": "Eigentumswohnung",
+      "aktiv": true
+    },
+    {
+      "id": 4,
+      "bezeichnung": "Einfamilienhaus",
+      "aktiv": true
+    },
+    {
+      "id": 38,
+      "bezeichnung": "Wohn- und Geschäftshaus",
+      "aktiv": true
+    },
+    {
+      "id": 39,
+      "bezeichnung": "Einzelhandelsfläche",
+      "aktiv": true
+    },
+    {
+      "id": 40,
+      "bezeichnung": "Lager",
+      "aktiv": true
+    },
+    {
+      "id": 41,
+      "bezeichnung": "Einkaufszentrum",
+      "aktiv": true
+    },
+    {
+      "id": 42,
+      "bezeichnung": "Fachmarkt",
+      "aktiv": true
+    },
+    {
+      "id": 43,
+      "bezeichnung": "Industriebau",
+      "aktiv": true
+    },
+    {
+      "id": 44,
+      "bezeichnung": "Logistikbau",
+      "aktiv": true
+    },
+    {
+      "id": 45,
+      "bezeichnung": "Speziallager",
+      "aktiv": true
+    },
+    {
+      "id": 46,
+      "bezeichnung": "Hotel/bewirtung",
+      "aktiv": true
+    },
+    {
+      "id": 47,
+      "bezeichnung": "Gesundheitsbau",
+      "aktiv": true
+    },
+    {
+      "id": 48,
+      "bezeichnung": "Bildungsbau",
+      "aktiv": true
+    },
+    {
+      "id": 49,
+      "bezeichnung": "Projekt",
+      "aktiv": true
+    },
+    {
+      "id": 50,
+      "bezeichnung": "Grundstück",
+      "aktiv": true
+    },
+    {
+      "id": 51,
+      "bezeichnung": "Baurecht",
+      "aktiv": true
+    }
+  ],
+  "kunden": [
+    {
+      "id": 1,
+      "kontaktId": 1,
+      "projektleiterId": 1,
+      "name": "Kunde AG",
+      "adresse": "Musterstrasse 1",
+      "plz": "8000",
+      "ort": "Zürich",
+      "status": "aktiv",
+      "erstelldatum": "2025-11-08T17:15:34.714Z"
+    },
+    {
+      "id": 3,
+      "kontaktId": 3,
+      "projektleiterId": 4,
+      "name": "Testkunde Alpha AG",
+      "adresse": "Bahnhofstrasse 12",
+      "plz": "8001",
+      "ort": "Zürich",
+      "status": null,
+      "erstelldatum": "2025-11-08T21:52:59.849Z"
+    },
+    {
+      "id": 4,
+      "kontaktId": 4,
+      "projektleiterId": 5,
+      "name": "Testkunde Beta GmbH",
+      "adresse": "Seestrasse 45",
+      "plz": "6004",
+      "ort": "Luzern",
+      "status": null,
+      "erstelldatum": "2025-11-08T21:53:00.427Z"
+    },
+    {
+      "id": 5,
+      "kontaktId": 5,
+      "projektleiterId": 6,
+      "name": "Testkunde Gamma AG",
+      "adresse": "Poststrasse 7",
+      "plz": "9000",
+      "ort": "St. Gallen",
+      "status": null,
+      "erstelldatum": "2025-11-08T21:53:01.069Z"
+    },
+    {
+      "id": 6,
+      "kontaktId": 6,
+      "projektleiterId": 8,
+      "name": "Testkunde Delta AG",
+      "adresse": "Marktplatz 3",
+      "plz": "3001",
+      "ort": "Bern",
+      "status": null,
+      "erstelldatum": "2025-11-08T21:53:01.481Z"
+    },
+    {
+      "id": 2,
+      "kontaktId": null,
+      "projektleiterId": 2,
+      "name": "ImmoVision AG, Postgasse 3, 3011 Bern",
+      "adresse": null,
+      "plz": null,
+      "ort": null,
+      "status": null,
+      "erstelldatum": "2025-11-08T19:51:21.394Z"
+    }
+  ],
+  "verteiler": [],
+  "objekte": [
+    {
+      "id": 1,
+      "kundeId": 1,
+      "kontaktId": 1,
+      "projektleiterId": 1,
+      "objekttypId": 1,
+      "bezeichnung": "Objekt A",
+      "erstellungsjahr": null,
+      "egid": null,
+      "adresse": "Bauweg 2",
+      "plz": "8001",
+      "ort": "Zürich",
+      "terminStartsitzung": null,
+      "protokollURL": null,
+      "status": true,
+      "notiz": null,
+      "erstelltAm": "2025-11-08T17:15:34.769Z",
+      "titelbildURL": null
+    },
+    {
+      "id": 2,
+      "kundeId": 2,
+      "kontaktId": null,
+      "projektleiterId": null,
+      "objekttypId": 2,
+      "bezeichnung": "Neubau Wohn- und Geschäftshaus \"Zum",
+      "erstellungsjahr": 2026,
+      "egid": null,
+      "adresse": "Seeweg 10-14",
+      "plz": "3013",
+      "ort": "Lindenhof\"",
+      "terminStartsitzung": null,
+      "protokollURL": null,
+      "status": null,
+      "notiz": "Wohneinheiten: 24\nGewerberäume: 0",
+      "erstelltAm": "2025-11-08T19:51:21.682Z",
+      "titelbildURL": null
+    },
+    {
+      "id": 3,
+      "kundeId": 2,
+      "kontaktId": null,
+      "projektleiterId": null,
+      "objekttypId": 2,
+      "bezeichnung": "Neubau Wohn- und Geschäftshaus \"Zum #2",
+      "erstellungsjahr": 2026,
+      "egid": null,
+      "adresse": "Seeweg 10-14",
+      "plz": "3013",
+      "ort": "Lindenhof\"",
+      "terminStartsitzung": null,
+      "protokollURL": null,
+      "status": null,
+      "notiz": "Wohneinheiten: 24\nGewerberäume: 0",
+      "erstelltAm": "2025-11-08T19:51:44.125Z",
+      "titelbildURL": null
+    },
+    {
+      "id": 4,
+      "kundeId": 2,
+      "kontaktId": null,
+      "projektleiterId": null,
+      "objekttypId": 2,
+      "bezeichnung": "Neubau Wohn- und Geschäftshaus \"Zum #3",
+      "erstellungsjahr": 2026,
+      "egid": null,
+      "adresse": "Seeweg 10-14",
+      "plz": "3013",
+      "ort": "Bern",
+      "terminStartsitzung": null,
+      "protokollURL": null,
+      "status": null,
+      "notiz": "Wohneinheiten: 24\nGewerberäume: 0",
+      "erstelltAm": "2025-11-08T20:51:31.833Z",
+      "titelbildURL": null
+    },
+    {
+      "id": 5,
+      "kundeId": 2,
+      "kontaktId": null,
+      "projektleiterId": null,
+      "objekttypId": 2,
+      "bezeichnung": "Neubau Wohn- und Geschäftshaus \"Zum #4",
+      "erstellungsjahr": 2026,
+      "egid": null,
+      "adresse": "Seeweg 10-14",
+      "plz": "3013",
+      "ort": "Bern",
+      "terminStartsitzung": null,
+      "protokollURL": null,
+      "status": null,
+      "notiz": "Wohneinheiten: 24\nGewerberäume: 0",
+      "erstelltAm": "2025-11-08T20:58:55.100Z",
+      "titelbildURL": null
+    },
+    {
+      "id": 6,
+      "kundeId": 3,
+      "kontaktId": null,
+      "projektleiterId": null,
+      "objekttypId": 36,
+      "bezeichnung": "Wohnüberbauung Alpha",
+      "erstellungsjahr": null,
+      "egid": null,
+      "adresse": "Im Park 4",
+      "plz": "8001",
+      "ort": "Zürich",
+      "terminStartsitzung": null,
+      "protokollURL": null,
+      "status": null,
+      "notiz": null,
+      "erstelltAm": "2025-11-08T21:53:00.193Z",
+      "titelbildURL": null
+    },
+    {
+      "id": 7,
+      "kundeId": 4,
+      "kontaktId": null,
+      "projektleiterId": null,
+      "objekttypId": 16,
+      "bezeichnung": "Gewerbepark Beta",
+      "erstellungsjahr": null,
+      "egid": null,
+      "adresse": "Industriestrasse 8",
+      "plz": "6005",
+      "ort": "Luzern",
+      "terminStartsitzung": null,
+      "protokollURL": null,
+      "status": null,
+      "notiz": null,
+      "erstelltAm": "2025-11-08T21:53:00.611Z",
+      "titelbildURL": null
+    },
+    {
+      "id": 8,
+      "kundeId": 4,
+      "kontaktId": null,
+      "projektleiterId": null,
+      "objekttypId": 15,
+      "bezeichnung": "Parkhaus Beta",
+      "erstellungsjahr": null,
+      "egid": null,
+      "adresse": "Pilatusstrasse 20",
+      "plz": "6003",
+      "ort": "Luzern",
+      "terminStartsitzung": null,
+      "protokollURL": null,
+      "status": null,
+      "notiz": null,
+      "erstelltAm": "2025-11-08T21:53:00.796Z",
+      "titelbildURL": null
+    },
+    {
+      "id": 9,
+      "kundeId": 5,
+      "kontaktId": null,
+      "projektleiterId": null,
+      "objekttypId": 13,
+      "bezeichnung": "Schulcampus Gamma",
+      "erstellungsjahr": null,
+      "egid": null,
+      "adresse": "Schulstrasse 14",
+      "plz": "9010",
+      "ort": "St. Gallen",
+      "terminStartsitzung": null,
+      "protokollURL": null,
+      "status": null,
+      "notiz": null,
+      "erstelltAm": "2025-11-08T21:53:01.239Z",
+      "titelbildURL": null
+    },
+    {
+      "id": 10,
+      "kundeId": 6,
+      "kontaktId": null,
+      "projektleiterId": null,
+      "objekttypId": 46,
+      "bezeichnung": "City Hotel Delta",
+      "erstellungsjahr": null,
+      "egid": null,
+      "adresse": "Bundesgasse 17",
+      "plz": "3011",
+      "ort": "Bern",
+      "terminStartsitzung": null,
+      "protokollURL": null,
+      "status": null,
+      "notiz": null,
+      "erstelltAm": "2025-11-08T21:53:01.654Z",
+      "titelbildURL": null
+    },
+    {
+      "id": 11,
+      "kundeId": 6,
+      "kontaktId": null,
+      "projektleiterId": null,
+      "objekttypId": 34,
+      "bezeichnung": "Verwaltungszentrum Delta",
+      "erstellungsjahr": null,
+      "egid": null,
+      "adresse": "Laubeggstrasse 6",
+      "plz": "3006",
+      "ort": "Bern",
+      "terminStartsitzung": null,
+      "protokollURL": null,
+      "status": null,
+      "notiz": null,
+      "erstelltAm": "2025-11-08T21:53:01.824Z",
+      "titelbildURL": null
+    },
+    {
+      "id": 12,
+      "kundeId": 2,
+      "kontaktId": null,
+      "projektleiterId": null,
+      "objekttypId": 2,
+      "bezeichnung": "Neubau Wohn- und Geschäftshaus \"Zum #5",
+      "erstellungsjahr": 2026,
+      "egid": null,
+      "adresse": "Seeweg 10-14",
+      "plz": "3013",
+      "ort": "Bern",
+      "terminStartsitzung": null,
+      "protokollURL": null,
+      "status": null,
+      "notiz": "Wohneinheiten: 24\nGewerberäume: 0",
+      "erstelltAm": "2025-11-09T21:02:16.682Z",
+      "titelbildURL": null
+    },
+    {
+      "id": 13,
+      "kundeId": 2,
+      "kontaktId": null,
+      "projektleiterId": null,
+      "objekttypId": 2,
+      "bezeichnung": "Neubau Wohn- und Geschäftshaus \"Zum #6",
+      "erstellungsjahr": 2026,
+      "egid": null,
+      "adresse": "Seeweg 10-14",
+      "plz": "3013",
+      "ort": "Bern",
+      "terminStartsitzung": null,
+      "protokollURL": null,
+      "status": null,
+      "notiz": "Wohneinheiten: 24\nGewerberäume: 0",
+      "erstelltAm": "2025-11-09T21:04:51.396Z",
+      "titelbildURL": null
+    },
+    {
+      "id": 14,
+      "kundeId": 2,
+      "kontaktId": null,
+      "projektleiterId": null,
+      "objekttypId": 2,
+      "bezeichnung": "Neubau Wohn- und Geschäftshaus \"Zum #7",
+      "erstellungsjahr": 2026,
+      "egid": null,
+      "adresse": "Seeweg 10-14",
+      "plz": "3013",
+      "ort": "Bern",
+      "terminStartsitzung": null,
+      "protokollURL": null,
+      "status": null,
+      "notiz": "Wohneinheiten: 24\nGewerberäume: 0",
+      "erstelltAm": "2025-11-09T21:11:37.008Z",
+      "titelbildURL": null
+    },
+    {
+      "id": 15,
+      "kundeId": 2,
+      "kontaktId": null,
+      "projektleiterId": null,
+      "objekttypId": 2,
+      "bezeichnung": "Neubau Wohn- und Geschäftshaus \"Zum #8",
+      "erstellungsjahr": 2026,
+      "egid": null,
+      "adresse": "Seeweg 10-14",
+      "plz": "3013",
+      "ort": "Bern",
+      "terminStartsitzung": null,
+      "protokollURL": null,
+      "status": null,
+      "notiz": "Wohneinheiten: 24\nGewerberäume: 0",
+      "erstelltAm": "2025-11-09T21:11:48.499Z",
+      "titelbildURL": null
+    },
+    {
+      "id": 16,
+      "kundeId": 2,
+      "kontaktId": null,
+      "projektleiterId": null,
+      "objekttypId": 2,
+      "bezeichnung": "Neubau Wohn- und Geschäftshaus \"Zum #9",
+      "erstellungsjahr": 2026,
+      "egid": null,
+      "adresse": "Seeweg 10-14",
+      "plz": "3013",
+      "ort": "Bern",
+      "terminStartsitzung": null,
+      "protokollURL": null,
+      "status": null,
+      "notiz": "Wohneinheiten: 24\nGewerberäume: 0",
+      "erstelltAm": "2025-11-09T21:17:11.929Z",
+      "titelbildURL": null
+    },
+    {
+      "id": 17,
+      "kundeId": 2,
+      "kontaktId": null,
+      "projektleiterId": null,
+      "objekttypId": 2,
+      "bezeichnung": "Neubau Wohn- und Geschäftshaus \"Zum #10",
+      "erstellungsjahr": 2026,
+      "egid": null,
+      "adresse": "Seeweg 10-14",
+      "plz": "3013",
+      "ort": "Bern",
+      "terminStartsitzung": null,
+      "protokollURL": null,
+      "status": null,
+      "notiz": "Wohneinheiten: 24\nGewerberäume: 0",
+      "erstelltAm": "2025-11-09T21:49:38.782Z",
+      "titelbildURL": null
+    },
+    {
+      "id": 18,
+      "kundeId": 2,
+      "kontaktId": null,
+      "projektleiterId": 2,
+      "objekttypId": 2,
+      "bezeichnung": "Neubau Wohn- und Geschäftshaus \"Zum #11",
+      "erstellungsjahr": 2026,
+      "egid": null,
+      "adresse": "Seeweg 10-14",
+      "plz": "3013",
+      "ort": "Bern",
+      "terminStartsitzung": null,
+      "protokollURL": null,
+      "status": null,
+      "notiz": "Wohneinheiten: 24\nGewerberäume: 0",
+      "erstelltAm": "2025-11-09T22:50:34.781Z",
+      "titelbildURL": null
+    }
+  ],
+  "baurundgangTypen": [
+    {
+      "id": 1,
+      "nummer": 1,
+      "name": "Phase 1 – Vorbereitungsrundgang",
+      "reihenfolge": 1,
+      "aktiv": true
+    },
+    {
+      "id": 2,
+      "nummer": 2,
+      "name": "Phase 2 – Rohbau",
+      "reihenfolge": 2,
+      "aktiv": true
+    },
+    {
+      "id": 3,
+      "nummer": 3,
+      "name": "Phase 3 – Ausbau",
+      "reihenfolge": 3,
+      "aktiv": true
+    }
+  ],
+  "baurundgaenge": [
+    {
+      "id": 1,
+      "objektId": 1,
+      "baurundgangTypId": 1,
+      "datumGeplant": null,
+      "datumDurchgefuehrt": null,
+      "status": "geplant",
+      "notiz": null,
+      "erstelltAm": "2025-11-08T17:15:34.851Z"
+    }
+  ],
+  "pruefpunkte": [],
+  "bauteilTemplates": [
+    {
+      "id": 1,
+      "name": "Fassade",
+      "reihenfolge": null,
+      "aktiv": true
+    },
+    {
+      "id": 2,
+      "name": "Rohbau",
+      "reihenfolge": 1,
+      "aktiv": true
+    },
+    {
+      "id": 3,
+      "name": "Steildach",
+      "reihenfolge": 2,
+      "aktiv": true
+    },
+    {
+      "id": 4,
+      "name": "Flachdach",
+      "reihenfolge": 3,
+      "aktiv": true
+    },
+    {
+      "id": 5,
+      "name": "Fassaden",
+      "reihenfolge": 4,
+      "aktiv": true
+    },
+    {
+      "id": 6,
+      "name": "Fenster",
+      "reihenfolge": 5,
+      "aktiv": true
+    },
+    {
+      "id": 7,
+      "name": "Läden/Sonnenschutz",
+      "reihenfolge": 6,
+      "aktiv": true
+    },
+    {
+      "id": 8,
+      "name": "Elektro",
+      "reihenfolge": 7,
+      "aktiv": true
+    },
+    {
+      "id": 9,
+      "name": "Wärmeerzeugung",
+      "reihenfolge": 8,
+      "aktiv": true
+    },
+    {
+      "id": 10,
+      "name": "Wärmeverteilung",
+      "reihenfolge": 9,
+      "aktiv": true
+    },
+    {
+      "id": 11,
+      "name": "Lüftungsanlagen",
+      "reihenfolge": 10,
+      "aktiv": true
+    },
+    {
+      "id": 12,
+      "name": "Übrige Gebäudetechnik",
+      "reihenfolge": 11,
+      "aktiv": true
+    },
+    {
+      "id": 13,
+      "name": "Sanitär",
+      "reihenfolge": 12,
+      "aktiv": true
+    },
+    {
+      "id": 14,
+      "name": "Innenausbau Bad/WC",
+      "reihenfolge": 13,
+      "aktiv": true
+    },
+    {
+      "id": 15,
+      "name": "Innenausbau Küche",
+      "reihenfolge": 14,
+      "aktiv": true
+    },
+    {
+      "id": 16,
+      "name": "Übriger Innenausbau",
+      "reihenfolge": 15,
+      "aktiv": true
+    },
+    {
+      "id": 17,
+      "name": "Lifte/Hebebühnen",
+      "reihenfolge": 16,
+      "aktiv": true
+    },
+    {
+      "id": 18,
+      "name": "Türen/Tore",
+      "reihenfolge": 17,
+      "aktiv": true
+    },
+    {
+      "id": 19,
+      "name": "Tiefbau/Umgebung",
+      "reihenfolge": 18,
+      "aktiv": true
+    }
+  ],
+  "materialisierungTemplates": [
+    {
+      "id": 1,
+      "bauteilTemplateId": 1,
+      "name": "Putz",
+      "reihenfolge": null,
+      "aktiv": true
+    },
+    {
+      "id": 7,
+      "bauteilTemplateId": 5,
+      "name": "Mauerwerk verputzt",
+      "reihenfolge": 2,
+      "aktiv": true
+    },
+    {
+      "id": 8,
+      "bauteilTemplateId": 5,
+      "name": "Sichtmauerwerk",
+      "reihenfolge": 3,
+      "aktiv": true
+    },
+    {
+      "id": 9,
+      "bauteilTemplateId": 5,
+      "name": "Sichtbeton",
+      "reihenfolge": 4,
+      "aktiv": true
+    },
+    {
+      "id": 10,
+      "bauteilTemplateId": 5,
+      "name": "Kompaktfassade verputzt",
+      "reihenfolge": 5,
+      "aktiv": true
+    },
+    {
+      "id": 11,
+      "bauteilTemplateId": 5,
+      "name": "Holzschindeln",
+      "reihenfolge": 6,
+      "aktiv": true
+    },
+    {
+      "id": 12,
+      "bauteilTemplateId": 5,
+      "name": "Holz",
+      "reihenfolge": 7,
+      "aktiv": true
+    },
+    {
+      "id": 13,
+      "bauteilTemplateId": 5,
+      "name": "Fachwerk",
+      "reihenfolge": 8,
+      "aktiv": true
+    },
+    {
+      "id": 14,
+      "bauteilTemplateId": 5,
+      "name": "Faserzement",
+      "reihenfolge": 9,
+      "aktiv": true
+    },
+    {
+      "id": 15,
+      "bauteilTemplateId": 5,
+      "name": "Metall",
+      "reihenfolge": 10,
+      "aktiv": true
+    },
+    {
+      "id": 16,
+      "bauteilTemplateId": 5,
+      "name": "Glas",
+      "reihenfolge": 11,
+      "aktiv": true
+    },
+    {
+      "id": 17,
+      "bauteilTemplateId": 5,
+      "name": "Naturstein",
+      "reihenfolge": 12,
+      "aktiv": true
+    },
+    {
+      "id": 18,
+      "bauteilTemplateId": 5,
+      "name": "Kunststein",
+      "reihenfolge": 13,
+      "aktiv": true
+    },
+    {
+      "id": 19,
+      "bauteilTemplateId": 5,
+      "name": "Keramik",
+      "reihenfolge": 14,
+      "aktiv": true
+    },
+    {
+      "id": 21,
+      "bauteilTemplateId": 5,
+      "name": "Metallgewebe",
+      "reihenfolge": 16,
+      "aktiv": true
+    },
+    {
+      "id": 22,
+      "bauteilTemplateId": 5,
+      "name": "Historisch",
+      "reihenfolge": 17,
+      "aktiv": true
+    },
+    {
+      "id": 23,
+      "bauteilTemplateId": 5,
+      "name": "funktionsfähig",
+      "reihenfolge": 18,
+      "aktiv": true
+    },
+    {
+      "id": 24,
+      "bauteilTemplateId": 5,
+      "name": "beschädigt",
+      "reihenfolge": 19,
+      "aktiv": true
+    },
+    {
+      "id": 25,
+      "bauteilTemplateId": 5,
+      "name": "Granit",
+      "reihenfolge": 20,
+      "aktiv": true
+    },
+    {
+      "id": 26,
+      "bauteilTemplateId": 5,
+      "name": "Holzrost",
+      "reihenfolge": 21,
+      "aktiv": true
+    },
+    {
+      "id": 27,
+      "bauteilTemplateId": 5,
+      "name": "Verbundsteine",
+      "reihenfolge": 22,
+      "aktiv": true
+    },
+    {
+      "id": 28,
+      "bauteilTemplateId": 5,
+      "name": "Pflasterstein",
+      "reihenfolge": 23,
+      "aktiv": true
+    },
+    {
+      "id": 29,
+      "bauteilTemplateId": 5,
+      "name": "Fallschutzmatten",
+      "reihenfolge": 24,
+      "aktiv": true
+    },
+    {
+      "id": 30,
+      "bauteilTemplateId": 5,
+      "name": "Mergel",
+      "reihenfolge": 25,
+      "aktiv": true
+    },
+    {
+      "id": 31,
+      "bauteilTemplateId": 5,
+      "name": "Bekiest",
+      "reihenfolge": 26,
+      "aktiv": true
+    },
+    {
+      "id": 32,
+      "bauteilTemplateId": 5,
+      "name": "Beton",
+      "reihenfolge": 27,
+      "aktiv": true
+    },
+    {
+      "id": 33,
+      "bauteilTemplateId": 5,
+      "name": "Andere",
+      "reihenfolge": 28,
+      "aktiv": true
+    },
+    {
+      "id": 34,
+      "bauteilTemplateId": 6,
+      "name": "Standard",
+      "reihenfolge": 1,
+      "aktiv": true
+    },
+    {
+      "id": 35,
+      "bauteilTemplateId": 6,
+      "name": "Holz",
+      "reihenfolge": 2,
+      "aktiv": true
+    },
+    {
+      "id": 36,
+      "bauteilTemplateId": 6,
+      "name": "Holz-Metall",
+      "reihenfolge": 3,
+      "aktiv": true
+    },
+    {
+      "id": 37,
+      "bauteilTemplateId": 6,
+      "name": "Metall",
+      "reihenfolge": 4,
+      "aktiv": true
+    },
+    {
+      "id": 38,
+      "bauteilTemplateId": 6,
+      "name": "Kunststoff",
+      "reihenfolge": 5,
+      "aktiv": true
+    },
+    {
+      "id": 40,
+      "bauteilTemplateId": 6,
+      "name": "Historisch",
+      "reihenfolge": 7,
+      "aktiv": true
+    },
+    {
+      "id": 41,
+      "bauteilTemplateId": 6,
+      "name": "klein",
+      "reihenfolge": 8,
+      "aktiv": true
+    },
+    {
+      "id": 42,
+      "bauteilTemplateId": 6,
+      "name": "normal",
+      "reihenfolge": 9,
+      "aktiv": true
+    },
+    {
+      "id": 43,
+      "bauteilTemplateId": 6,
+      "name": "hoch",
+      "reihenfolge": 10,
+      "aktiv": true
+    },
+    {
+      "id": 44,
+      "bauteilTemplateId": 6,
+      "name": "Schallschutz",
+      "reihenfolge": 11,
+      "aktiv": true
+    },
+    {
+      "id": 45,
+      "bauteilTemplateId": 6,
+      "name": "Einbruchschutz",
+      "reihenfolge": 12,
+      "aktiv": true
+    },
+    {
+      "id": 46,
+      "bauteilTemplateId": 4,
+      "name": "Standard",
+      "reihenfolge": 1,
+      "aktiv": true
+    },
+    {
+      "id": 47,
+      "bauteilTemplateId": 4,
+      "name": "Kunststoff",
+      "reihenfolge": 2,
+      "aktiv": true
+    },
+    {
+      "id": 48,
+      "bauteilTemplateId": 4,
+      "name": "Kunststoff mit Kies/Schotter",
+      "reihenfolge": 3,
+      "aktiv": true
+    },
+    {
+      "id": 49,
+      "bauteilTemplateId": 4,
+      "name": "Kunststoff intensiv begrünt",
+      "reihenfolge": 4,
+      "aktiv": true
+    },
+    {
+      "id": 50,
+      "bauteilTemplateId": 4,
+      "name": "Kunststoff extensiv begrünt",
+      "reihenfolge": 5,
+      "aktiv": true
+    },
+    {
+      "id": 51,
+      "bauteilTemplateId": 4,
+      "name": "Kunststoff begehbar",
+      "reihenfolge": 6,
+      "aktiv": true
+    },
+    {
+      "id": 52,
+      "bauteilTemplateId": 4,
+      "name": "Bitumen",
+      "reihenfolge": 7,
+      "aktiv": true
+    },
+    {
+      "id": 53,
+      "bauteilTemplateId": 4,
+      "name": "Bitumen mit Kies/Schotter",
+      "reihenfolge": 8,
+      "aktiv": true
+    },
+    {
+      "id": 55,
+      "bauteilTemplateId": 4,
+      "name": "Bitumen extensiv begrünt",
+      "reihenfolge": 10,
+      "aktiv": true
+    },
+    {
+      "id": 56,
+      "bauteilTemplateId": 4,
+      "name": "Bitumen begehbar",
+      "reihenfolge": 11,
+      "aktiv": true
+    },
+    {
+      "id": 57,
+      "bauteilTemplateId": 4,
+      "name": "Kautschuk",
+      "reihenfolge": 12,
+      "aktiv": true
+    },
+    {
+      "id": 58,
+      "bauteilTemplateId": 4,
+      "name": "Kautschuk mit Kies/Schotter",
+      "reihenfolge": 13,
+      "aktiv": true
+    },
+    {
+      "id": 59,
+      "bauteilTemplateId": 4,
+      "name": "Kautschuk intensiv begrünt",
+      "reihenfolge": 14,
+      "aktiv": true
+    },
+    {
+      "id": 60,
+      "bauteilTemplateId": 4,
+      "name": "Kautschuk extensiv begrünt",
+      "reihenfolge": 15,
+      "aktiv": true
+    },
+    {
+      "id": 61,
+      "bauteilTemplateId": 4,
+      "name": "Kautschuk begehbar",
+      "reihenfolge": 16,
+      "aktiv": true
+    },
+    {
+      "id": 62,
+      "bauteilTemplateId": 4,
+      "name": "Warmdach",
+      "reihenfolge": 17,
+      "aktiv": true
+    },
+    {
+      "id": 63,
+      "bauteilTemplateId": 4,
+      "name": "Kaltdach",
+      "reihenfolge": 18,
+      "aktiv": true
+    },
+    {
+      "id": 64,
+      "bauteilTemplateId": 4,
+      "name": "Umkehrdach",
+      "reihenfolge": 19,
+      "aktiv": true
+    },
+    {
+      "id": 65,
+      "bauteilTemplateId": 4,
+      "name": "Stahlbeton",
+      "reihenfolge": 20,
+      "aktiv": true
+    },
+    {
+      "id": 66,
+      "bauteilTemplateId": 4,
+      "name": "Asphalt",
+      "reihenfolge": 21,
+      "aktiv": true
+    },
+    {
+      "id": 67,
+      "bauteilTemplateId": 4,
+      "name": "Stahlbeton mit Beschichtung",
+      "reihenfolge": 22,
+      "aktiv": true
+    },
+    {
+      "id": 68,
+      "bauteilTemplateId": 4,
+      "name": "einschalig",
+      "reihenfolge": 23,
+      "aktiv": true
+    },
+    {
+      "id": 69,
+      "bauteilTemplateId": 4,
+      "name": "zweischalig",
+      "reihenfolge": 24,
+      "aktiv": true
+    },
+    {
+      "id": 70,
+      "bauteilTemplateId": 4,
+      "name": "hinterlüftet",
+      "reihenfolge": 25,
+      "aktiv": true
+    },
+    {
+      "id": 71,
+      "bauteilTemplateId": 4,
+      "name": "vorgehängt",
+      "reihenfolge": 26,
+      "aktiv": true
+    },
+    {
+      "id": 72,
+      "bauteilTemplateId": 14,
+      "name": "Bad/DU/WC Gästezimmer",
+      "reihenfolge": 1,
+      "aktiv": true
+    },
+    {
+      "id": 73,
+      "bauteilTemplateId": 15,
+      "name": "Standard",
+      "reihenfolge": 1,
+      "aktiv": true
+    },
+    {
+      "id": 74,
+      "bauteilTemplateId": 15,
+      "name": "Unterdurchschnittlich",
+      "reihenfolge": 2,
+      "aktiv": true
+    },
+    {
+      "id": 76,
+      "bauteilTemplateId": 15,
+      "name": "Gehoben",
+      "reihenfolge": 4,
+      "aktiv": true
+    },
+    {
+      "id": 77,
+      "bauteilTemplateId": 7,
+      "name": "Standard",
+      "reihenfolge": 1,
+      "aktiv": true
+    },
+    {
+      "id": 78,
+      "bauteilTemplateId": 7,
+      "name": "Rollläden Holz manuell",
+      "reihenfolge": 2,
+      "aktiv": true
+    },
+    {
+      "id": 79,
+      "bauteilTemplateId": 7,
+      "name": "Rollläden Holz elektrisch",
+      "reihenfolge": 3,
+      "aktiv": true
+    },
+    {
+      "id": 80,
+      "bauteilTemplateId": 7,
+      "name": "Rollläden Kunststoff manuell",
+      "reihenfolge": 4,
+      "aktiv": true
+    },
+    {
+      "id": 81,
+      "bauteilTemplateId": 7,
+      "name": "Rollläden Kunststoff elektrisch",
+      "reihenfolge": 5,
+      "aktiv": true
+    },
+    {
+      "id": 82,
+      "bauteilTemplateId": 7,
+      "name": "Rollläden Metall manuell",
+      "reihenfolge": 6,
+      "aktiv": true
+    },
+    {
+      "id": 83,
+      "bauteilTemplateId": 7,
+      "name": "Rollläden Metall elektrisch",
+      "reihenfolge": 7,
+      "aktiv": true
+    },
+    {
+      "id": 84,
+      "bauteilTemplateId": 7,
+      "name": "Lamellenstoren manuell",
+      "reihenfolge": 8,
+      "aktiv": true
+    },
+    {
+      "id": 85,
+      "bauteilTemplateId": 7,
+      "name": "Lamellenstoren elektrisch",
+      "reihenfolge": 9,
+      "aktiv": true
+    },
+    {
+      "id": 86,
+      "bauteilTemplateId": 7,
+      "name": "Fensterläden Holz",
+      "reihenfolge": 10,
+      "aktiv": true
+    },
+    {
+      "id": 87,
+      "bauteilTemplateId": 7,
+      "name": "Fensterläden Metall",
+      "reihenfolge": 11,
+      "aktiv": true
+    },
+    {
+      "id": 88,
+      "bauteilTemplateId": 7,
+      "name": "Markisen/Stoffstoren manuell",
+      "reihenfolge": 12,
+      "aktiv": true
+    },
+    {
+      "id": 89,
+      "bauteilTemplateId": 7,
+      "name": "Markisen/Stoffstoren elektrisch",
+      "reihenfolge": 13,
+      "aktiv": true
+    },
+    {
+      "id": 90,
+      "bauteilTemplateId": 7,
+      "name": "Sonnenschutz",
+      "reihenfolge": 14,
+      "aktiv": true
+    },
+    {
+      "id": 91,
+      "bauteilTemplateId": 7,
+      "name": "Blendschutz",
+      "reihenfolge": 15,
+      "aktiv": true
+    },
+    {
+      "id": 92,
+      "bauteilTemplateId": 17,
+      "name": "Standard",
+      "reihenfolge": 1,
+      "aktiv": true
+    },
+    {
+      "id": 93,
+      "bauteilTemplateId": 17,
+      "name": "Personenlift",
+      "reihenfolge": 2,
+      "aktiv": true
+    },
+    {
+      "id": 95,
+      "bauteilTemplateId": 17,
+      "name": "Hebebühne",
+      "reihenfolge": 4,
+      "aktiv": true
+    },
+    {
+      "id": 96,
+      "bauteilTemplateId": 17,
+      "name": "Autolift",
+      "reihenfolge": 5,
+      "aktiv": true
+    },
+    {
+      "id": 97,
+      "bauteilTemplateId": 17,
+      "name": "Krananlage/Brückenkran",
+      "reihenfolge": 6,
+      "aktiv": true
+    },
+    {
+      "id": 98,
+      "bauteilTemplateId": 17,
+      "name": "Rolltreppen/Förderbänder",
+      "reihenfolge": 7,
+      "aktiv": true
+    },
+    {
+      "id": 99,
+      "bauteilTemplateId": 17,
+      "name": "elektrisch",
+      "reihenfolge": 8,
+      "aktiv": true
+    },
+    {
+      "id": 100,
+      "bauteilTemplateId": 17,
+      "name": "hydraulisch",
+      "reihenfolge": 9,
+      "aktiv": true
+    },
+    {
+      "id": 101,
+      "bauteilTemplateId": 11,
+      "name": "Standard",
+      "reihenfolge": 1,
+      "aktiv": true
+    },
+    {
+      "id": 102,
+      "bauteilTemplateId": 11,
+      "name": "Gewerbliche Kälte",
+      "reihenfolge": 2,
+      "aktiv": true
+    },
+    {
+      "id": 103,
+      "bauteilTemplateId": 11,
+      "name": "Lüftung",
+      "reihenfolge": 3,
+      "aktiv": true
+    },
+    {
+      "id": 104,
+      "bauteilTemplateId": 11,
+      "name": "Lüftung/Kühlung",
+      "reihenfolge": 4,
+      "aktiv": true
+    },
+    {
+      "id": 106,
+      "bauteilTemplateId": 11,
+      "name": "Kontrollierte Wohnungslüftung",
+      "reihenfolge": 6,
+      "aktiv": true
+    },
+    {
+      "id": 107,
+      "bauteilTemplateId": 11,
+      "name": "Splittgeräte (Klimatisierung)",
+      "reihenfolge": 7,
+      "aktiv": true
+    },
+    {
+      "id": 108,
+      "bauteilTemplateId": 11,
+      "name": "Kühldecke (Kühlung)",
+      "reihenfolge": 8,
+      "aktiv": true
+    },
+    {
+      "id": 109,
+      "bauteilTemplateId": 11,
+      "name": "Splitgerät",
+      "reihenfolge": 9,
+      "aktiv": true
+    },
+    {
+      "id": 110,
+      "bauteilTemplateId": 11,
+      "name": "zentral",
+      "reihenfolge": 10,
+      "aktiv": true
+    },
+    {
+      "id": 111,
+      "bauteilTemplateId": 2,
+      "name": "Standard",
+      "reihenfolge": 1,
+      "aktiv": true
+    },
+    {
+      "id": 112,
+      "bauteilTemplateId": 2,
+      "name": "Massivbau",
+      "reihenfolge": 2,
+      "aktiv": true
+    },
+    {
+      "id": 113,
+      "bauteilTemplateId": 2,
+      "name": "Skelettbau",
+      "reihenfolge": 3,
+      "aktiv": true
+    },
+    {
+      "id": 114,
+      "bauteilTemplateId": 2,
+      "name": "Mischbau Massiv-/Skelettbau",
+      "reihenfolge": 4,
+      "aktiv": true
+    },
+    {
+      "id": 115,
+      "bauteilTemplateId": 2,
+      "name": "Mischbau Leicht-/Fertigbau",
+      "reihenfolge": 5,
+      "aktiv": true
+    },
+    {
+      "id": 116,
+      "bauteilTemplateId": 2,
+      "name": "Leichtbau",
+      "reihenfolge": 6,
+      "aktiv": true
+    },
+    {
+      "id": 117,
+      "bauteilTemplateId": 2,
+      "name": "Fachwerk",
+      "reihenfolge": 7,
+      "aktiv": true
+    },
+    {
+      "id": 118,
+      "bauteilTemplateId": 2,
+      "name": "Plattenbau",
+      "reihenfolge": 8,
+      "aktiv": true
+    },
+    {
+      "id": 119,
+      "bauteilTemplateId": 2,
+      "name": "Historisch",
+      "reihenfolge": 9,
+      "aktiv": true
+    },
+    {
+      "id": 120,
+      "bauteilTemplateId": 2,
+      "name": "schlecht",
+      "reihenfolge": 10,
+      "aktiv": true
+    },
+    {
+      "id": 121,
+      "bauteilTemplateId": 2,
+      "name": "mittel",
+      "reihenfolge": 11,
+      "aktiv": true
+    },
+    {
+      "id": 122,
+      "bauteilTemplateId": 2,
+      "name": "gut",
+      "reihenfolge": 12,
+      "aktiv": true
+    },
+    {
+      "id": 123,
+      "bauteilTemplateId": 2,
+      "name": "neu",
+      "reihenfolge": 13,
+      "aktiv": true
+    },
+    {
+      "id": 124,
+      "bauteilTemplateId": 2,
+      "name": "freistehend",
+      "reihenfolge": 14,
+      "aktiv": true
+    },
+    {
+      "id": 125,
+      "bauteilTemplateId": 2,
+      "name": "einseitig angebaut",
+      "reihenfolge": 15,
+      "aktiv": true
+    },
+    {
+      "id": 126,
+      "bauteilTemplateId": 2,
+      "name": "Reihenhaus",
+      "reihenfolge": 16,
+      "aktiv": true
+    },
+    {
+      "id": 127,
+      "bauteilTemplateId": 2,
+      "name": "Eckhaus",
+      "reihenfolge": 17,
+      "aktiv": true
+    },
+    {
+      "id": 128,
+      "bauteilTemplateId": 2,
+      "name": "schwer",
+      "reihenfolge": 18,
+      "aktiv": true
+    },
+    {
+      "id": 129,
+      "bauteilTemplateId": 2,
+      "name": "leicht",
+      "reihenfolge": 19,
+      "aktiv": true
+    },
+    {
+      "id": 4,
+      "bauteilTemplateId": 8,
+      "name": "Überdurchschnittlich",
+      "reihenfolge": 3,
+      "aktiv": true
+    },
+    {
+      "id": 5,
+      "bauteilTemplateId": 8,
+      "name": "Gehoben",
+      "reihenfolge": 4,
+      "aktiv": true
+    },
+    {
+      "id": 6,
+      "bauteilTemplateId": 5,
+      "name": "Standard",
+      "reihenfolge": 1,
+      "aktiv": true
+    },
+    {
+      "id": 135,
+      "bauteilTemplateId": 13,
+      "name": "einzel",
+      "reihenfolge": 5,
+      "aktiv": true
+    },
+    {
+      "id": 136,
+      "bauteilTemplateId": 13,
+      "name": "doppel",
+      "reihenfolge": 6,
+      "aktiv": true
+    },
+    {
+      "id": 137,
+      "bauteilTemplateId": 13,
+      "name": "einzel und doppel",
+      "reihenfolge": 7,
+      "aktiv": true
+    },
+    {
+      "id": 138,
+      "bauteilTemplateId": 13,
+      "name": "Dusche-WC",
+      "reihenfolge": 8,
+      "aktiv": true
+    },
+    {
+      "id": 140,
+      "bauteilTemplateId": 13,
+      "name": "Gusseisen, saniert (Inliner)",
+      "reihenfolge": 10,
+      "aktiv": true
+    },
+    {
+      "id": 141,
+      "bauteilTemplateId": 13,
+      "name": "PVC (braun), Originalzustand",
+      "reihenfolge": 11,
+      "aktiv": true
+    },
+    {
+      "id": 142,
+      "bauteilTemplateId": 13,
+      "name": "PVC (braun), saniert (Inliner)",
+      "reihenfolge": 12,
+      "aktiv": true
+    },
+    {
+      "id": 143,
+      "bauteilTemplateId": 13,
+      "name": "PE (schwarz), Originalzustand",
+      "reihenfolge": 13,
+      "aktiv": true
+    },
+    {
+      "id": 144,
+      "bauteilTemplateId": 13,
+      "name": "PE (schwarz), saniert (Inliner)",
+      "reihenfolge": 14,
+      "aktiv": true
+    },
+    {
+      "id": 145,
+      "bauteilTemplateId": 13,
+      "name": "Stahl verzinkt (silber)",
+      "reihenfolge": 15,
+      "aktiv": true
+    },
+    {
+      "id": 146,
+      "bauteilTemplateId": 13,
+      "name": "Kupferrohr (rot)",
+      "reihenfolge": 16,
+      "aktiv": true
+    },
+    {
+      "id": 147,
+      "bauteilTemplateId": 13,
+      "name": "Kunststoff",
+      "reihenfolge": 17,
+      "aktiv": true
+    },
+    {
+      "id": 148,
+      "bauteilTemplateId": 13,
+      "name": "Chromstahl",
+      "reihenfolge": 18,
+      "aktiv": true
+    },
+    {
+      "id": 149,
+      "bauteilTemplateId": 13,
+      "name": "Emailliert",
+      "reihenfolge": 19,
+      "aktiv": true
+    },
+    {
+      "id": 150,
+      "bauteilTemplateId": 13,
+      "name": "Edelstahl",
+      "reihenfolge": 20,
+      "aktiv": true
+    },
+    {
+      "id": 151,
+      "bauteilTemplateId": 13,
+      "name": "zentral",
+      "reihenfolge": 21,
+      "aktiv": true
+    },
+    {
+      "id": 152,
+      "bauteilTemplateId": 13,
+      "name": "WP-Boiler",
+      "reihenfolge": 22,
+      "aktiv": true
+    },
+    {
+      "id": 153,
+      "bauteilTemplateId": 13,
+      "name": "dezentral (Elektro)",
+      "reihenfolge": 23,
+      "aktiv": true
+    },
+    {
+      "id": 154,
+      "bauteilTemplateId": 13,
+      "name": "dezentral (Gas)",
+      "reihenfolge": 24,
+      "aktiv": true
+    },
+    {
+      "id": 155,
+      "bauteilTemplateId": 3,
+      "name": "Standard",
+      "reihenfolge": 1,
+      "aktiv": true
+    },
+    {
+      "id": 156,
+      "bauteilTemplateId": 3,
+      "name": "Ziegel",
+      "reihenfolge": 2,
+      "aktiv": true
+    },
+    {
+      "id": 157,
+      "bauteilTemplateId": 3,
+      "name": "Betondachstein",
+      "reihenfolge": 3,
+      "aktiv": true
+    },
+    {
+      "id": 158,
+      "bauteilTemplateId": 3,
+      "name": "Faserzement",
+      "reihenfolge": 4,
+      "aktiv": true
+    },
+    {
+      "id": 159,
+      "bauteilTemplateId": 3,
+      "name": "Metall",
+      "reihenfolge": 5,
+      "aktiv": true
+    },
+    {
+      "id": 160,
+      "bauteilTemplateId": 3,
+      "name": "Glas",
+      "reihenfolge": 6,
+      "aktiv": true
+    },
+    {
+      "id": 162,
+      "bauteilTemplateId": 3,
+      "name": "Giebeldach",
+      "reihenfolge": 8,
+      "aktiv": true
+    },
+    {
+      "id": 163,
+      "bauteilTemplateId": 3,
+      "name": "Satteldach",
+      "reihenfolge": 9,
+      "aktiv": true
+    },
+    {
+      "id": 164,
+      "bauteilTemplateId": 3,
+      "name": "Pultdach",
+      "reihenfolge": 10,
+      "aktiv": true
+    },
+    {
+      "id": 165,
+      "bauteilTemplateId": 3,
+      "name": "Walmdach",
+      "reihenfolge": 11,
+      "aktiv": true
+    },
+    {
+      "id": 166,
+      "bauteilTemplateId": 3,
+      "name": "Mansarddach",
+      "reihenfolge": 12,
+      "aktiv": true
+    },
+    {
+      "id": 167,
+      "bauteilTemplateId": 3,
+      "name": "Kupfer",
+      "reihenfolge": 13,
+      "aktiv": true
+    },
+    {
+      "id": 168,
+      "bauteilTemplateId": 3,
+      "name": "Edelstahl",
+      "reihenfolge": 14,
+      "aktiv": true
+    },
+    {
+      "id": 169,
+      "bauteilTemplateId": 3,
+      "name": "Uginox",
+      "reihenfolge": 15,
+      "aktiv": true
+    },
+    {
+      "id": 170,
+      "bauteilTemplateId": 3,
+      "name": "Kunststoff",
+      "reihenfolge": 16,
+      "aktiv": true
+    },
+    {
+      "id": 171,
+      "bauteilTemplateId": 3,
+      "name": "Andere",
+      "reihenfolge": 17,
+      "aktiv": true
+    },
+    {
+      "id": 172,
+      "bauteilTemplateId": 19,
+      "name": "Standard",
+      "reihenfolge": 1,
+      "aktiv": true
+    },
+    {
+      "id": 173,
+      "bauteilTemplateId": 19,
+      "name": "Unterdurchschnittlich",
+      "reihenfolge": 2,
+      "aktiv": true
+    },
+    {
+      "id": 175,
+      "bauteilTemplateId": 19,
+      "name": "Gehoben",
+      "reihenfolge": 4,
+      "aktiv": true
+    },
+    {
+      "id": 176,
+      "bauteilTemplateId": 19,
+      "name": "Tiefgarage",
+      "reihenfolge": 5,
+      "aktiv": true
+    },
+    {
+      "id": 177,
+      "bauteilTemplateId": 19,
+      "name": "Garagenbox",
+      "reihenfolge": 6,
+      "aktiv": true
+    },
+    {
+      "id": 178,
+      "bauteilTemplateId": 18,
+      "name": "Standard",
+      "reihenfolge": 1,
+      "aktiv": true
+    },
+    {
+      "id": 179,
+      "bauteilTemplateId": 18,
+      "name": "Holz",
+      "reihenfolge": 2,
+      "aktiv": true
+    },
+    {
+      "id": 180,
+      "bauteilTemplateId": 18,
+      "name": "Holz-Metall",
+      "reihenfolge": 3,
+      "aktiv": true
+    },
+    {
+      "id": 181,
+      "bauteilTemplateId": 18,
+      "name": "Metall",
+      "reihenfolge": 4,
+      "aktiv": true
+    },
+    {
+      "id": 182,
+      "bauteilTemplateId": 18,
+      "name": "Kunststoff",
+      "reihenfolge": 5,
+      "aktiv": true
+    },
+    {
+      "id": 183,
+      "bauteilTemplateId": 18,
+      "name": "Kunststoff-Metall",
+      "reihenfolge": 6,
+      "aktiv": true
+    },
+    {
+      "id": 184,
+      "bauteilTemplateId": 18,
+      "name": "Historisch",
+      "reihenfolge": 7,
+      "aktiv": true
+    },
+    {
+      "id": 185,
+      "bauteilTemplateId": 18,
+      "name": "elektrisch",
+      "reihenfolge": 8,
+      "aktiv": true
+    },
+    {
+      "id": 186,
+      "bauteilTemplateId": 18,
+      "name": "manuell",
+      "reihenfolge": 9,
+      "aktiv": true
+    },
+    {
+      "id": 187,
+      "bauteilTemplateId": 18,
+      "name": "Massivholz",
+      "reihenfolge": 10,
+      "aktiv": true
+    },
+    {
+      "id": 188,
+      "bauteilTemplateId": 18,
+      "name": "MDF",
+      "reihenfolge": 11,
+      "aktiv": true
+    },
+    {
+      "id": 189,
+      "bauteilTemplateId": 18,
+      "name": "Glas",
+      "reihenfolge": 12,
+      "aktiv": true
+    },
+    {
+      "id": 190,
+      "bauteilTemplateId": 18,
+      "name": "Rolltor",
+      "reihenfolge": 13,
+      "aktiv": true
+    },
+    {
+      "id": 191,
+      "bauteilTemplateId": 18,
+      "name": "Sektionaltor",
+      "reihenfolge": 14,
+      "aktiv": true
+    },
+    {
+      "id": 192,
+      "bauteilTemplateId": 18,
+      "name": "Kipptor",
+      "reihenfolge": 15,
+      "aktiv": true
+    },
+    {
+      "id": 194,
+      "bauteilTemplateId": 18,
+      "name": "Schiebetor",
+      "reihenfolge": 17,
+      "aktiv": true
+    },
+    {
+      "id": 195,
+      "bauteilTemplateId": 18,
+      "name": "Falttor",
+      "reihenfolge": 18,
+      "aktiv": true
+    },
+    {
+      "id": 196,
+      "bauteilTemplateId": 18,
+      "name": "Drehtür",
+      "reihenfolge": 19,
+      "aktiv": true
+    },
+    {
+      "id": 197,
+      "bauteilTemplateId": 18,
+      "name": "Schiebetür",
+      "reihenfolge": 20,
+      "aktiv": true
+    },
+    {
+      "id": 198,
+      "bauteilTemplateId": 18,
+      "name": "Schwenktür",
+      "reihenfolge": 21,
+      "aktiv": true
+    },
+    {
+      "id": 199,
+      "bauteilTemplateId": 18,
+      "name": "klein",
+      "reihenfolge": 22,
+      "aktiv": true
+    },
+    {
+      "id": 200,
+      "bauteilTemplateId": 18,
+      "name": "normal",
+      "reihenfolge": 23,
+      "aktiv": true
+    },
+    {
+      "id": 201,
+      "bauteilTemplateId": 18,
+      "name": "hoch",
+      "reihenfolge": 24,
+      "aktiv": true
+    },
+    {
+      "id": 202,
+      "bauteilTemplateId": 18,
+      "name": "Schallschutz",
+      "reihenfolge": 25,
+      "aktiv": true
+    },
+    {
+      "id": 203,
+      "bauteilTemplateId": 18,
+      "name": "Einbruchschutz",
+      "reihenfolge": 26,
+      "aktiv": true
+    },
+    {
+      "id": 204,
+      "bauteilTemplateId": 12,
+      "name": "Standard",
+      "reihenfolge": 1,
+      "aktiv": true
+    },
+    {
+      "id": 205,
+      "bauteilTemplateId": 12,
+      "name": "Unterdurchschnittlich",
+      "reihenfolge": 2,
+      "aktiv": true
+    },
+    {
+      "id": 207,
+      "bauteilTemplateId": 12,
+      "name": "Gehoben",
+      "reihenfolge": 4,
+      "aktiv": true
+    },
+    {
+      "id": 208,
+      "bauteilTemplateId": 16,
+      "name": "Standard",
+      "reihenfolge": 1,
+      "aktiv": true
+    },
+    {
+      "id": 209,
+      "bauteilTemplateId": 16,
+      "name": "Massivbau",
+      "reihenfolge": 2,
+      "aktiv": true
+    },
+    {
+      "id": 210,
+      "bauteilTemplateId": 16,
+      "name": "Leichtbau",
+      "reihenfolge": 3,
+      "aktiv": true
+    },
+    {
+      "id": 211,
+      "bauteilTemplateId": 16,
+      "name": "Historisch",
+      "reihenfolge": 4,
+      "aktiv": true
+    },
+    {
+      "id": 212,
+      "bauteilTemplateId": 16,
+      "name": "massiv",
+      "reihenfolge": 5,
+      "aktiv": true
+    },
+    {
+      "id": 213,
+      "bauteilTemplateId": 16,
+      "name": "leicht",
+      "reihenfolge": 6,
+      "aktiv": true
+    },
+    {
+      "id": 214,
+      "bauteilTemplateId": 16,
+      "name": "Büro",
+      "reihenfolge": 7,
+      "aktiv": true
+    },
+    {
+      "id": 215,
+      "bauteilTemplateId": 16,
+      "name": "Einliegerwohnung",
+      "reihenfolge": 8,
+      "aktiv": true
+    },
+    {
+      "id": 216,
+      "bauteilTemplateId": 16,
+      "name": "Verkauf",
+      "reihenfolge": 9,
+      "aktiv": true
+    },
+    {
+      "id": 217,
+      "bauteilTemplateId": 16,
+      "name": "Bankausbau",
+      "reihenfolge": 10,
+      "aktiv": true
+    },
+    {
+      "id": 218,
+      "bauteilTemplateId": 16,
+      "name": "übr. Ausbau",
+      "reihenfolge": 11,
+      "aktiv": true
+    },
+    {
+      "id": 219,
+      "bauteilTemplateId": 16,
+      "name": "Restaurant",
+      "reihenfolge": 12,
+      "aktiv": true
+    },
+    {
+      "id": 220,
+      "bauteilTemplateId": 16,
+      "name": "Fitness",
+      "reihenfolge": 13,
+      "aktiv": true
+    },
+    {
+      "id": 222,
+      "bauteilTemplateId": 16,
+      "name": "Viersternhotel",
+      "reihenfolge": 15,
+      "aktiv": true
+    },
+    {
+      "id": 223,
+      "bauteilTemplateId": 16,
+      "name": "Unterdurchschnittlich",
+      "reihenfolge": 16,
+      "aktiv": true
+    },
+    {
+      "id": 224,
+      "bauteilTemplateId": 16,
+      "name": "Überdurchschnittlich",
+      "reihenfolge": 17,
+      "aktiv": true
+    },
+    {
+      "id": 225,
+      "bauteilTemplateId": 16,
+      "name": "Gehoben",
+      "reihenfolge": 18,
+      "aktiv": true
+    },
+    {
+      "id": 226,
+      "bauteilTemplateId": 16,
+      "name": "Parkett",
+      "reihenfolge": 19,
+      "aktiv": true
+    },
+    {
+      "id": 227,
+      "bauteilTemplateId": 16,
+      "name": "Laminat",
+      "reihenfolge": 20,
+      "aktiv": true
+    },
+    {
+      "id": 228,
+      "bauteilTemplateId": 16,
+      "name": "Kunststoff",
+      "reihenfolge": 21,
+      "aktiv": true
+    },
+    {
+      "id": 229,
+      "bauteilTemplateId": 16,
+      "name": "Naturstein",
+      "reihenfolge": 22,
+      "aktiv": true
+    },
+    {
+      "id": 230,
+      "bauteilTemplateId": 16,
+      "name": "Keramik",
+      "reihenfolge": 23,
+      "aktiv": true
+    },
+    {
+      "id": 231,
+      "bauteilTemplateId": 16,
+      "name": "Textiler Bodenbelag",
+      "reihenfolge": 24,
+      "aktiv": true
+    },
+    {
+      "id": 232,
+      "bauteilTemplateId": 16,
+      "name": "Unterlagsboden",
+      "reihenfolge": 25,
+      "aktiv": true
+    },
+    {
+      "id": 233,
+      "bauteilTemplateId": 16,
+      "name": "Rohbau",
+      "reihenfolge": 26,
+      "aktiv": true
+    },
+    {
+      "id": 234,
+      "bauteilTemplateId": 16,
+      "name": "Dielen",
+      "reihenfolge": 27,
+      "aktiv": true
+    },
+    {
+      "id": 235,
+      "bauteilTemplateId": 16,
+      "name": "Kunstharz",
+      "reihenfolge": 28,
+      "aktiv": true
+    },
+    {
+      "id": 236,
+      "bauteilTemplateId": 16,
+      "name": "PVC",
+      "reihenfolge": 29,
+      "aktiv": true
+    },
+    {
+      "id": 237,
+      "bauteilTemplateId": 16,
+      "name": "Linoleum",
+      "reihenfolge": 30,
+      "aktiv": true
+    },
+    {
+      "id": 238,
+      "bauteilTemplateId": 16,
+      "name": "Andere",
+      "reihenfolge": 31,
+      "aktiv": true
+    },
+    {
+      "id": 239,
+      "bauteilTemplateId": 16,
+      "name": "Beton",
+      "reihenfolge": 32,
+      "aktiv": true
+    },
+    {
+      "id": 240,
+      "bauteilTemplateId": 16,
+      "name": "Holz",
+      "reihenfolge": 33,
+      "aktiv": true
+    },
+    {
+      "id": 241,
+      "bauteilTemplateId": 16,
+      "name": "Anstrich",
+      "reihenfolge": 34,
+      "aktiv": true
+    },
+    {
+      "id": 242,
+      "bauteilTemplateId": 16,
+      "name": "Verputz Abrieb",
+      "reihenfolge": 35,
+      "aktiv": true
+    },
+    {
+      "id": 243,
+      "bauteilTemplateId": 16,
+      "name": "Weissputz",
+      "reihenfolge": 36,
+      "aktiv": true
+    },
+    {
+      "id": 245,
+      "bauteilTemplateId": 16,
+      "name": "Rohbaudecke",
+      "reihenfolge": 38,
+      "aktiv": true
+    },
+    {
+      "id": 246,
+      "bauteilTemplateId": 16,
+      "name": "Abgehänkte Decke",
+      "reihenfolge": 39,
+      "aktiv": true
+    },
+    {
+      "id": 247,
+      "bauteilTemplateId": 16,
+      "name": "Gespachtelte Decke",
+      "reihenfolge": 40,
+      "aktiv": true
+    },
+    {
+      "id": 248,
+      "bauteilTemplateId": 16,
+      "name": "Tapete",
+      "reihenfolge": 41,
+      "aktiv": true
+    },
+    {
+      "id": 249,
+      "bauteilTemplateId": 16,
+      "name": "Abrieb",
+      "reihenfolge": 42,
+      "aktiv": true
+    },
+    {
+      "id": 250,
+      "bauteilTemplateId": 16,
+      "name": "Glas",
+      "reihenfolge": 43,
+      "aktiv": true
+    },
+    {
+      "id": 251,
+      "bauteilTemplateId": 9,
+      "name": "Standard",
+      "reihenfolge": 1,
+      "aktiv": true
+    },
+    {
+      "id": 252,
+      "bauteilTemplateId": 9,
+      "name": "Gasheizung",
+      "reihenfolge": 2,
+      "aktiv": true
+    },
+    {
+      "id": 253,
+      "bauteilTemplateId": 9,
+      "name": "Ölheizung",
+      "reihenfolge": 3,
+      "aktiv": true
+    },
+    {
+      "id": 254,
+      "bauteilTemplateId": 9,
+      "name": "Öl-/Gas-Kombi-Heizung",
+      "reihenfolge": 4,
+      "aktiv": true
+    },
+    {
+      "id": 255,
+      "bauteilTemplateId": 9,
+      "name": "Fernwärme",
+      "reihenfolge": 5,
+      "aktiv": true
+    },
+    {
+      "id": 256,
+      "bauteilTemplateId": 9,
+      "name": "Blockheizkraftwerk",
+      "reihenfolge": 6,
+      "aktiv": true
+    },
+    {
+      "id": 257,
+      "bauteilTemplateId": 9,
+      "name": "Holzpellets",
+      "reihenfolge": 7,
+      "aktiv": true
+    },
+    {
+      "id": 258,
+      "bauteilTemplateId": 9,
+      "name": "Holzschnitzel",
+      "reihenfolge": 8,
+      "aktiv": true
+    },
+    {
+      "id": 260,
+      "bauteilTemplateId": 9,
+      "name": "Elektro/Elektrospeicher",
+      "reihenfolge": 10,
+      "aktiv": true
+    },
+    {
+      "id": 261,
+      "bauteilTemplateId": 9,
+      "name": "Wärmepumpe",
+      "reihenfolge": 11,
+      "aktiv": true
+    },
+    {
+      "id": 262,
+      "bauteilTemplateId": 9,
+      "name": "Wärmepumpe Erdsonde",
+      "reihenfolge": 12,
+      "aktiv": true
+    },
+    {
+      "id": 263,
+      "bauteilTemplateId": 9,
+      "name": "Wärmepumpe Erdregister",
+      "reihenfolge": 13,
+      "aktiv": true
+    },
+    {
+      "id": 264,
+      "bauteilTemplateId": 9,
+      "name": "Wärmepumpe Luft/Wasser",
+      "reihenfolge": 14,
+      "aktiv": true
+    },
+    {
+      "id": 265,
+      "bauteilTemplateId": 9,
+      "name": "Edelstahl",
+      "reihenfolge": 15,
+      "aktiv": true
+    },
+    {
+      "id": 266,
+      "bauteilTemplateId": 9,
+      "name": "Kunststoff",
+      "reihenfolge": 16,
+      "aktiv": true
+    },
+    {
+      "id": 132,
+      "bauteilTemplateId": 13,
+      "name": "Unterdurchschnittlich",
+      "reihenfolge": 2,
+      "aktiv": true
+    },
+    {
+      "id": 133,
+      "bauteilTemplateId": 13,
+      "name": "Überdurchschnittlich",
+      "reihenfolge": 3,
+      "aktiv": true
+    },
+    {
+      "id": 134,
+      "bauteilTemplateId": 13,
+      "name": "Gehoben",
+      "reihenfolge": 4,
+      "aktiv": true
+    },
+    {
+      "id": 193,
+      "bauteilTemplateId": 18,
+      "name": "Gittertor",
+      "reihenfolge": 16,
+      "aktiv": true
+    },
+    {
+      "id": 206,
+      "bauteilTemplateId": 12,
+      "name": "Überdurchschnittlich",
+      "reihenfolge": 3,
+      "aktiv": true
+    },
+    {
+      "id": 221,
+      "bauteilTemplateId": 16,
+      "name": "Oberflächen Gästezimmer",
+      "reihenfolge": 14,
+      "aktiv": true
+    },
+    {
+      "id": 244,
+      "bauteilTemplateId": 16,
+      "name": "Stuckatur",
+      "reihenfolge": 37,
+      "aktiv": true
+    },
+    {
+      "id": 259,
+      "bauteilTemplateId": 9,
+      "name": "Stückholz",
+      "reihenfolge": 9,
+      "aktiv": true
+    },
+    {
+      "id": 267,
+      "bauteilTemplateId": 9,
+      "name": "Keramik/Schamotte",
+      "reihenfolge": 17,
+      "aktiv": true
+    },
+    {
+      "id": 268,
+      "bauteilTemplateId": 9,
+      "name": "Aussen",
+      "reihenfolge": 18,
+      "aktiv": true
+    },
+    {
+      "id": 269,
+      "bauteilTemplateId": 9,
+      "name": "Innen",
+      "reihenfolge": 19,
+      "aktiv": true
+    },
+    {
+      "id": 270,
+      "bauteilTemplateId": 9,
+      "name": "kondensierend",
+      "reihenfolge": 20,
+      "aktiv": true
+    },
+    {
+      "id": 271,
+      "bauteilTemplateId": 9,
+      "name": "nicht kondensierend",
+      "reihenfolge": 21,
+      "aktiv": true
+    },
+    {
+      "id": 272,
+      "bauteilTemplateId": 9,
+      "name": "Heizung",
+      "reihenfolge": 22,
+      "aktiv": true
+    },
+    {
+      "id": 273,
+      "bauteilTemplateId": 9,
+      "name": "Warmwasser",
+      "reihenfolge": 23,
+      "aktiv": true
+    },
+    {
+      "id": 274,
+      "bauteilTemplateId": 9,
+      "name": "H + WW ganzjährig",
+      "reihenfolge": 24,
+      "aktiv": true
+    },
+    {
+      "id": 275,
+      "bauteilTemplateId": 9,
+      "name": "H + WW nur Heizperiode",
+      "reihenfolge": 25,
+      "aktiv": true
+    },
+    {
+      "id": 276,
+      "bauteilTemplateId": 9,
+      "name": "Gas",
+      "reihenfolge": 26,
+      "aktiv": true
+    },
+    {
+      "id": 277,
+      "bauteilTemplateId": 9,
+      "name": "Öl",
+      "reihenfolge": 27,
+      "aktiv": true
+    },
+    {
+      "id": 278,
+      "bauteilTemplateId": 9,
+      "name": "Wärmelieferant",
+      "reihenfolge": 28,
+      "aktiv": true
+    },
+    {
+      "id": 279,
+      "bauteilTemplateId": 9,
+      "name": "Gebäudeeigentümer",
+      "reihenfolge": 29,
+      "aktiv": true
+    },
+    {
+      "id": 280,
+      "bauteilTemplateId": 9,
+      "name": "knapp",
+      "reihenfolge": 30,
+      "aktiv": true
+    },
+    {
+      "id": 281,
+      "bauteilTemplateId": 9,
+      "name": "grosszügig",
+      "reihenfolge": 31,
+      "aktiv": true
+    },
+    {
+      "id": 282,
+      "bauteilTemplateId": 9,
+      "name": "Seewasser",
+      "reihenfolge": 32,
+      "aktiv": true
+    },
+    {
+      "id": 283,
+      "bauteilTemplateId": 9,
+      "name": "Grundwasser",
+      "reihenfolge": 33,
+      "aktiv": true
+    },
+    {
+      "id": 284,
+      "bauteilTemplateId": 9,
+      "name": "Luft - Luft",
+      "reihenfolge": 34,
+      "aktiv": true
+    },
+    {
+      "id": 285,
+      "bauteilTemplateId": 10,
+      "name": "Standard",
+      "reihenfolge": 1,
+      "aktiv": true
+    },
+    {
+      "id": 286,
+      "bauteilTemplateId": 10,
+      "name": "Heizkörper",
+      "reihenfolge": 2,
+      "aktiv": true
+    },
+    {
+      "id": 287,
+      "bauteilTemplateId": 10,
+      "name": "Bodenheizung",
+      "reihenfolge": 3,
+      "aktiv": true
+    },
+    {
+      "id": 288,
+      "bauteilTemplateId": 10,
+      "name": "Deckenheizung",
+      "reihenfolge": 4,
+      "aktiv": true
+    },
+    {
+      "id": 289,
+      "bauteilTemplateId": 10,
+      "name": "Warmluft",
+      "reihenfolge": 5,
+      "aktiv": true
+    },
+    {
+      "id": 290,
+      "bauteilTemplateId": 10,
+      "name": "Wandheizung",
+      "reihenfolge": 6,
+      "aktiv": true
+    },
+    {
+      "id": 291,
+      "bauteilTemplateId": 10,
+      "name": "Ofen zentral",
+      "reihenfolge": 7,
+      "aktiv": true
+    },
+    {
+      "id": 292,
+      "bauteilTemplateId": 10,
+      "name": "Thermoaktive Bauteilsysteme (TABS)",
+      "reihenfolge": 8,
+      "aktiv": true
+    },
+    {
+      "id": 293,
+      "bauteilTemplateId": 10,
+      "name": "Edelstahl",
+      "reihenfolge": 9,
+      "aktiv": true
+    },
+    {
+      "id": 294,
+      "bauteilTemplateId": 10,
+      "name": "Stahl",
+      "reihenfolge": 10,
+      "aktiv": true
+    },
+    {
+      "id": 295,
+      "bauteilTemplateId": 10,
+      "name": "Keramik/Schamotte",
+      "reihenfolge": 11,
+      "aktiv": true
+    },
+    {
+      "id": 2,
+      "bauteilTemplateId": 8,
+      "name": "Standard",
+      "reihenfolge": 1,
+      "aktiv": true
+    },
+    {
+      "id": 3,
+      "bauteilTemplateId": 8,
+      "name": "Unterdurchschnittlich",
+      "reihenfolge": 2,
+      "aktiv": true
+    },
+    {
+      "id": 20,
+      "bauteilTemplateId": 5,
+      "name": "Module mit integriereter Photovoltaik",
+      "reihenfolge": 15,
+      "aktiv": true
+    },
+    {
+      "id": 39,
+      "bauteilTemplateId": 6,
+      "name": "Kunststoff-Metall",
+      "reihenfolge": 6,
+      "aktiv": true
+    },
+    {
+      "id": 54,
+      "bauteilTemplateId": 4,
+      "name": "Bitumen intensiv begrünt",
+      "reihenfolge": 9,
+      "aktiv": true
+    },
+    {
+      "id": 75,
+      "bauteilTemplateId": 15,
+      "name": "Überdurchschnittlich",
+      "reihenfolge": 3,
+      "aktiv": true
+    },
+    {
+      "id": 94,
+      "bauteilTemplateId": 17,
+      "name": "Warenlift",
+      "reihenfolge": 3,
+      "aktiv": true
+    },
+    {
+      "id": 105,
+      "bauteilTemplateId": 11,
+      "name": "Lüftung/Kühlung/Befeuchtung",
+      "reihenfolge": 5,
+      "aktiv": true
+    },
+    {
+      "id": 130,
+      "bauteilTemplateId": 2,
+      "name": "sehr leicht",
+      "reihenfolge": 20,
+      "aktiv": true
+    },
+    {
+      "id": 131,
+      "bauteilTemplateId": 13,
+      "name": "Standard",
+      "reihenfolge": 1,
+      "aktiv": true
+    },
+    {
+      "id": 139,
+      "bauteilTemplateId": 13,
+      "name": "Gusseisen, Originalzustand",
+      "reihenfolge": 9,
+      "aktiv": true
+    },
+    {
+      "id": 161,
+      "bauteilTemplateId": 3,
+      "name": "Naturstein",
+      "reihenfolge": 7,
+      "aktiv": true
+    },
+    {
+      "id": 174,
+      "bauteilTemplateId": 19,
+      "name": "Überdurchschnittlich",
+      "reihenfolge": 3,
+      "aktiv": true
+    }
+  ],
+  "bereichKapitelTemplates": [
+    {
+      "id": 720,
+      "bauteilTemplateId": 2,
+      "name": "Altlasten",
+      "bkp": "113",
+      "reihenfolge": null
+    },
+    {
+      "id": 724,
+      "bauteilTemplateId": 2,
+      "name": "Generell",
+      "bkp": "152",
+      "reihenfolge": null
+    },
+    {
+      "id": 728,
+      "bauteilTemplateId": 2,
+      "name": "Gerüst",
+      "bkp": "211",
+      "reihenfolge": null
+    },
+    {
+      "id": 732,
+      "bauteilTemplateId": 2,
+      "name": "Montagebau in Beton",
+      "bkp": "212",
+      "reihenfolge": null
+    },
+    {
+      "id": 736,
+      "bauteilTemplateId": 6,
+      "name": "Einbruchschutz",
+      "bkp": "221",
+      "reihenfolge": null
+    },
+    {
+      "id": 740,
+      "bauteilTemplateId": 8,
+      "name": "Blitzschutzanlage",
+      "bkp": "223",
+      "reihenfolge": null
+    },
+    {
+      "id": 744,
+      "bauteilTemplateId": 4,
+      "name": "Dachwassereinlauf",
+      "bkp": "224",
+      "reihenfolge": null
+    },
+    {
+      "id": 748,
+      "bauteilTemplateId": 4,
+      "name": "Flachdach",
+      "bkp": "224",
+      "reihenfolge": null
+    },
+    {
+      "id": 752,
+      "bauteilTemplateId": 5,
+      "name": "Fassadendämmung",
+      "bkp": "226",
+      "reihenfolge": null
+    },
+    {
+      "id": 756,
+      "bauteilTemplateId": 5,
+      "name": "Abdichtungsarbeiten",
+      "bkp": "226",
+      "reihenfolge": null
+    },
+    {
+      "id": 760,
+      "bauteilTemplateId": 5,
+      "name": "Grund- und Deckputz",
+      "bkp": "226",
+      "reihenfolge": null
+    },
+    {
+      "id": 764,
+      "bauteilTemplateId": 7,
+      "name": "Verbundraffstoren",
+      "bkp": "228",
+      "reihenfolge": null
+    },
+    {
+      "id": 768,
+      "bauteilTemplateId": 8,
+      "name": "Rettungszeichen (Notleuchten und Fluchtwegbeschilderungen)",
+      "bkp": "230",
+      "reihenfolge": null
+    },
+    {
+      "id": 772,
+      "bauteilTemplateId": 8,
+      "name": "Elektrische Anschlüsse",
+      "bkp": "230",
+      "reihenfolge": null
+    },
+    {
+      "id": 776,
+      "bauteilTemplateId": 8,
+      "name": "Lüftungstaster für die RWA",
+      "bkp": "230",
+      "reihenfolge": null
+    },
+    {
+      "id": 780,
+      "bauteilTemplateId": 8,
+      "name": "Steckdose Nassausführung (NUP)",
+      "bkp": "230",
+      "reihenfolge": null
+    },
+    {
+      "id": 784,
+      "bauteilTemplateId": 8,
+      "name": "R und TV Installation",
+      "bkp": "230",
+      "reihenfolge": null
+    },
+    {
+      "id": 788,
+      "bauteilTemplateId": 10,
+      "name": "Wärmeverteilung",
+      "bkp": "243",
+      "reihenfolge": null
+    },
+    {
+      "id": 792,
+      "bauteilTemplateId": 10,
+      "name": "Leistungen des Unternehmers",
+      "bkp": "243",
+      "reihenfolge": null
+    },
+    {
+      "id": 796,
+      "bauteilTemplateId": 11,
+      "name": "Technische Vorschriften",
+      "bkp": "244",
+      "reihenfolge": null
+    },
+    {
+      "id": 800,
+      "bauteilTemplateId": 11,
+      "name": "Garage (Durchfahrtshöhe)",
+      "bkp": "244",
+      "reihenfolge": null
+    },
+    {
+      "id": 804,
+      "bauteilTemplateId": 13,
+      "name": "Allgemeine Apparateliste",
+      "bkp": "250",
+      "reihenfolge": null
+    },
+    {
+      "id": 808,
+      "bauteilTemplateId": 13,
+      "name": "Dämmungen – Sanitär",
+      "bkp": "250",
+      "reihenfolge": null
+    },
+    {
+      "id": 812,
+      "bauteilTemplateId": 13,
+      "name": "Installationselemente",
+      "bkp": "250",
+      "reihenfolge": null
+    },
+    {
+      "id": 816,
+      "bauteilTemplateId": 13,
+      "name": "Ver- und Entsorgungsapparate",
+      "bkp": "250",
+      "reihenfolge": null
+    },
+    {
+      "id": 820,
+      "bauteilTemplateId": 13,
+      "name": "Leitungsspülung Trinkwasser",
+      "bkp": "250",
+      "reihenfolge": null
+    },
+    {
+      "id": 824,
+      "bauteilTemplateId": 13,
+      "name": "Dämmung – Sanitär",
+      "bkp": "250",
+      "reihenfolge": null
+    },
+    {
+      "id": 828,
+      "bauteilTemplateId": 15,
+      "name": "Beleuchtung – Innenausbau Küche",
+      "bkp": "258",
+      "reihenfolge": null
+    },
+    {
+      "id": 832,
+      "bauteilTemplateId": 15,
+      "name": "Energieeffizienzklasse",
+      "bkp": "258",
+      "reihenfolge": null
+    },
+    {
+      "id": 836,
+      "bauteilTemplateId": 16,
+      "name": "Trockenbauarbeiten",
+      "bkp": "271",
+      "reihenfolge": null
+    },
+    {
+      "id": 840,
+      "bauteilTemplateId": 16,
+      "name": "Beschriftungen, Markierungen, Signaletik",
+      "bkp": "273",
+      "reihenfolge": null
+    },
+    {
+      "id": 844,
+      "bauteilTemplateId": 16,
+      "name": "Innere Malerarbeiten",
+      "bkp": "285",
+      "reihenfolge": null
+    },
+    {
+      "id": 848,
+      "bauteilTemplateId": 12,
+      "name": "Koordination Revisionsöffnungen",
+      "bkp": "298",
+      "reihenfolge": null
+    },
+    {
+      "id": 852,
+      "bauteilTemplateId": 2,
+      "name": "Bodenbeläge",
+      "bkp": "391",
+      "reihenfolge": null
+    },
+    {
+      "id": 856,
+      "bauteilTemplateId": 2,
+      "name": "Dämmung – Rohbau",
+      "bkp": "391",
+      "reihenfolge": null
+    },
+    {
+      "id": 860,
+      "bauteilTemplateId": 2,
+      "name": "Waschturm",
+      "bkp": "391",
+      "reihenfolge": null
+    },
+    {
+      "id": 864,
+      "bauteilTemplateId": 2,
+      "name": "Sichtbeton",
+      "bkp": "391",
+      "reihenfolge": null
+    },
+    {
+      "id": 868,
+      "bauteilTemplateId": 19,
+      "name": "Gärtnerarbeiten",
+      "bkp": "421",
+      "reihenfolge": null
+    },
+    {
+      "id": 721,
+      "bauteilTemplateId": 2,
+      "name": "Baustelleneinrichtungen, Zufahrten, Plätze",
+      "bkp": "132",
+      "reihenfolge": null
+    },
+    {
+      "id": 725,
+      "bauteilTemplateId": 2,
+      "name": "Kanalisation",
+      "bkp": "152",
+      "reihenfolge": null
+    },
+    {
+      "id": 729,
+      "bauteilTemplateId": 2,
+      "name": "Kanalisation im Gebäude",
+      "bkp": "211",
+      "reihenfolge": null
+    },
+    {
+      "id": 733,
+      "bauteilTemplateId": 5,
+      "name": "Fassadenbau",
+      "bkp": "215",
+      "reihenfolge": null
+    },
+    {
+      "id": 737,
+      "bauteilTemplateId": 6,
+      "name": "Fenstermontage, Grundausführung",
+      "bkp": "221",
+      "reihenfolge": null
+    },
+    {
+      "id": 741,
+      "bauteilTemplateId": 4,
+      "name": "Allgemeiner Hinweis – Flachdach",
+      "bkp": "224",
+      "reihenfolge": null
+    },
+    {
+      "id": 745,
+      "bauteilTemplateId": 4,
+      "name": "Einhängestreifen",
+      "bkp": "224",
+      "reihenfolge": null
+    },
+    {
+      "id": 749,
+      "bauteilTemplateId": 16,
+      "name": "Allgemeiner Hinweis – Übriger Innenausbau",
+      "bkp": "225",
+      "reihenfolge": null
+    },
+    {
+      "id": 753,
+      "bauteilTemplateId": 5,
+      "name": "Bewegungsfugen",
+      "bkp": "226",
+      "reihenfolge": null
+    },
+    {
+      "id": 757,
+      "bauteilTemplateId": 5,
+      "name": "Fensterbankanschlüsse",
+      "bkp": "226",
+      "reihenfolge": null
+    },
+    {
+      "id": 761,
+      "bauteilTemplateId": 7,
+      "name": "Montage der Schienen auf Metallzargen,",
+      "bkp": "228",
+      "reihenfolge": null
+    },
+    {
+      "id": 765,
+      "bauteilTemplateId": 8,
+      "name": "Vorschriften",
+      "bkp": "230",
+      "reihenfolge": null
+    },
+    {
+      "id": 769,
+      "bauteilTemplateId": 8,
+      "name": "Technikraum",
+      "bkp": "230",
+      "reihenfolge": null
+    },
+    {
+      "id": 773,
+      "bauteilTemplateId": 8,
+      "name": "Beleuchtungsstärke im Bereich der Treppe, Treppenhaus",
+      "bkp": "230",
+      "reihenfolge": null
+    },
+    {
+      "id": 777,
+      "bauteilTemplateId": 8,
+      "name": "FL Leuchten",
+      "bkp": "230",
+      "reihenfolge": null
+    },
+    {
+      "id": 781,
+      "bauteilTemplateId": 8,
+      "name": "Ladestationen",
+      "bkp": "230",
+      "reihenfolge": null
+    },
+    {
+      "id": 785,
+      "bauteilTemplateId": 16,
+      "name": "Starkstromanlagen",
+      "bkp": "231",
+      "reihenfolge": null
+    },
+    {
+      "id": 789,
+      "bauteilTemplateId": 10,
+      "name": "Besondere Bemerkungen – Wärmeverteilung",
+      "bkp": "243",
+      "reihenfolge": null
+    },
+    {
+      "id": 793,
+      "bauteilTemplateId": 10,
+      "name": "Apparate",
+      "bkp": "243",
+      "reihenfolge": null
+    },
+    {
+      "id": 797,
+      "bauteilTemplateId": 11,
+      "name": "Schutz vor Beschädigung",
+      "bkp": "244",
+      "reihenfolge": null
+    },
+    {
+      "id": 801,
+      "bauteilTemplateId": 11,
+      "name": "Aussenluftfassung",
+      "bkp": "244",
+      "reihenfolge": null
+    },
+    {
+      "id": 805,
+      "bauteilTemplateId": 13,
+      "name": "Schallschutz – Sanitär",
+      "bkp": "250",
+      "reihenfolge": null
+    },
+    {
+      "id": 809,
+      "bauteilTemplateId": 13,
+      "name": "Leitungen",
+      "bkp": "250",
+      "reihenfolge": null
+    },
+    {
+      "id": 813,
+      "bauteilTemplateId": 13,
+      "name": "Spültischmischer",
+      "bkp": "250",
+      "reihenfolge": null
+    },
+    {
+      "id": 817,
+      "bauteilTemplateId": 13,
+      "name": "Sanitäranlagen, Bauseitige Leistungen",
+      "bkp": "250",
+      "reihenfolge": null
+    },
+    {
+      "id": 821,
+      "bauteilTemplateId": 13,
+      "name": "Bestand (Abbrucharbeiten)",
+      "bkp": "250",
+      "reihenfolge": null
+    },
+    {
+      "id": 825,
+      "bauteilTemplateId": 13,
+      "name": "Vorwand-Installationssystem",
+      "bkp": "254",
+      "reihenfolge": null
+    },
+    {
+      "id": 829,
+      "bauteilTemplateId": 15,
+      "name": "Bodenbelag",
+      "bkp": "258",
+      "reihenfolge": null
+    },
+    {
+      "id": 833,
+      "bauteilTemplateId": 15,
+      "name": "Dunstabzug",
+      "bkp": "258",
+      "reihenfolge": null
+    },
+    {
+      "id": 837,
+      "bauteilTemplateId": 16,
+      "name": "Allgemeine Metallbauarbeiten",
+      "bkp": "272",
+      "reihenfolge": null
+    },
+    {
+      "id": 841,
+      "bauteilTemplateId": 16,
+      "name": "Unterlagsboden",
+      "bkp": "281",
+      "reihenfolge": null
+    },
+    {
+      "id": 845,
+      "bauteilTemplateId": 16,
+      "name": "Baureinigung",
+      "bkp": "287",
+      "reihenfolge": null
+    },
+    {
+      "id": 849,
+      "bauteilTemplateId": 12,
+      "name": "Koordination Aussenluftfassung",
+      "bkp": "298",
+      "reihenfolge": null
+    },
+    {
+      "id": 853,
+      "bauteilTemplateId": 2,
+      "name": "Nasszellen",
+      "bkp": "391",
+      "reihenfolge": null
+    },
+    {
+      "id": 857,
+      "bauteilTemplateId": 2,
+      "name": "Hindernisfrei",
+      "bkp": "391",
+      "reihenfolge": null
+    },
+    {
+      "id": 861,
+      "bauteilTemplateId": 2,
+      "name": "Wohnungstür",
+      "bkp": "391",
+      "reihenfolge": null
+    },
+    {
+      "id": 865,
+      "bauteilTemplateId": 2,
+      "name": "Brifkastenanlage",
+      "bkp": "391",
+      "reihenfolge": null
+    },
+    {
+      "id": 869,
+      "bauteilTemplateId": 12,
+      "name": "Bauwerksdokumentation",
+      "bkp": "525",
+      "reihenfolge": null
+    },
+    {
+      "id": 722,
+      "bauteilTemplateId": 2,
+      "name": "Baustelleneinrichtungen",
+      "bkp": "132",
+      "reihenfolge": null
+    },
+    {
+      "id": 726,
+      "bauteilTemplateId": 2,
+      "name": "Grundwasserabdichtungen",
+      "bkp": "175",
+      "reihenfolge": null
+    },
+    {
+      "id": 730,
+      "bauteilTemplateId": 2,
+      "name": "Beton- und Stahlbetonarbeiten",
+      "bkp": "211",
+      "reihenfolge": null
+    },
+    {
+      "id": 734,
+      "bauteilTemplateId": 6,
+      "name": "Fenster",
+      "bkp": "221",
+      "reihenfolge": null
+    },
+    {
+      "id": 738,
+      "bauteilTemplateId": 6,
+      "name": "Fenster Hindernisfreie Schwellen",
+      "bkp": "221",
+      "reihenfolge": null
+    },
+    {
+      "id": 742,
+      "bauteilTemplateId": 4,
+      "name": "Dampfbremse",
+      "bkp": "224",
+      "reihenfolge": null
+    },
+    {
+      "id": 746,
+      "bauteilTemplateId": 4,
+      "name": "Sicherheitsrinne",
+      "bkp": "224",
+      "reihenfolge": null
+    },
+    {
+      "id": 750,
+      "bauteilTemplateId": 5,
+      "name": "Verputzte Aussenwärmedämmung",
+      "bkp": "226",
+      "reihenfolge": null
+    },
+    {
+      "id": 754,
+      "bauteilTemplateId": 5,
+      "name": "Schützen von Bauteilen",
+      "bkp": "226",
+      "reihenfolge": null
+    },
+    {
+      "id": 758,
+      "bauteilTemplateId": 5,
+      "name": "Ausdehnung Fensterbänke in Aluminium",
+      "bkp": "226",
+      "reihenfolge": null
+    },
+    {
+      "id": 762,
+      "bauteilTemplateId": 7,
+      "name": "Gelenkarmmarkisen",
+      "bkp": "228",
+      "reihenfolge": null
+    },
+    {
+      "id": 766,
+      "bauteilTemplateId": 8,
+      "name": "Materialwahl",
+      "bkp": "230",
+      "reihenfolge": null
+    },
+    {
+      "id": 770,
+      "bauteilTemplateId": 8,
+      "name": "Zugangstüre der Veloabstellplätze",
+      "bkp": "230",
+      "reihenfolge": null
+    },
+    {
+      "id": 774,
+      "bauteilTemplateId": 8,
+      "name": "Allgemein Wohnen:FTTH Dose",
+      "bkp": "230",
+      "reihenfolge": null
+    },
+    {
+      "id": 778,
+      "bauteilTemplateId": 8,
+      "name": "Schalters / Bewegungsmelder",
+      "bkp": "230",
+      "reihenfolge": null
+    },
+    {
+      "id": 782,
+      "bauteilTemplateId": 8,
+      "name": "Beleuchtung Kellerkorridor und Keller",
+      "bkp": "230",
+      "reihenfolge": null
+    },
+    {
+      "id": 786,
+      "bauteilTemplateId": 8,
+      "name": "Übriges",
+      "bkp": "232",
+      "reihenfolge": null
+    },
+    {
+      "id": 790,
+      "bauteilTemplateId": 10,
+      "name": "Dämmungen – Wärmeverteilung",
+      "bkp": "243",
+      "reihenfolge": null
+    },
+    {
+      "id": 794,
+      "bauteilTemplateId": 10,
+      "name": "Armaturen",
+      "bkp": "243",
+      "reihenfolge": null
+    },
+    {
+      "id": 798,
+      "bauteilTemplateId": 11,
+      "name": "Reinigungskonzept Kontrollierte Wohnungslüftung",
+      "bkp": "244",
+      "reihenfolge": null
+    },
+    {
+      "id": 802,
+      "bauteilTemplateId": 11,
+      "name": "Abluftauslass bei Umlufthaube",
+      "bkp": "244",
+      "reihenfolge": null
+    },
+    {
+      "id": 806,
+      "bauteilTemplateId": 13,
+      "name": "Sanitäranlagen",
+      "bkp": "250",
+      "reihenfolge": null
+    },
+    {
+      "id": 810,
+      "bauteilTemplateId": 13,
+      "name": "Schmutzabwasser",
+      "bkp": "250",
+      "reihenfolge": null
+    },
+    {
+      "id": 814,
+      "bauteilTemplateId": 13,
+      "name": "Probenahmeventile",
+      "bkp": "250",
+      "reihenfolge": null
+    },
+    {
+      "id": 818,
+      "bauteilTemplateId": 13,
+      "name": "Druckerhöhungsanlage",
+      "bkp": "250",
+      "reihenfolge": null
+    },
+    {
+      "id": 822,
+      "bauteilTemplateId": 13,
+      "name": "Technikzentrale – Sanitär",
+      "bkp": "250",
+      "reihenfolge": null
+    },
+    {
+      "id": 826,
+      "bauteilTemplateId": 15,
+      "name": "Kücheneinrichtungen",
+      "bkp": "258",
+      "reihenfolge": null
+    },
+    {
+      "id": 830,
+      "bauteilTemplateId": 15,
+      "name": "Sockelblende",
+      "bkp": "258",
+      "reihenfolge": null
+    },
+    {
+      "id": 834,
+      "bauteilTemplateId": 17,
+      "name": "Aufzüge",
+      "bkp": "261",
+      "reihenfolge": null
+    },
+    {
+      "id": 838,
+      "bauteilTemplateId": 16,
+      "name": "Innentüren in Holz",
+      "bkp": "273",
+      "reihenfolge": null
+    },
+    {
+      "id": 842,
+      "bauteilTemplateId": 16,
+      "name": "Bodenbeläge Terasse / Balkone",
+      "bkp": "281",
+      "reihenfolge": null
+    },
+    {
+      "id": 846,
+      "bauteilTemplateId": 16,
+      "name": "Musterwohnung",
+      "bkp": "289",
+      "reihenfolge": null
+    },
+    {
+      "id": 850,
+      "bauteilTemplateId": 2,
+      "name": "Technikzentrale – Rohbau",
+      "bkp": "391",
+      "reihenfolge": null
+    },
+    {
+      "id": 854,
+      "bauteilTemplateId": 2,
+      "name": "Küche",
+      "bkp": "391",
+      "reihenfolge": null
+    },
+    {
+      "id": 858,
+      "bauteilTemplateId": 2,
+      "name": "Dachaufsicht",
+      "bkp": "391",
+      "reihenfolge": null
+    },
+    {
+      "id": 862,
+      "bauteilTemplateId": 2,
+      "name": "Trennung Fremdbauteile",
+      "bkp": "391",
+      "reihenfolge": null
+    },
+    {
+      "id": 866,
+      "bauteilTemplateId": 2,
+      "name": "Zugtang Veloraum",
+      "bkp": "391",
+      "reihenfolge": null
+    },
+    {
+      "id": 719,
+      "bauteilTemplateId": 2,
+      "name": "Bestandesaufnahmen",
+      "bkp": "101",
+      "reihenfolge": null
+    },
+    {
+      "id": 723,
+      "bauteilTemplateId": 16,
+      "name": "Handwerker",
+      "bkp": "134",
+      "reihenfolge": null
+    },
+    {
+      "id": 727,
+      "bauteilTemplateId": 2,
+      "name": "Baugrubenaushub",
+      "bkp": "201",
+      "reihenfolge": null
+    },
+    {
+      "id": 731,
+      "bauteilTemplateId": 2,
+      "name": "Maurerarbeiten",
+      "bkp": "211",
+      "reihenfolge": null
+    },
+    {
+      "id": 735,
+      "bauteilTemplateId": 6,
+      "name": "Schallschutz – Fenster",
+      "bkp": "221",
+      "reihenfolge": null
+    },
+    {
+      "id": 739,
+      "bauteilTemplateId": 6,
+      "name": "Aussentüren, -Tore in Metall",
+      "bkp": "221",
+      "reihenfolge": null
+    },
+    {
+      "id": 743,
+      "bauteilTemplateId": 4,
+      "name": "Dämmung – Flachdach",
+      "bkp": "224",
+      "reihenfolge": null
+    },
+    {
+      "id": 747,
+      "bauteilTemplateId": 4,
+      "name": "Systemgarantie",
+      "bkp": "224",
+      "reihenfolge": null
+    },
+    {
+      "id": 751,
+      "bauteilTemplateId": 5,
+      "name": "Normen und andere Regelwerke",
+      "bkp": "226",
+      "reihenfolge": null
+    },
+    {
+      "id": 755,
+      "bauteilTemplateId": 5,
+      "name": "Wärmedämmung im Erdbereich",
+      "bkp": "226",
+      "reihenfolge": null
+    },
+    {
+      "id": 759,
+      "bauteilTemplateId": 5,
+      "name": "Dichtfugen",
+      "bkp": "226",
+      "reihenfolge": null
+    },
+    {
+      "id": 763,
+      "bauteilTemplateId": 7,
+      "name": "Lamellenstoren",
+      "bkp": "228",
+      "reihenfolge": null
+    },
+    {
+      "id": 767,
+      "bauteilTemplateId": 8,
+      "name": "Hauptverteilung",
+      "bkp": "230",
+      "reihenfolge": null
+    },
+    {
+      "id": 771,
+      "bauteilTemplateId": 8,
+      "name": "Steckdosen in den Wohnungstrennwänden",
+      "bkp": "230",
+      "reihenfolge": null
+    },
+    {
+      "id": 775,
+      "bauteilTemplateId": 8,
+      "name": "Schalter/ Steckdosenkombinatonen",
+      "bkp": "230",
+      "reihenfolge": null
+    },
+    {
+      "id": 779,
+      "bauteilTemplateId": 8,
+      "name": "zusätzliche Leuchte",
+      "bkp": "230",
+      "reihenfolge": null
+    },
+    {
+      "id": 783,
+      "bauteilTemplateId": 8,
+      "name": "Beleuchtung – Elektro",
+      "bkp": "230",
+      "reihenfolge": null
+    },
+    {
+      "id": 787,
+      "bauteilTemplateId": 9,
+      "name": "Wärmeerzeugung",
+      "bkp": "242",
+      "reihenfolge": null
+    },
+    {
+      "id": 791,
+      "bauteilTemplateId": 10,
+      "name": "Bodendämmung",
+      "bkp": "243",
+      "reihenfolge": null
+    },
+    {
+      "id": 795,
+      "bauteilTemplateId": 11,
+      "name": "Lüftungsanlagen",
+      "bkp": "244",
+      "reihenfolge": null
+    },
+    {
+      "id": 799,
+      "bauteilTemplateId": 11,
+      "name": "Garage",
+      "bkp": "244",
+      "reihenfolge": null
+    },
+    {
+      "id": 803,
+      "bauteilTemplateId": 13,
+      "name": "Generelles",
+      "bkp": "250",
+      "reihenfolge": null
+    },
+    {
+      "id": 807,
+      "bauteilTemplateId": 13,
+      "name": "Besondere Bemerkungen – Sanitär",
+      "bkp": "250",
+      "reihenfolge": null
+    },
+    {
+      "id": 811,
+      "bauteilTemplateId": 13,
+      "name": "Terrassenwasser",
+      "bkp": "250",
+      "reihenfolge": null
+    },
+    {
+      "id": 815,
+      "bauteilTemplateId": 13,
+      "name": "Verteilbatterie",
+      "bkp": "250",
+      "reihenfolge": null
+    },
+    {
+      "id": 819,
+      "bauteilTemplateId": 13,
+      "name": "Feuerlöschleitung",
+      "bkp": "250",
+      "reihenfolge": null
+    },
+    {
+      "id": 823,
+      "bauteilTemplateId": 13,
+      "name": "Planprüfung",
+      "bkp": "250",
+      "reihenfolge": null
+    },
+    {
+      "id": 827,
+      "bauteilTemplateId": 15,
+      "name": "Gewürzschrank",
+      "bkp": "258",
+      "reihenfolge": null
+    },
+    {
+      "id": 831,
+      "bauteilTemplateId": 15,
+      "name": "Schallschutz – Innenausbau Küche",
+      "bkp": "258",
+      "reihenfolge": null
+    },
+    {
+      "id": 835,
+      "bauteilTemplateId": 16,
+      "name": "Allgemeine Gipserarbeiten",
+      "bkp": "271",
+      "reihenfolge": null
+    },
+    {
+      "id": 839,
+      "bauteilTemplateId": 16,
+      "name": "Innentüren und -fenster in Holz",
+      "bkp": "273",
+      "reihenfolge": null
+    },
+    {
+      "id": 843,
+      "bauteilTemplateId": 16,
+      "name": "Bodenbeläge Plattenarbeiten",
+      "bkp": "281",
+      "reihenfolge": null
+    },
+    {
+      "id": 847,
+      "bauteilTemplateId": 12,
+      "name": "Koordination Einstellhalle",
+      "bkp": "298",
+      "reihenfolge": null
+    },
+    {
+      "id": 851,
+      "bauteilTemplateId": 2,
+      "name": "Einstellhalle",
+      "bkp": "391",
+      "reihenfolge": null
+    },
+    {
+      "id": 855,
+      "bauteilTemplateId": 2,
+      "name": "Treppen",
+      "bkp": "391",
+      "reihenfolge": null
+    },
+    {
+      "id": 859,
+      "bauteilTemplateId": 2,
+      "name": "Vorwandinstallationen Nasszellen",
+      "bkp": "391",
+      "reihenfolge": null
+    },
+    {
+      "id": 863,
+      "bauteilTemplateId": 2,
+      "name": "Wohnungstrennwand",
+      "bkp": "391",
+      "reihenfolge": null
+    },
+    {
+      "id": 867,
+      "bauteilTemplateId": 2,
+      "name": "Nutzungsvereinbarung",
+      "bkp": "392",
+      "reihenfolge": null
+    }
+  ],
+  "bereichKapitelTextTemplates": [
+    {
+      "id": 900,
+      "bereichKapitelTemplateId": 736,
+      "text": "In diversen Ausschreibungspositionen wird RC1N bzw. RC2N ausgeschrieben. N bedeutet «ohne Verbundsicherheitsglas (VSG)». In der normativen Beschreibung ist grundsätzlich RC1 immer ohne VSG. Der Unterschied zwischen RC1 und RC2 macht als Mehrleistung und erhöhte Sicherheit das Verbundsicherheitsglas aus. RC2 ist in der Regel immer mit VSG. Warum wird RC2N ausgeschrieben? Das macht aus unserer Sicht keinen Sinn, da RC2 ohne VSG grösstenteils RC1 entspricht. Wir empfehlen diese Positionen verständlich anzupassen.",
+      "reihenfolge": null
+    },
+    {
+      "id": 920,
+      "bereichKapitelTemplateId": 756,
+      "text": "Wir empfehlen Anschlüssen an Fensterbänke entsprechend dem SMGV Merkblatt 73 Fensterbänke und Türschwellen auszuführen.",
+      "reihenfolge": null
+    },
+    {
+      "id": 940,
+      "bereichKapitelTemplateId": 776,
+      "text": "Es ist zu Empfehlen, einen Lüftungstaster für die RWA im Dachgeschoss anzuordnen, dieser sollte zudem mittels eines Temperatur- und Witterungsfühler ausgerüstet werden.",
+      "reihenfolge": null
+    },
+    {
+      "id": 960,
+      "bereichKapitelTemplateId": 796,
+      "text": "Motoren mit Riemenantrieb sind auf einem Spannschlitten am gemeinsamen Grundrahmen anzubringen. Der Grundrahmen ist auf Schwingungsdämpfer zu lagern. Je ein Satz Ersatzkeilriemen gleicher Qualität ist bei der Übergabe der Anlage dem Betreiber zu übergeben.Es sind lediglich noch EC-Motoren mit Direktantrieb einzubauen.",
+      "reihenfolge": null
+    },
+    {
+      "id": 980,
+      "bereichKapitelTemplateId": 816,
+      "text": "Lieferung und Montage der Kalt- und Warmwasserzähler (Unterputz) in den Wohnungen. Für den allgemeinen Teil sind Aufputz Zähler vorgesehen. Die Ablesung der Zähler erfolgt via Funk.Es ist zu prüfen, die Zähler für das Energiemonitoring ebenfalls über M-Bus zu lösen und dies in die Gebäudeautomation miteinzubinden (Lebensdauer der Zählerbatterie 5-10 Jahre).",
+      "reihenfolge": null
+    },
+    {
+      "id": 1000,
+      "bereichKapitelTemplateId": 836,
+      "text": "Teilweise Vorwandsystem in GIS bei Nasszelleninstallationen. Gipser: Ausdämmen der Elemente (Brandschutz) und Beplankung nach Vorgabe Elementlieferant. Es ist zu prüfen, die Beplankung der Leichtbauwände im Auftrag des Sanitär zu integrieren (Systemgarantie).",
+      "reihenfolge": null
+    },
+    {
+      "id": 1020,
+      "bereichKapitelTemplateId": 856,
+      "text": "08 Verputzte Fassade (Seite 14)Womöglich ist dieses Detail noch nicht fertig geplant, wir möchten totzdem bereits darauf hinweisen, dass zu prüfen ist ob eine Flankendämmung bzw. Deckendämmung (Schichtex) an der Tiefgaragendecke nötig wird.",
+      "reihenfolge": null
+    },
+    {
+      "id": 901,
+      "bereichKapitelTemplateId": 737,
+      "text": "Es ist darauf zu achten, dass vor der Montage aller erdberührten Fenster, vorgängig eine Dampfbremse gemäss SIA 271:2021, Abs. 6.11 erstellt wurde. Diese Abdichtung kann durch den Fensterbauer oder einen anderen Unternehmer erstellt werden. Wichtig ist, dass es normgerecht ausgeführt wird.",
+      "reihenfolge": null
+    },
+    {
+      "id": 921,
+      "bereichKapitelTemplateId": 757,
+      "text": "Gemäss dem SMGV Merkblatt 73 Fensterbänke und Türschwellen ist eine Sekundärabdichtung unter den Fensterbänken zur Gewährleistung einer dichten Gebäudehülle einzubauen.",
+      "reihenfolge": null
+    },
+    {
+      "id": 941,
+      "bereichKapitelTemplateId": 777,
+      "text": "Wir gehen davon aus, dass keine FL-Leuchten verbaut werden. Der Plankopf ist anzupassen LED",
+      "reihenfolge": null
+    },
+    {
+      "id": 961,
+      "bereichKapitelTemplateId": 797,
+      "text": "Alle Anlageteile sind während Transport, Lagerung und Montage bis zur Inbetriebnahme vor Beschädigungen zu schützen.Dies dient auch zum Schutz vor Verunreinigung der Komponenten.",
+      "reihenfolge": null
+    },
+    {
+      "id": 981,
+      "bereichKapitelTemplateId": 817,
+      "text": "Das Abdichten von Duschen und Badwannen ist mittels Zargenband abzudichten, sämtliche Plattendurchdringungen und Befestigungspunkte sind mit Dichtungsmassen abzudichten.",
+      "reihenfolge": null
+    },
+    {
+      "id": 1001,
+      "bereichKapitelTemplateId": 837,
+      "text": "Treppengeländer:Staketengeländer Rundstäbe 1.5cm, oben und unten an Flachstahl befestigt, einbrennlackiert Farbe gemäss Farb- und Materialkonzept, Handlauf aus Kunststoff, Profilage Promano HL02, schwarz, Handlauf ist in den Ecken rund durchlaufend. gem. Bauvorschriften. Erdgeschoss Treppenharfe, Staketengeländer Rundstäbe 1.5cm, oben und unten an Flachstahl befestigt, einbrennlackiert Farbe gemäss Farb- und Materialkonzept analog Treppengeländer. Es ist zu prüfen ob beidseitig ein Handlauf benötigt wird, gemäss SIA 358 und BfU sind diese in Allgemeinen Fluchtwegen gefordert. Einhaltung der BfU Richtlinien.",
+      "reihenfolge": null
+    },
+    {
+      "id": 1021,
+      "bereichKapitelTemplateId": 857,
+      "text": "Es ist Allgmein zu klären, wieweit die Nasszellen, Küchen der Wohnungen bereits Hindernisfrei ausgeführt, bzw. vorbereitet werden? Ausholzungen? Die Stellflächen wurden ja bereits dafür Markiert und eingehalten.",
+      "reihenfolge": null
+    },
+    {
+      "id": 902,
+      "bereichKapitelTemplateId": 738,
+      "text": "Bei der Vertextung der Grundposition 824 wird von hindernisfreien Fenstertüren gesprochen. In der Unterposition 001 wird von Hebeschiebefenstern gesprochen. Nach unseren Erkenntnissen ist eine Hebeschiebetürschwelle mit der richtigen Planung und Ausführung der Rahmenverbreiterung ohne Mehraufwendungen und Profiländerungen hindernisfrei zu gestalten. Nur bei Fenstertüren ist eine spezifische Planung und ein spezielles Rahmenprofil notwendig, was auch einem Mehrpreis entspricht. Wir empfehlen dies klar zu definieren.",
+      "reihenfolge": null
+    },
+    {
+      "id": 922,
+      "bereichKapitelTemplateId": 758,
+      "text": "Je nach Ausführung der Fensterbänke aus Aluminium, sind aufgrund der zu erwartenden Längenausdehnung die maximalen Längen zu definieren.",
+      "reihenfolge": null
+    },
+    {
+      "id": 942,
+      "bereichKapitelTemplateId": 778,
+      "text": "Für was ist der Schalter (Kreis) Beleuchtungssteuerung über Bewegungsmelder, es ist zu prüfen, anstelle des Schalters ein Bewegungsmelder einzubauen.",
+      "reihenfolge": null
+    },
+    {
+      "id": 962,
+      "bereichKapitelTemplateId": 798,
+      "text": "Inkl. Reinigungsnachweis der Anlagen gemäss SWKI 104-1Abklatschtest (Ersthygiene Inspektion).",
+      "reihenfolge": null
+    },
+    {
+      "id": 982,
+      "bereichKapitelTemplateId": 818,
+      "text": "Der von der Industriellen Werke Basel IWB zur Verfügung stehende Druck bei dem Projekt Wallstrasse/Bollwerk (Walltstrasse) beträgt auf Strassenniveau 4.85 bar. Der vorgeschriebene Druck für die Feuerlöschposten an der obersten Stelle beträgt der Ruhedruck 3.0 bar bei einem Durchsatz von 0.27l/s. Es ist eine Druckerhöhung für Brandschutztechnische Anwendungen einzusetzen. Die Anforderungen dazu sollten mit dem zuständigen QSS-Verantwortlichen geklärt werden.",
+      "reihenfolge": null
+    },
+    {
+      "id": 1002,
+      "bereichKapitelTemplateId": 838,
+      "text": "Türen im Kellerbereich:Metallzargen 2.10 m hoch (wegen Installationen an der Decke), Türblätter mittelschwer, Kunstharz belegt, Farbe Weiss. Stahlzargen weiss gestrichen. Türen mit Einsteckschlössern und Sicherheitszylinder über Schliessanlage abgestimmt. Wo erforderlich Ausführung EI 30 mit Türschliesser, Ist die Beschriftung der Kellerabteile eingerechnet?",
+      "reihenfolge": null
+    },
+    {
+      "id": 1022,
+      "bereichKapitelTemplateId": 858,
+      "text": "Es ist anzunehmen, dass die Planung der PV-Anlage noch nicht abgeschlossen ist? Es muss sichergestellt werden das der Wartungsraum von 60cm eingealten wird und die Seilsicherung ohne Unterbrechung ausgeführt werden kann.",
+      "reihenfolge": null
+    },
+    {
+      "id": 883,
+      "bereichKapitelTemplateId": 719,
+      "text": "Bestandsaufnahmen von Anlagen, die für die Ausführung notwendig sind.Erstellen aller erforderlichen Bestandsaufnahmen für Baugelände, Baugrubensicherung, Nachbaranlagen (Rissprotokolle an Nachbarbauten und Verkehrsanlagen, Gartenanlagen, Einfriedungen und dgl.), Werkleitungen, Kanalisationsleitungen, öffentliche- und private Verkehrsanlagen (Zustand der Strassen, Trottoire und dgl.)",
+      "reihenfolge": null
+    },
+    {
+      "id": 903,
+      "bereichKapitelTemplateId": 739,
+      "text": "Hauseingang-Front aus isolierten Stahl- oder Aluprofilen einbrennlackiert (RAL oder NCS gemäss Farbkonzept) mit 3-IV + VSG. Aussen CNS-Stossstange, Innen Drücker, Türe als Fluchttüre nach aussen öffnend, mit Panikschloss, inkl. elektrischem Türöffner. Türschliesser wo gemäss Brandschutzanforderungen notwendig.",
+      "reihenfolge": null
+    },
+    {
+      "id": 923,
+      "bereichKapitelTemplateId": 759,
+      "text": "Aufgrund der hohen Wartungs- und Unterhaltsaufwände von Dichtfugen raten wir, wenn immer möglich auf Dichtmassen zu verzichten und Anschluss- und Bewegungsfugen wenn immer möglich konstruktiv oder mittels Dichtprofilen auszuführen.Einschubprofile für die seitliche Abdichtung von Fensterbänken sind in der Praxis bewährt. Es sind praktisch keine Unterhaltsarbeiten erforderlich.",
+      "reihenfolge": null
+    },
+    {
+      "id": 943,
+      "bereichKapitelTemplateId": 779,
+      "text": "Im Korridor sind nur 2 Leuchten eingezeichnet, es ist zu prüfen eine zusätzliche Leuchte zu planen.",
+      "reihenfolge": null
+    },
+    {
+      "id": 963,
+      "bereichKapitelTemplateId": 799,
+      "text": "Für periodische Lüftungen ist eine Schaltuhr vorgesehen. Die Lüftungsanlage wird mittels Lichtkontakt betrieben.Wird keine CO/ NO Anlage benötigt?",
+      "reihenfolge": null
+    },
+    {
+      "id": 983,
+      "bereichKapitelTemplateId": 819,
+      "text": "Das Wasser in der Feuerlöschleitung ist «kein Trinkwasser», es dürfen keine Sanitärapparate am Ende der Feuerlöschleitung angeschlossen werden. Zum Schutz des Trinkwassersnetzen der IWB, ist an der Verteilbatterie im Abgang Feuerlöschleitung eine Gewichtsbelastet Rückschlagklappe mit Leckanzeige vorgesehen. Sämtliche Anschlussstellen sind mit einem Piktogramm kein Trinkwasser zu bezeichnen.",
+      "reihenfolge": null
+    },
+    {
+      "id": 1003,
+      "bereichKapitelTemplateId": 839,
+      "text": "Wohnungsabschlusstüren, Treppenhaustüren:Bänder aufgesetzt, edelstahlfinish. Beschläge Türgriffe Mega 32.601 mit Sicherheitsrosette, matt vernickelt.",
+      "reihenfolge": null
+    },
+    {
+      "id": 1023,
+      "bereichKapitelTemplateId": 859,
+      "text": "Generell ist zu hinterfragen, wie die Ausführung in den Vorwände ausgeführt wird. Grundsätzlich ist eine Auflockung aus Hygienischer (Kalt- und Warmwasser) sicht nicht mehr zulässig. Es ist klar zu empfehlen mit Geberit ProTec zu arbeiten.",
+      "reihenfolge": null
+    },
+    {
+      "id": 884,
+      "bereichKapitelTemplateId": 720,
+      "text": "Fachgerechter Rückbau und Beprobung der vorhandenen Altlasten.Alle allfälligen Massnahmen zum Altlastenrückbau und der Entsorgung sind mit einzuberechnen, evtl. ist ein Gutachten zu erstellen?",
+      "reihenfolge": null
+    },
+    {
+      "id": 904,
+      "bereichKapitelTemplateId": 740,
+      "text": "Keine Blitzschutzanlage geplantEs ist zu prüfen ob Überspannungsableiter in den Hauptverteilungen vorgesehen werden (Grob- und Mittelschutz).",
+      "reihenfolge": null
+    },
+    {
+      "id": 924,
+      "bereichKapitelTemplateId": 760,
+      "text": "In den Ausschreibungsunterlagen sind keine Hinweise auf die Stärke des Grund- und Deckputzes ersichtlich. Es müssen zwingend die Angaben der jeweiligen Hersteller (Systemlieferanten) eingehalten werden.",
+      "reihenfolge": null
+    },
+    {
+      "id": 944,
+      "bereichKapitelTemplateId": 780,
+      "text": "Es ist zu prüfen, eine Steckdose Nassausführung mit Deckel zu planen, oder wie bei der Durchfahrt einen Kemper- Tresor zu installieren.",
+      "reihenfolge": null
+    },
+    {
+      "id": 964,
+      "bereichKapitelTemplateId": 800,
+      "text": "Es gibt diverse Bereiche in der Tiefgarage, die grössere Kreuzungen mit Lüftungskanäle aufweisen. Gemäss VSS Norm müssen die Durchfahrtshöhen eine lichte Raumhöhe von 2.30m und Parkplätze 2.20m aufweisen.",
+      "reihenfolge": null
+    },
+    {
+      "id": 984,
+      "bereichKapitelTemplateId": 820,
+      "text": "Diese Position beinhaltet sämtliche Aufwendungen des Unternehmers während der Bauausführung für die Spülungen sämtlicher Versorgungsleitungen.Ausschreibungspositionen:Erstbefüllung und Spülung mit Angaben zum Zeitfenster (z.B. während 2-3 Monaten alle 72h spülen)Nach Erstbefüllung und Spülung Probeentnahmen/Wasseranalysen (ca. 1-2 Stk. pro 25 Wohnungen)Wasserproben/WasseranalysenKW ca. 1-2 Stk.WW und Zirkulation ca. 1-2 Stk.3 Wochen vor Übergabe / SchlussabnahmeTemperaturaufzeichnung WW und Zirkulation (nach erfolgreicher IBS). Nachweis Einhaltung BWW-Temperatur an der BWW-Erzeugung, Zirkulation und an ca. 2 Entnahmestellen (z.B. Küche, Duschen).Erstellen Spülkonzept (Spülplan) mit Spülprotokoll.",
+      "reihenfolge": null
+    },
+    {
+      "id": 1004,
+      "bereichKapitelTemplateId": 840,
+      "text": "Beschriftung Treppenhauszugänge, Geschosse, Technikräume, Kellerzugänge, Kellerabteile etc.",
+      "reihenfolge": null
+    },
+    {
+      "id": 1024,
+      "bereichKapitelTemplateId": 860,
+      "text": "Auch hier möchten wir darauf hinweisen, dass in der Planung darauf geachtet wird, dass das Absperrventil für den Waschturm genügend hoch und seitich geplant wird. Nur so kann die Maschine möglichst an die Wand geschoben werden und die Bedienung des Ventil ist möglich. Gemäss EN 103 Volzugshilfe, müssen Innenliegende Räume (mit innerer Abwärme) zudem mit einem RT ausgestattet werden.",
+      "reihenfolge": null
+    },
+    {
+      "id": 885,
+      "bereichKapitelTemplateId": 721,
+      "text": "Erstellen, Unterhalt und Widerentfernen der für die Bauarbeiten und Betrieb benötigten Zu- und Wegfahrten sowie Plätze. Anpassungen an öffentliches Trottoir, etc. inkl. Instandstellung von Terrain und Strassenbelägen falls erforderlich. Provisorische und definitive Anpassungsarbeiten an eigenen oder fremden Verkehrsanlagen, welche durch das Bauvorhaben tangiert werden, inkl. Reinigung und Unterhalt.",
+      "reihenfolge": null
+    },
+    {
+      "id": 905,
+      "bereichKapitelTemplateId": 741,
+      "text": "Gemäss Ausschreibung liegt das Objekt auf 411m über Meer.Zur Beurteilung der Witterungseinflüsse ist die Bezugshöhe gemäss SIA 261:2020 Anhang D entscheidend.",
+      "reihenfolge": null
+    },
+    {
+      "id": 925,
+      "bereichKapitelTemplateId": 761,
+      "text": "Wir empfehlen explizit zu erwähnen, dass die Schienen Dilatationsfähig montiert werden müssen, damit bei unterschiedlicher Materialausdehnung keine Beschädigungen der Befestigungspunkte entstehen.",
+      "reihenfolge": null
+    },
+    {
+      "id": 945,
+      "bereichKapitelTemplateId": 781,
+      "text": "Es sind keine Anschlüsse für Ladestationen ersichtlich.Es ist zu prüfen, ob Ladestationen bei 2- 3 Parkplätzen sinnvoll wären.",
+      "reihenfolge": null
+    },
+    {
+      "id": 965,
+      "bereichKapitelTemplateId": 801,
+      "text": "Die Aussenluftfassung beim Gewerbe (AU103) liegt direkt bei einem Eingangsbereich der Gewerbefläche. Da sich in diesem Bereich zbsp. Raucher aufhalten könnten, gilt es zu prüfen, ob die Aussenluftfassung an einem anderen Ort geplant werden kann?",
+      "reihenfolge": null
+    },
+    {
+      "id": 985,
+      "bereichKapitelTemplateId": 821,
+      "text": "Demontage-Arbeiten sind, aufgrund fehlender Revisionsunterlagen, nicht kalkuliert. Eingerechnet ist das Entleeren der zu demontierenden Wasserinstallationen (Sanitär und Heizung). Aus Sicht QualiCasa empfiehlt sich eine Begehung mit einer Abbruchfirma durchzuführen, um allfällige kosten in der Vergabe bereits einzurechnen.",
+      "reihenfolge": null
+    },
+    {
+      "id": 1005,
+      "bereichKapitelTemplateId": 841,
+      "text": "Sämtliche Räume des Untergeschosses Zementüberzug 3 cm stark. Garage mit Hartbeton. Bodenplatte und Hartbeton im Gefälle? Zufahrt in gerillter Oberfläche?Schwimmende Zementunterlagsböden 8 cm stark für Wohnungsnutzung in allen Geschossen, gemäss Normen fertig zur Aufnahme von den Deckbelägen.Es ist zu prüfen, welche Hartbetonsorte eingesetzt wird. Das Gefälle in der TG wird Bestenfalls mit 2% ausgeführt. Es ist ein besonderes Augenmerkt auf die Fugenanordnung zu legen, um Risse vorzubeugen.",
+      "reihenfolge": null
+    },
+    {
+      "id": 1025,
+      "bereichKapitelTemplateId": 861,
+      "text": "Wir möchten darauf hinweisen, dass bei den Türen darauf geachtet werden soll, dass diese mit Puffer ausgestattet werden (Schall).",
+      "reihenfolge": null
+    },
+    {
+      "id": 886,
+      "bereichKapitelTemplateId": 722,
+      "text": "Einrichten und Vorhalten von Lager-, Transport- und Arbeitsstätte, die für den Neubau der Anlage erforderliche sein können. Der Standort muss vor dem errichten mit der Bauleitung vor Ort besprochen werden.",
+      "reihenfolge": null
+    },
+    {
+      "id": 906,
+      "bereichKapitelTemplateId": 742,
+      "text": "Gemäss Ausschreibung ist eine Dampfbremse für normale Anforderungen mit einem sd-Wert von mind. 150m gefordert.Gemäss SIA 271:2021, Abs. 5.11 müssen Dampfbremsen, welche als Bauzeitabdichtung eingesetzt werden, einen sd-Wert von mind. 250m aufweisen. Die in der Ausschreibung vorgeschlagene Dampfbremse weist einen sd-Wert von 1’500m auf. Die in der Ausschreibung angeforderten Werte sind ggf. zu korrigieren/abzugleichen.",
+      "reihenfolge": null
+    },
+    {
+      "id": 926,
+      "bereichKapitelTemplateId": 762,
+      "text": "Gemäss Ausschreibug werden im Attikageschoss Gelenkarmmarkisen entsprechend der Windwiderstandsklasse 3 geplant. Nach SIA 342:2009, Abs. B.2.3 gilt bei Gelenkarmmarkisen grundsätzlich und unabhängig der Grösse die windwiderstandsklasse 2.",
+      "reihenfolge": null
+    },
+    {
+      "id": 946,
+      "bereichKapitelTemplateId": 782,
+      "text": "Die Beleuchtung Kellerkorridor und der Keller werden über 2 Bewegungsmelder über den Allgemeinstrom betrieben. Es ist zu prüfen, die Kellerabteile separat mit Schalter über Wohnungszähler zu betreiben, da unnötig die Beleuchtungen in den Kellern eingeschaltet werden.",
+      "reihenfolge": null
+    },
+    {
+      "id": 966,
+      "bereichKapitelTemplateId": 802,
+      "text": "Die Anordnung des Lüftungsauslasses direkt oberhalb der Umlufthaube soll überprüft werden. Bestenfalls wird dieser nicht direkt darüber platziert, da sonst fettige Luft angesogen werden könnte, was zu Ablagerungen und Verunreinigungen in den Leitungen führt.",
+      "reihenfolge": null
+    },
+    {
+      "id": 986,
+      "bereichKapitelTemplateId": 822,
+      "text": "Die Verteilbatterie Sanitär sowie der Eintritt der Fernwärme (Übergabestation) sind Suboptimal angerodnet. Gemäss W3/E3:2020, Abs. 6.4 müssen Anlagekomponenten in kühlen, aber frostsicheren Räumen aufgestellt werden, sodass das Trinkwasser kalt und nicht unzulässig erwärmt wird (Legionellenbildung). Dies ist im Zuge der Ausführungsplanung Beachtung zu schenken.",
+      "reihenfolge": null
+    },
+    {
+      "id": 1006,
+      "bereichKapitelTemplateId": 842,
+      "text": "Zementplatten mit Weisszementanteil, 40x40cm gefast, abgerieben auf Stelzlager. An sämtlich aufgehenden Bauteilen mit einer Fuge von 10mm inkl. Fugenprofil. Bei Attikaterrassen, in EG und Loggia über Innenraum in Splitt verlegt. Je nach öffnungshöhe und tiefe wird eine Sicherheitsrinne gefordert.",
+      "reihenfolge": null
+    },
+    {
+      "id": 1026,
+      "bereichKapitelTemplateId": 862,
+      "text": "Es sind noch keine Trennungen zwischen den Betonwänden (Kern) und den Backsteinwänden ersichtlich. Wir gehen davon aus, dass diese Anschlüsse noch mit einem Dämmstreifen voneinander entkoppelt werden (PS81).",
+      "reihenfolge": null
+    },
+    {
+      "id": 887,
+      "bereichKapitelTemplateId": 723,
+      "text": "Es ist zu prüfen ob allfällige Handwerkercontainer, WC-Anlagen, Lager und Umschlagsplätze etc. auch mit Integriert werden sollten.",
+      "reihenfolge": null
+    },
+    {
+      "id": 907,
+      "bereichKapitelTemplateId": 743,
+      "text": "Im Baubeschrieb vom 07.11.2023 ist erwähnt, dass im Flachdachbereich EPS Dämmung verwendet wird. Gemäss Ausschreibung 324 Seite 38 wird eine PUR/PIR Dämmung gefordert.Damit keine Verwechslungen entstehen empfehlen wir, die Dokumente aufeinander abzustimmen. Aus energetischer Sicht sind PUR/PIR Dämmungen zu bevorzugen.",
+      "reihenfolge": null
+    },
+    {
+      "id": 927,
+      "bereichKapitelTemplateId": 763,
+      "text": "Verbundraffstoren VR 90 mit gebördelten Lamellen bei allen Fenstern. Jede Lamelle mit eingewalzter Dichtungslippe zur Geräuschdämmung. Farbe nach RAL oder NCS nach def. Farbkonzept.Es ist zu prüfen, elektrische Bedienung auszuführen.",
+      "reihenfolge": null
+    },
+    {
+      "id": 947,
+      "bereichKapitelTemplateId": 783,
+      "text": "Die Beleuchtung im Vorraum ist zu prüfen, ob die Beleuchtung genügend ist.",
+      "reihenfolge": null
+    },
+    {
+      "id": 967,
+      "bereichKapitelTemplateId": 803,
+      "text": "Druckproben Alle Medien im Bereich Sanitäre Anlagen müssen einerfachgerechten protokollierten Druckprobe unterzogen werden.Unabhängig von der Fertigstellung der gesamten Installation, sind die montierten Leitungen, gemäss Aufforderung nach SVGW W3/E3 zu prüfen.Diese Punkte sind zu erfüllen:1. Druckprobe:Sämtliche Druckproben mit oelfreier Luft oder mitinerten Gasen (z.B.Stickstoff) auszuführen, wobei derPrüfdruck mindestens15 kPa (0.15 bar) betragen muss.2. Prüfzeit:Die Prüfzeit richtet sich nach dem Leitungsvolumen:- 50 Liter mind. 10. MinutenBei grösseren Leitungsvolumen ist die Prüfzeit pro 50 Literum 10 Minuten zu verlängern.Bei Anlagen mit einem grösseren Leitungsvolumen als400 Liter ist die Anlage strangweise zu prüfen.Es ist mindestens jeder Steigstrang als Etappe zu prüfen.Eine Gesamtprüfung pro Verteilerabgang muss vor der Befüllung erstellt werden. Von der Prüfung ausgenommen sind Apparate wieWassererwärmer usw. Messgeräte:Zur Druckprüfung sind entsprechende Messgeräte zu verwenden:- Elektronische Messgeräte - Manometer Ablesegenauigkeit < 1% 4. ev. undichte Stellen: Anfällige Undichtheiten sind mithilfe nicht korrosivwirkender, schaumbildender Mittel nach EN14291 zulokalisieren.",
+      "reihenfolge": null
+    },
+    {
+      "id": 987,
+      "bereichKapitelTemplateId": 823,
+      "text": "Es sind Entlüftungsleitungen auf der Dachterasse (Dachgarten) ersichtlich, die Kanalgase können beim Aufenthalt störend wirken. Es sind Massnahmen zu treffen.QualiCasa empfiehlt den Einsatz der Geberit ERV Ventile um Geruchsemissionen zu verhindern.",
+      "reihenfolge": null
+    },
+    {
+      "id": 1007,
+      "bereichKapitelTemplateId": 843,
+      "text": "Terrassen und Balkone mit keramischen Platten Rutschfestigkeit R11, Badezimmer GB1 oder A. Duschräume und Duschwannen Barfussbereich GB2 oder B. Die Auswahl wird durch den Bauherrn bestimmt. Bodenplatten oder Parkett nach Wahl gemäss Preisgrenze, verlegt bzw. aufgeklebt und ausgefugt, teilweise Sockel, inkl. aller Nebenarbeiten Inkl. Erstpflege falls nötig.Wandplatten nach Wahl gemäss Preisgrenze, verlegt, aufgeklebt und ausgefugt, teilweise Silikonfuge beim Übergang Boden-Wand, inkl. aller Nebenarbeiten, brutto inkl. MwSt: Wohnungen: alle Nassräume raumhoch inkl. sämtlichen Abdichtungsmassnahmen wie Verbundabdichtung und Haftbrücke etc.",
+      "reihenfolge": null
+    },
+    {
+      "id": 1027,
+      "bereichKapitelTemplateId": 863,
+      "text": "Wohnungstrennwand Schallschutz:Alle Geschosse: Keine Betonwand im Eckbereich",
+      "reihenfolge": null
+    },
+    {
+      "id": 888,
+      "bereichKapitelTemplateId": 724,
+      "text": "Wir möchten darauf hinweisen, dass vor der Fertigstellung der Kanalisation eine Abnhame mit der zuständigen Behörde erfolgen muss. Auch sind bei sämtliche Schächte und Leitungen eine Druckprüfung durchzuführen.",
+      "reihenfolge": null
+    },
+    {
+      "id": 908,
+      "bereichKapitelTemplateId": 744,
+      "text": "Gemäss SIA 271:2021, Abs. 5.9 sind die Entwässerungen durch Absenken der Dachwassereinläufe um mindestens 20mm unter die Abdichtungsebene zu verbessern (Bild unten).",
+      "reihenfolge": null
+    },
+    {
+      "id": 928,
+      "bereichKapitelTemplateId": 764,
+      "text": "Gemäss Ausschreibung werden im Attikageschoss Raffstoren mit einer Breite von 2600mm geplant. Nach SIA 342:2009, Tabelle 7 ist das Gebäude in die Windwiderstandsklasse 5 einzuordnen (Mittelland bis 600m ü.M., Seeufer). Demnach ist die maximale Breite der Verbundraffstoren bis 2500mm zugelassen. Es ist zu prüfen ob die Verbundraffstoren im Attikageschoss den Beanspruchungen Stand hält.",
+      "reihenfolge": null
+    },
+    {
+      "id": 948,
+      "bereichKapitelTemplateId": 784,
+      "text": "Sind eine R und TV-Installation notwendig?Ist ein Glasfaseranschluss in den Wohnungen vorhanden, Multimediaverteilung vorhanden?",
+      "reihenfolge": null
+    },
+    {
+      "id": 968,
+      "bereichKapitelTemplateId": 804,
+      "text": "Lieferung und Montage der Sanitärapparate für alle Wohnungen gemäss Sanitas Troesch Offerte vom…….",
+      "reihenfolge": null
+    },
+    {
+      "id": 988,
+      "bereichKapitelTemplateId": 824,
+      "text": "Dämmen sämtlicher Kaltwasserleitung zur Verhinderung von Kondensatbildung. Der Fachplaner gibt vor Kaltwasserleitungen innerhalb von den Installationsschächten mit 50mm Dämmstärke zu isolieren. Dämmen sämtlicher Warmwasserleitungen zur Reduzierung der Auskühlverluste. Dämmen der Schmutzwasserleitungen zur Verhinderung von Schallübertragungen auf das Gebäude.Generell ist die Ummantelung und der Dämmtyp zu definieren.",
+      "reihenfolge": null
+    },
+    {
+      "id": 1008,
+      "bereichKapitelTemplateId": 844,
+      "text": "Innenwände und –decken zweimal mit Silikonharzfarbe gestrichen. Rahmentüren, Türzargen, Heizungsverteiler, etc. mit 2-Komponentenfarbe gestrichen. Lifttüren aussen gestrichen/gespritzt mit 2-Komponentenfarbe nach Farbkonzept Malerarbeiten Garage: Wände und Decke gemäss Materialkonzept gestrichen/gespritzt, Keller roh belassen nicht streichenEs ist zu prüfen ob die Kellerböden gestrichen werden, zumindest in den Technikräumen?",
+      "reihenfolge": null
+    },
+    {
+      "id": 1028,
+      "bereichKapitelTemplateId": 864,
+      "text": "Im Baubeschrieb kann entnommen werden, dass das Treppenhaus in Sichtbeton mit de Schalungstyp 4.1.1, BOK 3 ausgeführt wird. Demzufolge ist gemäss SIA 118-262;2018 und CEM Suisse ein Referenzbauteil zu definieren und bezüglich der Ausführung zu bemustern.",
+      "reihenfolge": null
+    },
+    {
+      "id": 889,
+      "bereichKapitelTemplateId": 725,
+      "text": "Wurde das Detail mit der zuständigen Firma für die Abdichtung besprochen und Freigegeben? Aus unserer Sicht sollte dies sicherlich nochmals überprüft werden. Bestenfalls wird die Ausführung mit Pressringe ausgeführt um allfällige Bewegungen aufzunehmen.",
+      "reihenfolge": null
+    },
+    {
+      "id": 909,
+      "bereichKapitelTemplateId": 745,
+      "text": "Einhängestreifen durchgehend montierenJe nach Exposition kann ergänzt werden, dass die Einhängestreifen am Dachrand auf der Aussen- und Innenseite angebracht werden müssen.",
+      "reihenfolge": null
+    },
+    {
+      "id": 929,
+      "bereichKapitelTemplateId": 765,
+      "text": "Sämtliche am Ort des Bauvorhabens gültigen Gesetze / Vorschriften / Richtlinien werden eingehalten, wie:Elektrizitätsgesetz Starkstromverordnung Werkvorschriften des energieliefernden Elektrizitätswerks Brandschutzrichtlinie der Vereinigung Kantonaler Feuerversicherungen (VKF) vom 01.01.2015 Weisungen des Verbandes Schweiz. Elektroinstallateure (VSEI)Verordnung über elektrische Niederspannungserzeugnisse (NEV) Verordnung über elektrische Niederspannungsinstallationen (NIV) Niederspannungsinstallationsnormen (NIN) SUVA-Vorschriften Weisungen des Starkstrominspektorats Leitsätze des SEV: SN 413724 / SN 414022 / SN 413569-1 bis -3 / SN 414113 SIA-Normen: 108 / 118 / 380.4 / 380.7 etc. Bestimmungen der Bauherrschaft / des Architekten Beleuchtungsstärken gemäss SIA und BFU",
+      "reihenfolge": null
+    },
+    {
+      "id": 949,
+      "bereichKapitelTemplateId": 785,
+      "text": "AllgemeinDie gesamte Installation erfolgt nach Vorschrift der örtlichen Werke.Sämtliche Elektroinstallationen werden gemäss anerkannten Regeln der Technik ausgeführt (Normen NIN, NIV, VEMV, NISV usw.)Haupt- und Unterverteilungen Die Hauptverteilungen sind im Untergeschoss in den Technikräumen vorgesehen.Es sind sämtliche Zählereinrichtungen inkl. Reserveplatz, Sicherungen, FI-Schutzschalter, Elektronischer Schrittschalter, Überspannungsableiter und Steuerkomponenten für die Licht- und Kraftinstallationen der einzelnen Verbraucher eingebaut.Sonstige Elektrische Anlagen sind noch zu definieren!",
+      "reihenfolge": null
+    },
+    {
+      "id": 969,
+      "bereichKapitelTemplateId": 805,
+      "text": "Budget inkl. Schallschutzträger bei Dusche und Badewanne Porestaträger mit Schallschutzset SIA 181",
+      "reihenfolge": null
+    },
+    {
+      "id": 989,
+      "bereichKapitelTemplateId": 825,
+      "text": "Lieferung und Montage der jeweiligen in den Plänen definierten Vorwand-Installationssysteme inkl. Spiegelschranknischen.",
+      "reihenfolge": null
+    },
+    {
+      "id": 1009,
+      "bereichKapitelTemplateId": 845,
+      "text": "Abdeckarbeiten Böden und Aufzüge, periodische Zwischenreinigungen je nach Baufortschritt. sowie einmalige Schlussreinigung sämtlicher Räumlichkeiten. Unterhaltsreinigungen der Musterwohnung. Schlussreinigung des gesamten Kanalisationssystems inkl. Nachweisprotokoll.",
+      "reihenfolge": null
+    },
+    {
+      "id": 1029,
+      "bereichKapitelTemplateId": 865,
+      "text": "Soweit ersichtlich, ist die geplante Briefkastenanlage an einer angrenzenden Wohnung. Es ist ein grosses Augenmerk auf den Schallschutz zulegen.Dies ist mit dem zuständigen Bauakustiker zu prüfen.",
+      "reihenfolge": null
+    },
+    {
+      "id": 890,
+      "bereichKapitelTemplateId": 726,
+      "text": "Abdichtungskonzept gemäss Bauingenieur.Gemäss Nutzungsvereinbarung Bauingenieur mit dem Datum vom xxxxDefinition der Dichtigkeitsklassen (DK1 und DK2), inkl. allfälligen Nachinjektionen. Inkl. einer 10-jährige Systemgarantie.QualiCasa empfiehlt den Treppenkern und die Technikzentralen in DK1 auszuführen und di Tiefgarage in DK2.",
+      "reihenfolge": null
+    },
+    {
+      "id": 910,
+      "bereichKapitelTemplateId": 746,
+      "text": "931 Bettungen, Plattenauflager und Entwässerungsrinnen zu Gehbelägen, Seite 49Wenn die Fugendimensionen der offenen Gehbeläge untereinander und zur Schwelle eingehalten werden, kann ggf. auf eine Sicherheitsrinne verzichtet werden. SIA 271:2021, Abs. 6.12.Falls Sicherheitsrinnen eingebaut werden, müssen diese direkt und separat an das Entwässerungssystem angeschlossen werden.",
+      "reihenfolge": null
+    },
+    {
+      "id": 930,
+      "bereichKapitelTemplateId": 766,
+      "text": "Folgende Fabrikate sind zwingend einzusetzen. Andere Fabrikate dürfen nur in Absprache mit der Fachbauleitung eingesetzt werden.Produkt Bestimmen z.B. Feller Edizio Due",
+      "reihenfolge": null
+    },
+    {
+      "id": 950,
+      "bereichKapitelTemplateId": 786,
+      "text": "Schilder und GravurenSämtliche Verbraucher, Schalter, Taster, Steckdosen, Abzweig- und Klemmdosen sowie Hauptkabel werden mit VK- und Sicherungsnummern dauerhaft beschriftet, in den Wohnungen werden nur die Multimediasteckdosen beschriftet.",
+      "reihenfolge": null
+    },
+    {
+      "id": 970,
+      "bereichKapitelTemplateId": 806,
+      "text": "Kalt- und WarmwasserleitungenKaltwasserleitungen ab Gebäudeeintritt, über eine Verteilbatterie, zu allen Verbrauchstellen, Wohnungsverteilern und Boiler geführt. Für die Wohnungen sind Kalt- und Warmwasserzähler vorgesehen. Als Rohrmaterial werden Chromstahl-Rohre (Hauptverteilung) und Kunststoff- Leitungen (Feinverteilung) verwendet, inkl. allen notwendigen Formstücken und Befestigungen. Dämmen der Rohrleitungen ist zu definieren.Ver und EntsorgungsleitungenWerkstoff ist zu definieren PE-HD oder PE-Silent Leitungen",
+      "reihenfolge": null
+    },
+    {
+      "id": 990,
+      "bereichKapitelTemplateId": 826,
+      "text": "Küchen aus Normelementen hergestellt und schallhemmend montiert.Definieren wie der Dampfabzug funktioniert?Alle Küchen werden mit Umlufthauben (Küchenbauer) mit eingebauten Aktivkohle-Longlife Filter ausgerüstet.",
+      "reihenfolge": null
+    },
+    {
+      "id": 1010,
+      "bereichKapitelTemplateId": 846,
+      "text": "Es ist zu prüfen eine Vorzeitige Fertigstellung einer Musterwohnung zu definieren. Termin spätestens 6 Monate vor Bezug gem. Werkvertrag.",
+      "reihenfolge": null
+    },
+    {
+      "id": 1030,
+      "bereichKapitelTemplateId": 866,
+      "text": "Es ist zu prüfen ob der Zugang zum Veloraum mit einem Elektrischem Türöffner ausgeführt wird. Dies um das Ein- und Ausbringen des Velos zu vereinfachen.",
+      "reihenfolge": null
+    },
+    {
+      "id": 891,
+      "bereichKapitelTemplateId": 727,
+      "text": "Humusabtrag und maschineller Aushub gemäss Aushubplan, inkl. notwendigen Abtransport auf Deponie inkl. Gebühren. Baugrubenaushub gemäss Konzept und Angaben Bauingenieur. Einbringen der Magerbetonschicht auf Aushubsohle inkl. Fundamentvertiefungen. Hinterfüllen des Bauwerks mit seitlich gelagertem oder zugeführtem, sicker- und verdichtungsfähigem Aushubmaterial.Sämtliche bestehende Werkleitungen, Bäume etc. im und ausserhalb des Gebäudes sind, wenn nötig zu schützen.",
+      "reihenfolge": null
+    },
+    {
+      "id": 911,
+      "bereichKapitelTemplateId": 747,
+      "text": "Es empfiehlt sich die Systemgarantie explizit mit Ausführungsgarantie zu ergänzen.",
+      "reihenfolge": null
+    },
+    {
+      "id": 931,
+      "bereichKapitelTemplateId": 767,
+      "text": "Die Hauptverteilung befindet sich unterhalb des HWi und teilweise Zimmer 1.Die Verordnung über den Schutz vor nichtionisierender Strahlung (NISV) wird womöglich nicht eingehalten. Ggf. müssen noch Massnahmen erfolgen (z.B. Abschirmung).",
+      "reihenfolge": null
+    },
+    {
+      "id": 951,
+      "bereichKapitelTemplateId": 787,
+      "text": "Wärme- und Warmwassererzeugung mit einer Wärmepumpe und Erdsonden.Steuerung mittels Witterungsgeführtem Aussentemperaturfühler.Pufferspeicher, Heizverteiler, Heizgruppe Bodenheizung, Armaturen, Expansionsanlage und Regulierung. Als Rohrmaterial werden Stahlrohre mit Rostschutzanstrich verwendet inkl. allen notwendigen Formstücken und Befestigungen. Dämmen der Rohrleitungen mit Mineralwollschalen.Dämmen der Rohrleitungen ist zu definieren, zbsp. mit Mineralwollschalen oder PIR-Schalen und einem PVC-Mantel, entsprechend den gesetzlichen Vorschriften. Dämmen der Armaturen mit Mineralwolle und Armaturenboxen aus Aluminiumblech. Füllen der Anlage mit demineralisiertem Wasser gemäss SWKI. Inbetriebsetzung und Einregulierung mit Protokoll, Betriebsanleitung und Instruktion an Personal.Für Wanddurchführungen durch Brandabschnitte sind Isolationen mit entsprechender Steinwolle / Brandabschottungen vorzusehen.Es ist zu prüfen, ob Störungs- und Alarmmeldungen dem Technischem Dienst (Hauswartung) gemeldet werden sollten?",
+      "reihenfolge": null
+    },
+    {
+      "id": 971,
+      "bereichKapitelTemplateId": 807,
+      "text": "3.5 Arbeitsausführungen / ProbenIrgendwelche Rohrverbindungen dürfen keine Materialschwächung der Rohrenden aufweisen und müssen den freien Rohrquerschnitt garantieren.Wenn möglich müssen alle Rohrverbindungen geschweisst werden.Grundsätzlich werden im Häuslichem Sanitärbereich keine Rohre geschweisst.Die Leitungen sind auf Dichtigkeit zu prüfen (gemäss SVGW W3/E3) und von den zuständigen Werken oder Ämtern sowie von der Bauleitung abnehmen zu lassen. Die Prüfungen werden protokolliert an die Bauleitung abgegeben.Bei Frostgefahr sind sämtliche Leitungen nach der Druckprobe sorgfältig zu entleeren. Notfalls sind geeignete Frostschutzmittel zu verwenden.Frostschutzmittel haben im Sanitärbereich nichts zu suchen.",
+      "reihenfolge": null
+    },
+    {
+      "id": 991,
+      "bereichKapitelTemplateId": 827,
+      "text": "Gewürzschrank:Es ist zu prüfen, den Gewürzschrank mit Relingen auszustatten, um mögliche Beschädigungen des Glaskeramikkochfelds zu verhindern. Dieser Punkt wurde bereits in der Planprüfung der Architektur erwähnt!",
+      "reihenfolge": null
+    },
+    {
+      "id": 1011,
+      "bereichKapitelTemplateId": 847,
+      "text": "Es gibt diverse Bereiche in der Tiefgarage, die grössere Kreuzungen mit Lüftungskanäle aufweisen. Gemäss VSS Norm müssen die Durchfahrtshöhen eine lichte Raumhöhe von 2.30m und Parkplätze 2.20m aufweisen.",
+      "reihenfolge": null
+    },
+    {
+      "id": 1031,
+      "bereichKapitelTemplateId": 867,
+      "text": "Geplante NutzungsdauerDie Nutzungsdauer wird für statisch notwendige Bauteile auf 50 Jahre festgelegt. Während der Nutzungsdauer sind die periodischen Unterhaltsarbeiten nach SIA 469 durchzuführen. Nach Ablauf dieser Nutzungsdauer soll mit Instandsetzungsmassnahmen eine weitere Nutzungsperiode der gleichen Grössenordnung möglich sein.Austauschbare Bauteile, wie Abdichtungen, Beläge etc. haben eine geplante Nutzungsdauer von 25 Jahre. Die geplante Nutzungsdauer soll durch eine sorgfältige konstruktive Durchbildung des Tragwerks, eine regelmässige Überwachung und eine periodische Durchführung von Unterhaltsarbeiten sichergestellt werden.",
+      "reihenfolge": null
+    },
+    {
+      "id": 892,
+      "bereichKapitelTemplateId": 728,
+      "text": "Notwendige Gerüste für die vertragsgemässe Erstellung des Bauwerkes.Erstellen von leichtem Arbeitsgerüst und Aufgangstreppen inkl. Transport und Miete gemäss SUVA-Vorschrift. Erstellen der erforderlichen Schutzgeländer und Bockgerüste für die Maurer- und Verputzarbeiten gemäss SUVA-Vorschriften. Schlechtwetter- und Kältemassnahmen, falls Qualität oder Bezugstermin gefährdet sind.",
+      "reihenfolge": null
+    },
+    {
+      "id": 912,
+      "bereichKapitelTemplateId": 748,
+      "text": "Nicht begehbares Flachdach:Voranstrich Bitumenlack, Dampfsperre einlagig aus Polymerbitumen- Dichtungsbahn V4A. Wärmedämmung aus Polystyrol expandiert EPS, Stärke gemäss Energienachweis (Datum). Dichtungsbahn 2-lagig aus Polymerbitumen Dichtungsbahn; 1. Lage EGV 3, 2. Lage EP 5WF flam wurzelfest. 1. Lage lose verlegt, Überlappungen mind. 10 cm verschweisst oder geklebt, 2. Lage vollflächig verklebt. Drainagelage, z. B. Enkadrain oder gleichwertig. Vegetationsschicht aus Schüttstoffgemisch, mit Kies. Randbereich mit Kiesstreifen. inkl. seitlichen Auf- und Abbordungen inkl. Mechanischer Befestigung FLK; Betondecke mit ca. 1.5 -2 % Gefälle?Balkone und Terrassen:Abdichtung, Stelzenlager und Keramikplatten 40 – 50 mm auf Stelzenlagern gemäss Plan Architekt. Entwässerungen nach Vorgabe SIA – inkl. CNS Rinne vor Balkontüren. Wenn die Fugenbreiten eingehalten werden, kann ggf. auf eine Sicherheitsrinnen vor dem Fenster verzichtet werden.Alle Dächer mit Notüberläufen nach SIA 271 und evtl. Speiher, Dachwassereinläufe und Absturzsicherungen.10-jährige Ausführungs- und Systemgarantie durch Flachdächler",
+      "reihenfolge": null
+    },
+    {
+      "id": 932,
+      "bereichKapitelTemplateId": 768,
+      "text": "Soweit ersichtlich sind noch keine Rettungszeichen (Notleuchten und Fluchtwegbeschilderungen) vorhanden. Diese sind noch für die Ausführungsplanung miteinzubeziehen.",
+      "reihenfolge": null
+    },
+    {
+      "id": 952,
+      "bereichKapitelTemplateId": 788,
+      "text": "Niedertemperatur-Fussbodenheizung mit Kunststoffrohren (diffusionsdicht). Warmwasseraufbereitung zentral, nach Erfordernissen der bauphysikalischen Vorgaben. Alle sichtbaren Leitungen werden gedämmt.Die Wärmemessung ebenfalls in den Verteilern eingebaut. Die Verbrauchsdaten können mittels Funksignals abgelesen werden. Um in den Zimmern individuelle Raumtemperaturen zu ermöglichen, werden elektrische Raumthermostaten (durch Elektriker) vorgesehen. Die Bodendämmungen und Randdämmstreifen werden vom Heizungsunternehmer geliefert und verlegt. Die Bodenfelder des Unterlagsbodens werden wo notwendig mit Fugenbändern getrennt. Durchdringungen mit Bodenheizungsrohren werden mit Schutzhülsen versehen.Es ist zu prüfen, wer die Randstellstreifen zurückschneidet, in der Regel ist dies in der Leistung des Heizungsunternehmer.",
+      "reihenfolge": null
+    },
+    {
+      "id": 972,
+      "bereichKapitelTemplateId": 808,
+      "text": "Anstriche, Isolationen oder Überdeckungen von Leitungen und Installationen dürfen erst nachbestandener Prüfung und Abnahme durch die zuständigen Instanzen und/oder der Bauleitung vorgenommen werden.Zur Verhütung von vermeidbaren Schwitzwasserbildungen, Brandübertragungen, Korrosionen, Geräuschübertragungen, Dehnungsschäden an Leitungen und Bauteilen sowie Wärmeverlusten, sind die Isolationen äusserst sorgfältig auszuführen.Alle Warmgehaltenen Teile eines Warmwasserverteilsystems müssen in ihrer gesamten Länge ausnahmslos mit Wärmedämmung versehen werden. Speicheranschlüsse (z.B. Verschraubungen und Armaturen sind durchgehend zu dämmen. (SIA385/1 Abs 5.3.1.1 und 5.2.4.2).Wärmedämmung Haustechnik (Es gelten die aktuellen Dämmdicken nach kantonalen Energiegesetzen Wärmedämmvorschriften)",
+      "reihenfolge": null
+    },
+    {
+      "id": 992,
+      "bereichKapitelTemplateId": 828,
+      "text": "Generell:Es ist zu prüfen, ob die Luxanzahl für die Beleuchtung des Küchenbauers und die des Dampfabzugs mit der gleichen grösse (3000k oder 4000k) ausgeführt bzw. gelplant wurde.",
+      "reihenfolge": null
+    },
+    {
+      "id": 1012,
+      "bereichKapitelTemplateId": 848,
+      "text": "Es stellt sich die Frage, ob die Revisionsöffnungen der Lüftung in unterräume versetzt werden können, Bsp. oberhalb des Garderobenschranks oder in den Nasszellen. Dies hat lediglich Ästhetische Hintergründe wird aber vielfach als störend befunden.",
+      "reihenfolge": null
+    },
+    {
+      "id": 1032,
+      "bereichKapitelTemplateId": 868,
+      "text": "Umgebungsplanung gemäss LandschaftsarchitektHumusieren der gesamten Umgebungsanlage, Fertigplanie der Umgebung. Rasen- und Wiesensaat inkl. erstem Schnitt und Bepflanzung. Bepflanzung inkl. Pflanzlohn für die gesamte Umgebung gemäss Konzept Landschaftsarchitekt. Lieferung Humus und humusieren der gesamten Umgebungsanlage, Fertigplanie der Umgebung. Es ist zu prüfen, ob der Unterhalt in den ersten beiden Jahren (exkl. Rasenmähen, nur Bäume/Sträucher schneiden und bewässern, inkl. Schädlingsbekämpfung und Rasenbewässerung) sowie Lieferung von Unterhaltsofferten vor Vergabe der Gärtnerarbeiten eingerechnet werden sollten.",
+      "reihenfolge": null
+    },
+    {
+      "id": 893,
+      "bereichKapitelTemplateId": 729,
+      "text": "Alle Leitungen in PE 12–20 cm mit den notwendigen Bodenabläufen und Kontrollschächten. Planung Kanalisation durch HLS-Ingenieur in Absprache mit dem Landschaftsarchitekten.Gesamte Kanalisation inkl. allfälliger Versickerungsanlage und den notwendigen Kontroll- und Sammelschächten gemäss bewilligtem Kanalisationsplan. Einbau von Rinnen, Kanälen und Schächten inkl. Druckprotokoll vor dem verschliessen der Grabenarbeiten.Kanalisationsspülung inkl. Videoaufnahmen (TV) und Protokoll nach Endreinigung bei Bauende. Die Ausführung erfolgt nach Möglichkeit in PE-Rohre (Polyethylen).Sämtliche Anschlüsse an die Gemeindekanalisation inkl. allen Strassenanpassarbeiten, inkl. allfälligen Anschlüssen und Provisorien. Alle während den Bauarbeiten zum Vorschein kommenden Bestandesanschlüsse, die nicht mehr verwendet werden, sind fachgerecht zu schliessen.Die Kosten für alle neuen Hausanschlussleitungen sind einzurechnen.",
+      "reihenfolge": null
+    },
+    {
+      "id": 913,
+      "bereichKapitelTemplateId": 749,
+      "text": "KantenschutzSoweit ersichtlich, wurde der Kantenschutz für sämtliche Abschlüsse eingerechnet. Wie wurde der Abschluss zum jeweiligen Endbelag gewählt? Unsere Erfahrung zeigt, dass die Dämmplatten häufig direkt auf dem Boden montiert werden und dabei bei Schnee oder durch eine allfällige Reinigung kapillar Wasser aufnehmen. Es sollte geprüft werden, ob eine geeignete Variante für den Bodenabstand eingerechnet werden kann.",
+      "reihenfolge": null
+    },
+    {
+      "id": 933,
+      "bereichKapitelTemplateId": 769,
+      "text": "Die Koordination im Technikraum muss sicherlich noch überprüft werden.",
+      "reihenfolge": null
+    },
+    {
+      "id": 953,
+      "bereichKapitelTemplateId": 789,
+      "text": "2.5 Arbeitsausführungen / ProbenIrgendwelche Rohrverbindungen dürfen keine Materialschwächung der Rohrenden aufweisen und müssen den freien Rohrquerschnitt garantieren.Wenn möglich müssen alle Rohrverbindungen geschweisst werden.Die Leitungen sind auf Dichtigkeit zu prüfen (gemäss SWKI HE301-01) und von den zuständigen Werken oder Ämtern sowie von der Bauleitung abnehmen zu lassen. Die Prüfungen werden protokolliert an die Bauleitung abgegeben.Wurde dies mit der Bauherrschaft so vereinbart? Grundsätzlich können kleinere Leitungsdimensionen bis DN50 ohne Probleme gepresst werden.Auf Seite 37 werden gepresste Rohre ausgeschrieben!",
+      "reihenfolge": null
+    },
+    {
+      "id": 973,
+      "bereichKapitelTemplateId": 809,
+      "text": "Materialisierung:Rohre: Chromstahl, 1.4401 Formstücke: Chromstahl: 1.4401 / 1.4571Gemäss Beschrieb werden sämtliche Leitungen in 1.4401 ausgeführt, im Ausmass sind jedoch Leitungen in 1.4521 ausgeschrieben. Es ist zu prüfen, welche vorgaben gelten.",
+      "reihenfolge": null
+    },
+    {
+      "id": 993,
+      "bereichKapitelTemplateId": 829,
+      "text": "Generell:Es wird empfohlen, den Parkettboden unter der Küche durchgängig auszuführen. Die Mehrkosten sind in der Regel gering, und mögliche Änderungen während der Bauphase oder spätere Anpassungen in der Nutzung (z. B. für Barrierefreiheit) können dadurch einfacher umgesetzt werden.",
+      "reihenfolge": null
+    },
+    {
+      "id": 1013,
+      "bereichKapitelTemplateId": 849,
+      "text": "Es ist anzunehmen, dass es sich beim Lüftungsaustritt an der Fassade um die Aussenluftfassung handelt. In diesem Zusammenhang möchten wir darauf hinweisen, dass die Schneehöhe berücksichtigt werden muss. Siehe dazu auch SIA 382-1:2014.",
+      "reihenfolge": null
+    },
+    {
+      "id": 1033,
+      "bereichKapitelTemplateId": 869,
+      "text": "AnlagedokumentationSprache entsprechend der Landesgegend Bestehend aus: Übergabedokumente, Garantietermine, MängellistePlanverzeichnisRevisionspläne, Grundriss und DetailpläneAnlageverzeichnisAnlage- und FunktionsbeschriebTechnische DatenBetriebsanleitung / WartungsanleitungStörungsbeschrieb / Adressen StörungsdienstInbetriebsetzungsprotokolleTechnische Daten der KomponentenFabrikate-VerzeichnisErsatzteilliste (Verbrauchsmaterial)",
+      "reihenfolge": null
+    },
+    {
+      "id": 894,
+      "bereichKapitelTemplateId": 730,
+      "text": "Grundlage für die Betonarbeiten bilden die Nutzungsvereinbarung (Datum) und die die besonderen Bestimmungen des Bauingenieurs sowie die Planunterlagen des Architekten.Fundationen nach geologischen Erfordernissen. Armierte Betonplatte als Fundamentplatte. Aussenwände in armiertem Beton 25–30 cm mit abgedichteten Fugen (Dichtigkeitsklasse DK1 oder DK2 angeben). Innenwände Kalksandstein (mit Feuchtigkeitssperre) oder Beton 15–25 cm. Decken in Beton nach statischen Erfordernissen. Treppen in Beton, vorfabriziert, mit Feinsteinzeugplatten oder Kunststein belegt. Angaben des Schalungstyps der Sichtbetonflächen im Treppenhaus, Hydrophobiert? BOK-Klasse definieren, Lunker, Rost, Markierungen?Es ist zu empfehlen eine Referenzfläche zu erstellen.",
+      "reihenfolge": null
+    },
+    {
+      "id": 914,
+      "bereichKapitelTemplateId": 750,
+      "text": "Fassadensystem mineralisch mit Steinwolle, Stärke 22 cm und Wärmeleitzahl gemäss Energienachweis (Datum). Grundputz, Netzeinbettung, Voranstrich, mineralischer Deckputz (mineralischer Anstrich) gem. Farbkonzept gemäss Architekt. Liefern und versetzen von Fensterbänken (Option Metallzargen) mit Unterkonstruktion aus Metall einbrennlackiert (RAL oder NCS nach def. Farbkonzept).10 Jahre Ausführungs- und Systemgarantie durch Fassadenunternehmer",
+      "reihenfolge": null
+    },
+    {
+      "id": 934,
+      "bereichKapitelTemplateId": 770,
+      "text": "Es ist zu prüfen, die Zugangstüre der Veloabstellplätze mit einem elektrischen Türöffner mit Badge zu planen.",
+      "reihenfolge": null
+    },
+    {
+      "id": 954,
+      "bereichKapitelTemplateId": 790,
+      "text": "Anstriche, Isolationen oder Überdeckungen von Leitungen und Installationen dürfen erst nachbestandener Prüfung und Abnahme durch die zuständigen Instanzen und/oder der Bauleitung vorgenommen werden.Zur Verhütung von vermeidbaren Schwitzwasserbildungen, Brandübertragungen, Korrosionen, Geräuschübertragungen, Dehnungsschäden an Leitungen und Bauteilen sowie Wärmeverlusten, sind die Isolationen äusserst sorgfältig auszuführen.Die Wärmedämmung ist durchgehend und lückenlos auszuführen. Das bedeutet, dass die Wärmeverteilung, Armaturen, Umwälzpumpen, Verteiler, Anschlüsse von Apparaten und Potenzialausgleich so anzuordnen sind, dass die Wärmedämmung realisiert werden kann (SIA384/1 Abs 5.4.1.2).Wärmedämmung Haustechnik (Es gelten die aktuellen Dämmdicken nach kantonalen Energiegesetzen Wärmedämmvorschriften)",
+      "reihenfolge": null
+    },
+    {
+      "id": 974,
+      "bereichKapitelTemplateId": 810,
+      "text": "Materialisierung:Rohre: PE-H / PE-S2 (Silent) Formstücke: PE-H / PE-S2 (Silent) Die gesamte Entwässerung in den Wohnungen wird in PE-Silent ausgeführt.Die Entlüftungsleitungen über Dach werden in PE-H ausgeführt.Sämtliche PE-Silent Rohren werden mit Geberit Isol. Gegen Schall gedämmt.Erstellen von sämtlichen Tropfwasseranschlüssen (Technikraum, Luftentfeuchter etc.). Die Entwässerung des Untergeschosses erfolgt über die Abwasserhebeanlage. Das Abwasser wird via Pumpendruckleitung in die hochliegende Schmutzwasserleitung in der Garage gepumpt. Die Montage hat mit Dehnungselementen zu erfolgen (nicht starr).",
+      "reihenfolge": null
+    },
+    {
+      "id": 994,
+      "bereichKapitelTemplateId": 830,
+      "text": "Küchen nach PlanSockelausführung mit Stellfüssen oder Holzunterkonstruktion, Oberfläche Sockelblende wie Fronten.Es ist darauf zu achten, dass die Sockelblende mit Magnetstreifen und einer Dichtungslippe ausgeführt wird, um eine einfache Demontage der Sockel zu ermöglichen. Sollte darauf verzichtet werden, sollte dies mindestens beim Geschirrspüler berücksichtigt werden.",
+      "reihenfolge": null
+    },
+    {
+      "id": 1014,
+      "bereichKapitelTemplateId": 850,
+      "text": "Es ist zu prüfen, ob Einbringöffnungen eingerechnet wurden (auch für den späteren Unterhalt).",
+      "reihenfolge": null
+    },
+    {
+      "id": 895,
+      "bereichKapitelTemplateId": 731,
+      "text": "Die Mauererarbeiten haben gemäss der Vordimensionierung des Bauingenieurs für Stahlbetonteile und Mauerwerke zu erfolgen inkl. sämtlichen Decken- und Wandlager.Vordimensionierung und Dimensionierung durch Bauingenieur.Erstellen Mauerwerkstragwände in allen Geschossen. Dimensionen, Mauerwerkfestigkeit und notwendige Bewehrung den Anforderungen entsprechend. Die Mauerwerkswände in den Kellergeschossen aus Kalksandstein, vollfugig gemauert inkl. Feuchtigkeitssperren.",
+      "reihenfolge": null
+    },
+    {
+      "id": 915,
+      "bereichKapitelTemplateId": 751,
+      "text": "Nebst des SIA-Regelwerk sollten unbedingt die Merkblätter des SMGV berücksichtig werden. Insbesondere betreffend Bauteilanschlüssen.",
+      "reihenfolge": null
+    },
+    {
+      "id": 935,
+      "bereichKapitelTemplateId": 771,
+      "text": "Es sind Steckdosen in den Wohnungstrennwänden vorhanden. Die korrekte Ausführung und der Abstand der gegenüberliegenden Dosen ist durch den Bauakustiker zu definierten.",
+      "reihenfolge": null
+    },
+    {
+      "id": 955,
+      "bereichKapitelTemplateId": 791,
+      "text": "2 Heizsystem:Die Bodendämmung ist nicht Bestandteil dieser Submission.Ist dies korrekt, wurde dies bei der Fa. für den Estrich eingerechnet? Schnittstelle?",
+      "reihenfolge": null
+    },
+    {
+      "id": 975,
+      "bereichKapitelTemplateId": 811,
+      "text": "Lieferung und Montage von Terrassenwasserfallleitungen inkl. sämtlicher Anschlussleitungen der Dacheinläufe. Alle Leitungen und Formstücke werden in schallgedämmten PE-S2 Rohren ausgeführt. Das Terrassenwasser wird seitlich an der Fassade bis ins Erdgeschoss geführt und oberflächlich versickert. Vor jeder Hebeschiebetüre ist eine SIA-Rinne vorgesehen, die Direkt angeschlossen wird.",
+      "reihenfolge": null
+    },
+    {
+      "id": 995,
+      "bereichKapitelTemplateId": 831,
+      "text": "Montage und Befestigungen der EinbauschränkeWir möchten auf die korrekte schallentkoppelte Montage hinweisen, die bei den eingebauten Möbeln zwingend zu beachten ist. Dazu gehören unter anderem Schallschutzdübel, Konsolen und Trennbänder. Es ist sicherzustellen, dass die dafür anfallenden Kosten entsprechend eingeplant werden.",
+      "reihenfolge": null
+    },
+    {
+      "id": 1015,
+      "bereichKapitelTemplateId": 851,
+      "text": "Es sind noch keine Massnahmen für die Natürliche Garagenentlüftung ersichtlich (SWKI_VA103-01).",
+      "reihenfolge": null
+    },
+    {
+      "id": 896,
+      "bereichKapitelTemplateId": 732,
+      "text": "Lieferung und Montage von vorfabrizierten Betontreppenelementen, Ausführung Beton schalungsglatt, Untersicht Weissputz. Allfällige Stützen im Balkonbereich inkl. Sämtlichen Treppenlager und Kragplattenanschlüsse gemäss Angaben Bauingenieur.",
+      "reihenfolge": null
+    },
+    {
+      "id": 916,
+      "bereichKapitelTemplateId": 752,
+      "text": "Im Konzept Fassade vom 19.07.2023 ist die Fassadendämmung als Mineralwolle 220mm angegeben. Ausgeschrieben wird eine EPS Dämmung.Um Verwechslungen zu vermeiden, sollten die Dokumente aufeinander abgestimmt werden. Örtliche Brandschutzvorschriften sind zu dabei zu berücksichtigen, insbesondere bezüglich Thematik Brandriegel.Aus energetischer Sicht ist Mineralwolle einer EPS-Dämmung vorzuziehen.",
+      "reihenfolge": null
+    },
+    {
+      "id": 936,
+      "bereichKapitelTemplateId": 772,
+      "text": "Elektrische Anschlüsse M-Bus Zähler Heizung und Sanitär einplanen.",
+      "reihenfolge": null
+    },
+    {
+      "id": 956,
+      "bereichKapitelTemplateId": 792,
+      "text": "inbegriffene Leistungen (Auswahl)Druckprobe mit Protokoll gemäss SWKI HE301-01 W3/E3Durchspülen des Leitungssystems vor der Abnahme gemäss SWKI HE301-01 W3/E3",
+      "reihenfolge": null
+    },
+    {
+      "id": 976,
+      "bereichKapitelTemplateId": 812,
+      "text": "Es ist zu prüfen, ob die Vorwände ausgeflockt werden müssen (Schall- und Brandschutz).",
+      "reihenfolge": null
+    },
+    {
+      "id": 996,
+      "bereichKapitelTemplateId": 832,
+      "text": "Geschirrspüler / Kühlschrank / Weinkühler etc.Es ist darauf zu achten, dass nach Möglichkeit Geräte mit einer Energieeffizienzklasse A ausgewählt werden.",
+      "reihenfolge": null
+    },
+    {
+      "id": 1016,
+      "bereichKapitelTemplateId": 852,
+      "text": "Auch für die Wände mit Abrieb sind die Q-Stufen zu definieren.Siehe Merkblatt 3 Putzoberflkächen im Innenbereich.",
+      "reihenfolge": null
+    },
+    {
+      "id": 897,
+      "bereichKapitelTemplateId": 733,
+      "text": "Kompaktfassade Steinwolle 22 cm. Fenstereinfassungen aus Metall als Option.Angaben zum Fertigabrieb, Verputz, Wärmedämmung und Sockelanschluss10 Jahre Systemgarantie durch Fassadenunternehmer",
+      "reihenfolge": null
+    },
+    {
+      "id": 917,
+      "bereichKapitelTemplateId": 753,
+      "text": "Wenn Bewegungsfugen mittels Dichtmassen erstellt werden, ist bei der Ausführung die SIA 274:2021 zwingend zu berücksichtigen.Wir empfehlen Bewegungsfugen immer konstruktiv oder mittels Dichtprofilen auszuführen.",
+      "reihenfolge": null
+    },
+    {
+      "id": 937,
+      "bereichKapitelTemplateId": 773,
+      "text": "Es ist nicht ersichtlich, ob die Beleuchtungsstärke im Bereich der Treppe, Treppenhaus genügend ist.Empfehlung QualiCasa; Die Beleuchtungsstärke ist gemäss SIA 500, Tabelle 7 einzuhalten.Die SN EN 12464-1 und BfU, Treppen Tabelle 5 sind einzuhalten. Dies ist zu definieren, da ansonsten die Beleuchtungsstärke nicht eingehalten werden müssen.",
+      "reihenfolge": null
+    },
+    {
+      "id": 957,
+      "bereichKapitelTemplateId": 793,
+      "text": "Es ist nicht ersichtlich, ob bei sämtlichen gelieferten Apparaten auch die Inbetriebnahme eingerechnet wurde.",
+      "reihenfolge": null
+    },
+    {
+      "id": 977,
+      "bereichKapitelTemplateId": 813,
+      "text": "Spültischmischer",
+      "reihenfolge": null
+    },
+    {
+      "id": 997,
+      "bereichKapitelTemplateId": 833,
+      "text": "Es ist darauf zu achten, dass der V-ZUG DFSE mit einem geeigneten Filter ausgestattet wird. Idealerweise sollten dafür Longlife-Filter ausgeschrieben werden.",
+      "reihenfolge": null
+    },
+    {
+      "id": 1017,
+      "bereichKapitelTemplateId": 853,
+      "text": "Es ist zu prüfen ob die Luxanzahl für die Beleuchtung des Spiegelschranks und der Einbauspots mit der gleichen grösse (3000k oder 4000k) ausgeführt wird. Ggf. kann die Luxgrösse auch beim Speigelschrank eingestellt werden (Fabrikat).",
+      "reihenfolge": null
+    },
+    {
+      "id": 898,
+      "bereichKapitelTemplateId": 734,
+      "text": "Holz-Metall-Fenster, aussen Alu einbrennlackiert, innen Holz fertig lackiert. Aussen- und Innenfarbe gemäss Farbkonzept und Angaben des Architekten RAL oder NCS, 3-fach IV-Verglasung wo nötig in VSG gemäss Energienachweis (Datum).Öffnungsarten Dreh- und Dreh-Kippfenster (1 Stück pro Fensterkombination bzw. pro Fenstereinheit). Schiebetüren mit behindertengerechter Schwelle und die notwendigen konstruktiven Massnahmen (Rinne etc.). Es ist zu prüfen, ob eine Tür mit einer Durchgangsbreite von min 90 cm und einer Schwelle von max. 2,5 cm ausgeführt werden soll (SIA 500).Im Erdgeschoss alle Fenstergriffe abschliessbar mit Schlüssel, Wetterschenkel in Alu einbrennlackiert in Fensterfarbe. Erdgeschoss einbruchsicher RC1N nach SIA 343.301.Bei allen Fenstertüren zum Sitzplatz / Balkon, aussen mit Zuziehgriff und Schnäpper.(Die SIGAB Richtlinien werden eingehalten).Es ist zu prüfen, ob die Fenster im EG aus RC2 ausgeführt werden sollten, diese haben im Gegensatz zu RC1N eine VSG-Verglasung sind und somit auch bei einem einschlagen des Fensters Robuster.",
+      "reihenfolge": null
+    },
+    {
+      "id": 918,
+      "bereichKapitelTemplateId": 754,
+      "text": "Gemäss SIA 243:2008; Abs. 2.2.3 müssen horizontale und geneigte Flächen welche direkte Witterung ausgesetzt sind, entsprechend geschützt werden. Dazu zählen auch Wärmedämmungen.",
+      "reihenfolge": null
+    },
+    {
+      "id": 938,
+      "bereichKapitelTemplateId": 774,
+      "text": "Allgemein Wohnen:Es ist zu prüfen, im Wohnbereich eine FTTH Dose zu installieren.Die Platzverhältnisse für das Modem ist teils ungenügend, zuzdem wird der W-Lan empfang durch den Blechdeckel.",
+      "reihenfolge": null
+    },
+    {
+      "id": 958,
+      "bereichKapitelTemplateId": 794,
+      "text": "Es ist zu prüfen, ob die Kosten für die Montage, Beschriftung und Mithilfe bei der Inbetriebsetzung der Feldgeräte (Sensoren und Aktoren) einzurechnen sind.Zusätzlich ist die Mithilfe bei der technischen Bearbeitung / Engineering, der Fremdschemata Beschaffung, der Einregulierung und Inbetriebsetzung sowie die Mithilfe bei integrierten Tests.Für alle Regeleinrichtungen sind die entsprechenden Verbindungen wie Flanschen, Gegenflanschen, Dichtungen, Schrauben, Verschraubungen, Tauchhülsen und die Hilfsmaterialien zu berücksichtigen.",
+      "reihenfolge": null
+    },
+    {
+      "id": 978,
+      "bereichKapitelTemplateId": 814,
+      "text": "Am Verteiler eingebaut sind alle nötigen Armaturen wie, Wasserzähler, Probenahmeventil, Rückflussverhinderer, Druckreduzierventil und ein rückspülbarer Feinfilter.",
+      "reihenfolge": null
+    },
+    {
+      "id": 998,
+      "bereichKapitelTemplateId": 834,
+      "text": "Personenlift: Kabinengrösse ca. 110 x 140 cm rollstuhlgängig, Schindler Lift Typ 3100.Es ist zu prüfen, ob der Liftschacht mit einer Liftschacht-Entlüftung ausgerüstet werden muss. Dies ist mit einer Motorklappe mit Federrücklaufantrieb, ein Raumthermostat sowie ein Wetterschutzgitter auszurüsten.",
+      "reihenfolge": null
+    },
+    {
+      "id": 1018,
+      "bereichKapitelTemplateId": 854,
+      "text": "Generell:Sofern die Abluft des Dampfabzugs über Dach geführt wird, muss die Nachströmende Luft gewährleistet werden. Siehe SIA 382-4;2012 Anhang A.",
+      "reihenfolge": null
+    },
+    {
+      "id": 899,
+      "bereichKapitelTemplateId": 735,
+      "text": "Bezüglich Schalldämmwerte werden in der Aufstellung die Anforderungen der zu erreichende Werten in drei Fenstertypen (Typ 1-3) definiert. Es ist ein R’w Wert ausgeschrieben. Wir möchten darauf hinweisen, dass sich dieser Wert, auf den fertig eingebauten zu erreichenden Schalldämmwert bezieht.Um alle Risiken auszuschliessen, empfehlen wir die Ausschreibung wie folgt zu ergänzen: Z.B.(fertig eingebauter Wert)",
+      "reihenfolge": null
+    },
+    {
+      "id": 919,
+      "bereichKapitelTemplateId": 755,
+      "text": "Gemäss SIA 243:2008, Abs. 2.2.5 dürfen die XPS- oder speziellen EPS-Sockelplatten bis max. 250mm über die Sockellinie geführt werden.",
+      "reihenfolge": null
+    },
+    {
+      "id": 939,
+      "bereichKapitelTemplateId": 775,
+      "text": "Es ist zu Empfehlen, bei den Schalter / Steckdosenkombinatonen ein 2er Einlasskasten einzubauen (z.B. keine getrennten Schalter und Möglichkeit von nachträglichem Einbau von Dimmer). Es ist zu Empfehlen, bei den Schalter / Steckdosenkombinatonen ein 2er Einlasskasten einzubauen (z.B. keine getrennten Schalter und Möglichkeit von nachträglichem Einbau von Dimmer).",
+      "reihenfolge": null
+    },
+    {
+      "id": 959,
+      "bereichKapitelTemplateId": 795,
+      "text": "Kontrollierte Wohnungslüftung (Komfortlüftung) mit Wärmerückgewinnung ausgerüstet. Zentrale Anlage die die Zu- und Abluft über Lüftungskanäle zu den Wohnräumen verteilt. Wie wird die Anlage gesteuert? Stufenschalter? Co2 Fühler? Alle gefangenen Nebenräume im Untergeschoss sind mechanisch belüftet. Gibt es eine Entfeuchtung? Wie wird die Belüftung gesteuert? Zeit, Feuchte? Garage natürliche Zu- und Abluft (Garagentor mit Lochblechfüllung).",
+      "reihenfolge": null
+    },
+    {
+      "id": 979,
+      "bereichKapitelTemplateId": 815,
+      "text": "Die Verteilbatterie besteht aus:HauptwasserzählerProbenahmeventilRückspülbarer Feinfilter Druckreduzierventil HeizungsfüllventilEnthärtungsanlage1 Strang Schlauchventile Allgemein 2 Strang Wohnungen 3 Strang Wohnungen4 Strang Wassererwärmer",
+      "reihenfolge": null
+    },
+    {
+      "id": 999,
+      "bereichKapitelTemplateId": 835,
+      "text": "Wohnbereiche: Wände mit Vollabrieb 1.5 mm (Qualitätsstufe 3)Wände Nassräume Grundputz zur Aufnahme von Plattenbelag oder Weissputz mit abwaschbarer Farbe. Nasszellen: Restflächen mit Weissputz glatt. (Qualitätsstufe 3)Wohnungsdecken Q17ualitätsstufe 3, Weissputz, glatt, zum Streichen Sämtliche Wände und Decken sind mit einer Haftbrücke als Verbesserung der Haftung zwischen Untergrund und Putzauftrag sind zu versehen.Einbau VorhangschienenEinbau von 1 Vorhangschiene VS57direkt auf Betondecke befestigt, putzbündig montiert.",
+      "reihenfolge": null
+    },
+    {
+      "id": 1019,
+      "bereichKapitelTemplateId": 855,
+      "text": "Wie bereits im Memo vom Baubeschrieb erwähnt, ist wingend der Schalungstyp und die BOK-Klasse zu definieren. (Siehe SIA 118-262;2018 und CEM Suisse). Gemäss Bild im Farb- und Materialkonzept handels es sich womöglich um den Schalungstyp 4.1.4 BOK 2 oder BOK 3.",
+      "reihenfolge": null
+    }
+  ],
+  "bauteilRisiken": [
+    {
+      "id": 1,
+      "name": "Feuchtigkeit",
+      "reihenfolge": null,
+      "aktiv": true
+    },
+    {
+      "id": 2,
+      "name": "Rissbildung",
+      "reihenfolge": null,
+      "aktiv": true
+    },
+    {
+      "id": 3,
+      "name": "Schimmel",
+      "reihenfolge": null,
+      "aktiv": true
+    },
+    {
+      "id": 4,
+      "name": "Korrosion",
+      "reihenfolge": null,
+      "aktiv": true
+    }
+  ],
+  "bauteile": [
+    {
+      "id": 1,
+      "baurundgangId": 1,
+      "bauteilTemplateId": 2,
+      "materialisierungTemplateId": 1,
+      "bauteilRisikoId": 1,
+      "reihenfolge": null
+    },
+    {
+      "id": 2,
+      "baurundgangId": 1,
+      "bauteilTemplateId": 16,
+      "materialisierungTemplateId": null,
+      "bauteilRisikoId": null,
+      "reihenfolge": null
+    },
+    {
+      "id": 3,
+      "baurundgangId": 1,
+      "bauteilTemplateId": 13,
+      "materialisierungTemplateId": null,
+      "bauteilRisikoId": null,
+      "reihenfolge": null
+    },
+    {
+      "id": 4,
+      "baurundgangId": 1,
+      "bauteilTemplateId": 10,
+      "materialisierungTemplateId": null,
+      "bauteilRisikoId": null,
+      "reihenfolge": null
+    }
+  ],
+  "bereichKapitel": [
+    {
+      "id": 18,
+      "bauteilId": 1,
+      "name": "Empfehlungen",
+      "reihenfolge": 1
+    },
+    {
+      "id": 19,
+      "bauteilId": 1,
+      "name": "Normen, Empfehlungen",
+      "reihenfolge": 2
+    },
+    {
+      "id": 20,
+      "bauteilId": 1,
+      "name": "Mängelrecht",
+      "reihenfolge": 3
+    },
+    {
+      "id": 21,
+      "bauteilId": 1,
+      "name": "Abnahmenkonzept",
+      "reihenfolge": 4
+    },
+    {
+      "id": 22,
+      "bauteilId": 1,
+      "name": "Materialwahl",
+      "reihenfolge": 5
+    },
+    {
+      "id": 23,
+      "bauteilId": 1,
+      "name": "Schützen von Bauteilen",
+      "reihenfolge": 6
+    },
+    {
+      "id": 24,
+      "bauteilId": 1,
+      "name": "Bezeichnungen Apparate",
+      "reihenfolge": 7
+    },
+    {
+      "id": 25,
+      "bauteilId": 1,
+      "name": "Regelung zur Nachjustierung von Fenstern und Türen",
+      "reihenfolge": 8
+    },
+    {
+      "id": 26,
+      "bauteilId": 1,
+      "name": "Betriebsoptimierung",
+      "reihenfolge": 9
+    },
+    {
+      "id": 27,
+      "bauteilId": 1,
+      "name": "Leistungs- und Funktionsgarantie",
+      "reihenfolge": 10
+    },
+    {
+      "id": 28,
+      "bauteilId": 1,
+      "name": "Hindernisfreies Bauen",
+      "reihenfolge": 11
+    },
+    {
+      "id": 29,
+      "bauteilId": 1,
+      "name": "Allgemeines",
+      "reihenfolge": 1
+    },
+    {
+      "id": 30,
+      "bauteilId": 1,
+      "name": "Ausführung",
+      "reihenfolge": 2
+    },
+    {
+      "id": 31,
+      "bauteilId": 1,
+      "name": "Materialanforderungen",
+      "reihenfolge": 1
+    },
+    {
+      "id": 32,
+      "bauteilId": 1,
+      "name": "Nachweise/Prüfungen",
+      "reihenfolge": 2
+    },
+    {
+      "id": 33,
+      "bauteilId": 1,
+      "name": "Sämtliche bestehende Werkleitungen, Bäume etc. im und ausserhalb des Gebäudes sind, wenn nötig zu schützen.",
+      "reihenfolge": 43
+    },
+    {
+      "id": 34,
+      "bauteilId": 1,
+      "name": "Nutzungsvereinbarung",
+      "reihenfolge": 268
+    }
+  ],
+  "bereichKapitelTexte": [
+    {
+      "id": 26,
+      "bereichKapitelId": 18,
+      "text": "Generell müssen Änderungen im Voraus vom TU-Angezeigt und von der Bauherrschaft schriftlich genehmigt werden.",
+      "reihenfolge": 1
+    },
+    {
+      "id": 27,
+      "bereichKapitelId": 18,
+      "text": "Der Bauherr hat das Recht, einen externen Berater beizuziehen (QualiCasa).\nSämtliche Rückmeldungen, die gefordert werden, sind abzuklären und dem QM zurückzumelden.",
+      "reihenfolge": 2
+    },
+    {
+      "id": 28,
+      "bereichKapitelId": 18,
+      "text": "Der Bauherr hat das Recht, einen externen Berater beizuziehen.",
+      "reihenfolge": 4
+    },
+    {
+      "id": 29,
+      "bereichKapitelId": 18,
+      "text": "Kontrollrecht und Vertretung des Bestellers\nDer Besteller oder ihr Beauftragter sind berechtigt, aber nicht verpflichtet, den Planungs- und Baufortschritt sowie die Bauausführung jederzeit zu kontrollieren oder kontrollieren zu lassen. Der TU ist jederzeit zur Auskunft verpflichtet und hat dem Besteller uneingeschränkt Einblick in die Projektunterlagen zu gewähren.",
+      "reihenfolge": 3
+    },
+    {
+      "id": 30,
+      "bereichKapitelId": 19,
+      "text": "Die Bauausführung erfolgt nach den gültigen SIA-Normen, SIA-Empfehlungen und den Richtlinien der jeweiligen Fachverbände und behördlichen Vorschriften und Empfehlungen.\nSicherheitsvorschriften der SUVA und des BfU sind einzuhalten.\nDie Gliederung dieses Baubeschriebs erfolgt nach den BKP-Positionen.",
+      "reihenfolge": 1
+    },
+    {
+      "id": 31,
+      "bereichKapitelId": 19,
+      "text": "Angaben der Schallschutzanforderungen gemäss. SIA 181:2020.\nDer Heizwärmebedarf bzw. Energienachweis wird nach SIA 380/1:2016 bestimmt?",
+      "reihenfolge": 2
+    },
+    {
+      "id": 32,
+      "bereichKapitelId": 19,
+      "text": "Die Bauausführung erfolgt nach den gültigen SIA-Normen, SIA-Empfehlungen und den Richtlinien der jeweiligen Fachverbände und behördlichen Vorschriften und Empfehlungen.\nDie Ausführung erfolgt in allen Teilen in Übereinstimmung mit den geltenden Bauvorschriften und Normen sowie nach den allgemeinen Regeln der Baukunst. Die Gliederung dieses Baubeschriebs erfolgt nach den BKP-Positionen.",
+      "reihenfolge": 3
+    },
+    {
+      "id": 33,
+      "bereichKapitelId": 19,
+      "text": "Die Gläser entsprechen der SIGAB-Richtline 002.\nDie Gläser werden nach der SIGAB-Richtline 102 gereinigt.\nVorhandene Glaskratzer werden nach der SIGAB Richtline 006 beurteilt.",
+      "reihenfolge": 4
+    },
+    {
+      "id": 34,
+      "bereichKapitelId": 20,
+      "text": "Grundsatz\nDer Unternehmer haftet dafür, dass sein Werk keine Mängel aufweist (SIA 118 Art. 165/166). Er haftet ohne Rücksicht auf die Ursache des Mangels (z.B. unsorgfältige Arbeit, Verwendung untauglichen Materials, eigenmächtiges Abweichen von Plänen und Vorschriften der Bauleitung) und unabhängig vom Verschulden.",
+      "reihenfolge": 1
+    },
+    {
+      "id": 35,
+      "bereichKapitelId": 21,
+      "text": "Allgemein\nDer Start der Garantiefristen erfolgt über das gesamte Werk mit der erfolgreichen Schlussabnahme Werkübergabe, voraussichtlich (Datum)",
+      "reihenfolge": 1
+    },
+    {
+      "id": 36,
+      "bereichKapitelId": 21,
+      "text": "Allgemein\nIm Grundsatz richtet sich der Abnahme- und Garantieprozess nach den Vorgaben der entsprechenden SIA-Normen. Dies sind im Speziellen die SIA-Normen 118 (2013), 102 (2013), 103 (2013), 105 (2013) und 108 (2013). Ergänzend sind die Präzisierungen in den Planerverträgen sowie den Vorgaben der Bauherrschaft zu beachten.\nIn Abänderung zur SIA 118 wird die Rügefrist auf 5 Jahre verlängert.",
+      "reihenfolge": 2
+    },
+    {
+      "id": 37,
+      "bereichKapitelId": 22,
+      "text": "Bauweise und Werkstoffwahl der Leitungen gehen aus der Materialspezifikation hervor. Art, Fabrikat, Materialwahl sowie Verbindungen sind für den Unternehmer bindend. Produkteänderungen können nur toleriert werden, wenn der Bauherr, bzw. sein Vertreter dafür seine Zustimmung gibt.",
+      "reihenfolge": 1
+    },
+    {
+      "id": 38,
+      "bereichKapitelId": 23,
+      "text": "Leitungen sowie Verbindungen sind während der Lagerung auf der Baustelle und nach der Montage bis zur Abnahme vor Schmutz, korrosiven Einflüssen und Beschädigungen zu schützen.",
+      "reihenfolge": 1
+    },
+    {
+      "id": 39,
+      "bereichKapitelId": 24,
+      "text": "Beschriftungen (nach SIA 410)\nAlle Anlageteile wie Kessel, Speicher, Armaturen, Pumpen, Schalt-, Regel-, und Kontrollinstrumente werden mit der Apparatebezeichnung und Anlage-/Apparatenummer gemäss den Schemaunterlagen bezeichnet. Es sind Alu-Schilder mit eingraviertem Text zu verwenden. Die Schilder sind mit Schrauben zu befestigen, oder bei demontierbaren Teilen mit einem Kettchen festzumachen. Die Leitungen werden nach Angaben der Bauleitung mit selbstklebenden Farbpfeilen gekennzeichnet.",
+      "reihenfolge": 1
+    },
+    {
+      "id": 40,
+      "bereichKapitelId": 25,
+      "text": "Ist aus Sicht QC in den Vorspann zu integrieren:\n\nIm Rahmen der Vertragsgrundlagen wird festgelegt, dass das Nachjustieren von Fenstern und Türen Bestandteil der zweijährigen Garantiezeit ist, sofern diese nicht durch unsachgemässen Gebrauch oder äussere Einflüsse verursacht wurden.\nDie Nachjustierung erfolgt ohne zusätzliche Kosten für den Auftraggeber innerhalb der Garantiefrist.",
+      "reihenfolge": 1
+    },
+    {
+      "id": 41,
+      "bereichKapitelId": 26,
+      "text": "Ist aus Sicht QC in den Vorspann zu integrieren:\n\nIm ersten und zweiten Betriebsjahr wird die Betriebsoptimierung als integraler Bestandteil der Leistung durchgeführt. Dabei soll das Ziel verfolgt werden, dass dadurch keine Komforteinbusse für den Gebäudenutzer entstehen. Es geht hierbei darum die Regeleinstellung der Anlage so zu optimieren, dass die Anlage optimal funktioniert.\nBei der Betriebsoptimierung liegt der Fokus darauf, die bestehenden Anlagen, Systeme und Prozesse effizienter zu gestalten und ihre Leistung zu maximieren.",
+      "reihenfolge": 1
+    },
+    {
+      "id": 42,
+      "bereichKapitelId": 26,
+      "text": "Ist aus Sicht QC in den Vorspann zu integrieren:\n\nBei komplexen Anlagen resp. Systemen (bspw. Gebäudeautomationssystem) besteht nach der Inbetriebsetzung, Abnahme und Mängelbehebung noch beträchtliches Optimierungspotential. Durch eine fachliche Nachbetreuung seitens der planenden resp. ausführenden Unternehmer soll dieses Optimierungspotential ausgeschöpft werden. Im Rahmen der Betriebsoptimierung ist eine Nachjustierung der Gebäude/Anlagen/Systeme, etc. innerhalb der ersten 2 Betriebsjahre jeweils während der Heiz- und Kühlperiode (Winter– und Sommer) durch die ausführenden Firmen unter der Leitung des relevanten Fachplaners umzusetzen. Dadurch soll unter anderem Folgendes erreicht werden:\n- Optimale Integration von etwaigen Anlagen des Mieterausbaus\n- Minimierung des Energieverbrauchs und der Betriebskosten\n- Optimale Funktionalität und Zuverlässigkeit der Anlagen\n- Schriftlicher Bericht des Fachplaners für die Einhaltung der Projektvorgaben bezüglich Energieverbrauch und Raumkomfort\n\nDie Nachbetreuung resp. Sicherstellung von Betriebsoptimierungen durch zuständige Unternehmer ist in die entsprechenden Submissionen zu integrieren.",
+      "reihenfolge": 2
+    },
+    {
+      "id": 43,
+      "bereichKapitelId": 27,
+      "text": "Ist aus Sicht QC in den Vorspann zu integrieren:\nDer Unternehmer hat zu Beginn der Optimierungsphase, beginnend ein Quartal nach Übergabe des Werkes, den Leistungsnachweis abzuliefern, dass die in den Submissionsunterlagen definierten Werte, Leistungen und Funktionen der Anlagen und Systeme durch die einzelnen Anlagen und Systeme über das erste Betriebsjahr erzielt werden. Dazu sind vom Unternehmer monatliche Rapportings zu erstellen mit einem Analyse- und Massnahmenkatalog zur Erreichung der Soll-Zustände. Die Einzelmassnahmen sind durch den Unternehmer zu koordinieren und zu dokumentieren. Dazu sind die erforderlichen Trend- und Datenaufzeichnungen durch den Gewerksunternehmer vorgängig festzulegen. Der entsprechende Trend und Datenaufzeichnungen erfolgen durch den GA-Unternehmer. Der Leistungsnachweis enthält folgende Leistungen, welche im Angebot einzurechnen sind: \n\n• dauernde Aufzeichnung, Speicherung und Darstellung der Messdaten über mehrere Wochen im Winter, in der Übergangszeit und im Sommer\n\n• dauernde Aufzeichnung, Speicherung und Darstellung des dynamischen Anlagenverhaltens mehrere Wochen im Winter, in der Übergangszeit und im Sommer\n• Stabiles Regelverhalten aller Anlagen\n• Wirkungsgrad der WRG-Systeme der Lüftungs- und Klimaanlagen\n• Raumtemperaturen\n• nicht abschliessend, alles, was zum vollständigen Nachweis eines einwandfreien Betriebes notwendig ist.",
+      "reihenfolge": 1
+    },
+    {
+      "id": 44,
+      "bereichKapitelId": 28,
+      "text": "Ist aus Sicht QC in den Vorspann zu integrieren:\n\nEs ist zu prüfen, wie weit die SIA 500 im Projekt integriert wird. Es sollte dem behindertengerechten Bauen Rechnung getragen werden (Momentan bereits Massnahmen auf den Architekturgrundrissen ersichtlich).\nEs ist zu erwähnen, dass bereits Vorbereitungsarbeiten wie Ausholzungen in den Vorwänden, Stellplätze, Wendeplatz vorgängig mit einbezogen werden müssen.",
+      "reihenfolge": 1
+    },
+    {
+      "id": 45,
+      "bereichKapitelId": 29,
+      "text": "Allgemeine Hinweise zur Ausführung und Koordination der Rohbauarbeiten.",
+      "reihenfolge": 1
+    },
+    {
+      "id": 46,
+      "bereichKapitelId": 30,
+      "text": "Ausführung gemäss gültigen Normen und anerkannten Regeln der Baukunst.",
+      "reihenfolge": 1
+    },
+    {
+      "id": 47,
+      "bereichKapitelId": 31,
+      "text": "Materialien gemäss Ausschreibung/Planspezifikation; Gleichwertigkeit vorgängig schriftlich genehmigen lassen.",
+      "reihenfolge": 1
+    },
+    {
+      "id": 48,
+      "bereichKapitelId": 32,
+      "text": "Nachweise (z. B. Lieferscheine, Prüfprotokolle) sind der Bauleitung vorzulegen.",
+      "reihenfolge": 1
+    },
+    {
+      "id": 49,
+      "bereichKapitelId": 33,
+      "text": "BKP 211 Baumeisterarbeiten",
+      "reihenfolge": 43
+    },
+    {
+      "id": 50,
+      "bereichKapitelId": 34,
+      "text": "Es ist zu prüfen, ob die Bodenplatte & Wände Technik in DK 1 ausgeführt werden sollten.",
+      "reihenfolge": 268
+    }
+  ],
+  "fotos": [
+    {
+      "id": 1,
+      "baurundgangId": 1,
+      "dateiURL": "file://dummy.jpg",
+      "hinweisMarkierung": null,
+      "erstelltAm": "2025-11-08T17:15:35.270Z"
+    },
+    {
+      "id": 2,
+      "baurundgangId": 1,
+      "dateiURL": "C:\\Users\\tinon\\Projekte\\Agent-Qualiflow\\storage\\qs-rundgang\\photos\\dummy-foto-2025-11-10t14-08-49-538z-e999e6a2bb0e.jpg",
+      "hinweisMarkierung": "Strangabsperrventile ohne Entleerung",
+      "erstelltAm": "2025-11-10T14:08:49.888Z"
+    },
+    {
+      "id": 3,
+      "baurundgangId": 1,
+      "dateiURL": "C:\\Users\\tinon\\Projekte\\Agent-Qualiflow\\storage\\qs-rundgang\\photos\\dummy-foto-2025-11-10t15-13-48-587z-7c3efef6e4a2.jpg",
+      "hinweisMarkierung": "Strangabsperrventile ohne Entleerung",
+      "erstelltAm": "2025-11-10T15:13:49.115Z"
+    },
+    {
+      "id": 4,
+      "baurundgangId": 1,
+      "dateiURL": "C:\\Users\\tinon\\Projekte\\Agent-Qualiflow\\storage\\qs-rundgang\\photos\\dummy-foto-2025-11-11t02-06-53-996z-575ddcda2f58.jpg",
+      "hinweisMarkierung": "Strangabsperrventile ohne Entleerung",
+      "erstelltAm": "2025-11-11T02:06:54.245Z"
+    },
+    {
+      "id": 5,
+      "baurundgangId": 1,
+      "dateiURL": "C:\\Users\\tinon\\Projekte\\Agent-Qualiflow\\storage\\qs-rundgang\\photos\\dummy-foto-2025-11-11t11-21-40-097z-156e1ee4c7df.jpg",
+      "hinweisMarkierung": "Strangabsperrventile ohne Entleerung",
+      "erstelltAm": "2025-11-11T11:21:40.400Z"
+    },
+    {
+      "id": 6,
+      "baurundgangId": 1,
+      "dateiURL": "C:\\Users\\tinon\\Projekte\\Agent-Qualiflow\\storage\\qs-rundgang\\photos\\dummy-foto-2025-11-11t12-48-12-364z-3de9e0f8f3e5.jpg",
+      "hinweisMarkierung": "Strangabsperrventile ohne Entleerung",
+      "erstelltAm": "2025-11-11T12:48:12.715Z"
+    },
+    {
+      "id": 7,
+      "baurundgangId": 1,
+      "dateiURL": "C:\\Users\\tinon\\Projekte\\Agent-Qualiflow\\storage\\qs-rundgang\\photos\\dummy-foto-2025-11-11t12-51-11-625z-4a9756d81cd9.jpg",
+      "hinweisMarkierung": "Strangabsperrventile ohne Entleerung",
+      "erstelltAm": "2025-11-11T12:51:12.057Z"
+    },
+    {
+      "id": 8,
+      "baurundgangId": 1,
+      "dateiURL": "C:\\Users\\tinon\\Projekte\\Agent-Qualiflow\\storage\\qs-rundgang\\photos\\dummy-foto-2025-11-11t12-51-12-675z-b2b1ba3cf32a.jpg",
+      "hinweisMarkierung": "Problem bei Trennwand",
+      "erstelltAm": "2025-11-11T12:51:13.140Z"
+    },
+    {
+      "id": 9,
+      "baurundgangId": 1,
+      "dateiURL": "C:\\Users\\tinon\\Projekte\\Agent-Qualiflow\\storage\\qs-rundgang\\photos\\dummy-foto-2025-11-11t12-53-19-722z-0d5b3ce6a7cd.jpg",
+      "hinweisMarkierung": "Strangabsperrventile ohne Entleerung",
+      "erstelltAm": "2025-11-11T12:53:19.919Z"
+    },
+    {
+      "id": 10,
+      "baurundgangId": 1,
+      "dateiURL": "C:\\Users\\tinon\\Projekte\\Agent-Qualiflow\\storage\\qs-rundgang\\photos\\dummy-foto-2025-11-11t13-56-35-231z-e61ee67a8272.jpg",
+      "hinweisMarkierung": "Strangabsperrventile ohne Entleerung",
+      "erstelltAm": "2025-11-11T13:56:35.761Z"
+    },
+    {
+      "id": 11,
+      "baurundgangId": 1,
+      "dateiURL": "C:\\Users\\tinon\\Projekte\\Agent-Qualiflow\\storage\\qs-rundgang\\photos\\dummy-foto-2025-11-11t14-08-32-024z-e6261fc53925.jpg",
+      "hinweisMarkierung": "Strangabsperrventile ohne Entleerung",
+      "erstelltAm": "2025-11-11T14:08:32.363Z"
+    },
+    {
+      "id": 12,
+      "baurundgangId": 1,
+      "dateiURL": "C:\\Users\\tinon\\Projekte\\Agent-Qualiflow\\storage\\qs-rundgang\\photos\\dummy-foto-2025-11-11t15-37-14-746z-0f42e3cfc4d2.jpg",
+      "hinweisMarkierung": "Strangabsperrventile ohne Entleerung",
+      "erstelltAm": "2025-11-11T15:37:15.072Z"
+    },
+    {
+      "id": 13,
+      "baurundgangId": 1,
+      "dateiURL": "C:\\Users\\tinon\\Projekte\\Agent-Qualiflow\\storage\\qs-rundgang\\photos\\download-2025-11-11t17-32-28-494z-8f99a6fafd44.jpg",
+      "hinweisMarkierung": "Dachwassereinlauf",
+      "erstelltAm": "2025-11-11T17:32:28.739Z"
+    },
+    {
+      "id": 14,
+      "baurundgangId": 1,
+      "dateiURL": "C:\\Users\\tinon\\Projekte\\Agent-Qualiflow\\storage\\qs-rundgang\\photos\\download-2025-11-11t17-33-24-540z-66fc31e5f0b9.jpg",
+      "hinweisMarkierung": "Strangabsperrventile ohne Entleerung",
+      "erstelltAm": "2025-11-11T17:33:24.735Z"
+    },
+    {
+      "id": 15,
+      "baurundgangId": 1,
+      "dateiURL": "C:\\Users\\tinon\\Projekte\\Agent-Qualiflow\\storage\\qs-rundgang\\pending\\download-2025-11-11t17-59-11-630z-09fb66a3bb08.jpg",
+      "hinweisMarkierung": "Problem bei Trennwand",
+      "erstelltAm": "2025-11-11T17:59:14.851Z"
+    }
+  ],
+  "rueckmeldungstypen": [
+    {
+      "id": 1,
+      "typCode": "R",
+      "name": "Mangel"
+    },
+    {
+      "id": 2,
+      "typCode": "OK",
+      "name": "In Ordnung"
+    },
+    {
+      "id": 3,
+      "typCode": "MANGEL",
+      "name": "Mangel"
+    },
+    {
+      "id": 4,
+      "typCode": "HINWEIS",
+      "name": "Hinweis"
+    },
+    {
+      "id": 5,
+      "typCode": "INFO",
+      "name": "Information"
+    }
+  ],
+  "qsReports": [
+    {
+      "id": 1,
+      "baurundgangId": 1,
+      "objektId": 1,
+      "kundeId": 1,
+      "projektleiterId": 1,
+      "kontaktId": 1,
+      "objekttypId": 1,
+      "titelbildURL": null,
+      "zusammenfassung": "Erster QS-Report",
+      "diverses": null,
+      "erstelltAm": "2025-11-08T17:15:34.895Z"
+    }
+  ],
+  "qsReportTeilnehmer": [],
+  "positionen": [
+    {
+      "id": 1,
+      "qsreportId": 1,
+      "bauteilId": 1,
+      "bereichKapitelId": null,
+      "rueckmeldungstypId": 1,
+      "positionsnummer": 1,
+      "bereichstitel": null,
+      "bemerkung": "Abplatzungen vorhanden",
+      "loeschbar": true,
+      "frist": null,
+      "erledigtAm": null,
+      "erledigt": false,
+      "rueckmeldungBemerkung": null
+    },
+    {
+      "id": 2,
+      "qsreportId": 1,
+      "bauteilId": 2,
+      "bereichKapitelId": null,
+      "rueckmeldungstypId": null,
+      "positionsnummer": 2,
+      "bereichstitel": "Allgemein Wohnen:",
+      "bemerkung": "Allgemein Wohnen:\nEs ist zu prüfen, im Wohnbereich eine FTTH Dose zu in-stallieren.\nDie Platzverhältnisse für das Modem ist teils ungenügend, zuzdem wird der W-Lan empfang durch den Blechdeckel.\n\nNotiz: Strangabsperrventile ohne Entleerung",
+      "loeschbar": true,
+      "frist": "2025-11-15T17:15:34.851Z",
+      "erledigtAm": null,
+      "erledigt": false,
+      "rueckmeldungBemerkung": null
+    },
+    {
+      "id": 3,
+      "qsreportId": 1,
+      "bauteilId": 3,
+      "bereichKapitelId": null,
+      "rueckmeldungstypId": null,
+      "positionsnummer": 3,
+      "bereichstitel": "Besondere Bemerkungen\t3.5 Arbeitsausführungen / Proben",
+      "bemerkung": "Wenn möglich müssen alle Rohrverbindungen geschweisst werden.\nGrundsätzlich werden im Häuslichem Sanitärbereich keine Rohre geschweisst.\nDie Leitungen sind auf Dichtigkeit zu prüfen (gemäss SVGW W3/E3) und von den zuständigen Werken oder Ämtern sowie von der Bauleitung abnehmen zu lassen. Die Prüfungen werden protokolliert an die Bauleitung abgegeben.\nBei Frostgefahr sind sämtliche Leitungen nach der Druck-probe sorgfältig zu entleeren. Notfalls sind geeignete Frostschutzmittel zu verwenden.\nFrostschutzmittel haben im Sanitärbereich nichts zu su-chen.\n\nNotiz: Strangabsperrventile ohne Entleerung",
+      "loeschbar": true,
+      "frist": "2025-11-15T17:15:34.851Z",
+      "erledigtAm": null,
+      "erledigt": false,
+      "rueckmeldungBemerkung": null
+    },
+    {
+      "id": 4,
+      "qsreportId": 1,
+      "bauteilId": 3,
+      "bereichKapitelId": null,
+      "rueckmeldungstypId": null,
+      "positionsnummer": 4,
+      "bereichstitel": "Besondere Bemerkungen\t3.5 Arbeitsausführungen / Proben – Irgendwelche Rohrverbindungen dürfen keine Material-schwächung der Rohrenden aufweisen und müssen den freien Rohrquerschnitt garantieren.",
+      "bemerkung": "Wenn möglich müssen alle Rohrverbindungen geschweisst werden.\nGrundsätzlich werden im Häuslichem Sanitärbereich keine Rohre geschweisst.\nDie Leitungen sind auf Dichtigkeit zu prüfen (gemäss SVGW W3/E3) und von den zuständigen Werken oder Ämtern sowie von der Bauleitung abnehmen zu lassen. Die Prüfungen werden protokolliert an die Bauleitung abgegeben.\nBei Frostgefahr sind sämtliche Leitungen nach der Druck-probe sorgfältig zu entleeren. Notfalls sind geeignete Frostschutzmittel zu verwenden.\nFrostschutzmittel haben im Sanitärbereich nichts zu su-chen.\n\nNotiz: Strangabsperrventile ohne Entleerung",
+      "loeschbar": true,
+      "frist": "2025-11-15T17:15:34.851Z",
+      "erledigtAm": null,
+      "erledigt": false,
+      "rueckmeldungBemerkung": null
+    },
+    {
+      "id": 5,
+      "qsreportId": 1,
+      "bauteilId": 2,
+      "bereichKapitelId": null,
+      "rueckmeldungstypId": null,
+      "positionsnummer": 5,
+      "bereichstitel": "Leitungen",
+      "bemerkung": "Die Leitungen werden ab den Abgängen der Verteilbatte-rie nach dem zentralen DRV abgenommen und über die Kellerverteilung, Steigzonen zu den Unterverteilungen geführt. Ab der Unterverteilung erfolgt die Erschliessung bis ins oberste Geschoss. Die Wasserverteilung erfolgt mittels Pex-Verteiler unmittelbar unterhalb der Waschti-sche. Die Apparategruppen sind auf jedem Geschoss sepa-rat absperrbar und mit einem Wasserzähler ausgerüstet.\nSämtliche Strangabsperrungen sind mit Entleerventile auszurüsten.\n\nNotiz: Strangabsperrventile ohne Entleerung",
+      "loeschbar": true,
+      "frist": "2025-11-15T17:15:34.851Z",
+      "erledigtAm": null,
+      "erledigt": false,
+      "rueckmeldungBemerkung": null
+    },
+    {
+      "id": 6,
+      "qsreportId": 1,
+      "bauteilId": 3,
+      "bereichKapitelId": null,
+      "rueckmeldungstypId": null,
+      "positionsnummer": 6,
+      "bereichstitel": "Besondere Bemerkungen – Sanitär",
+      "bemerkung": "3.5 Arbeitsausführungen / ProbenIrgendwelche Rohrverbindungen dürfen keine Materialschwächung der Rohrenden aufweisen und müssen den freien Rohrquerschnitt garantieren.Wenn möglich müssen alle Rohrverbindungen geschweisst werden.Grundsätzlich werden im Häuslichem Sanitärbereich keine Rohre geschweisst.Die Leitungen sind auf Dichtigkeit zu prüfen (gemäss SVGW W3/E3) und von den zuständigen Werken oder Ämtern sowie von der Bauleitung abnehmen zu lassen. Die Prüfungen werden protokolliert an die Bauleitung abgegeben.Bei Frostgefahr sind sämtliche Leitungen nach der Druckprobe sorgfältig zu entleeren. Notfalls sind geeignete Frostschutzmittel zu verwenden.Frostschutzmittel haben im Sanitärbereich nichts zu suchen.\n\nNotiz: Strangabsperrventile ohne Entleerung",
+      "loeschbar": true,
+      "frist": "2025-11-15T17:15:34.851Z",
+      "erledigtAm": null,
+      "erledigt": false,
+      "rueckmeldungBemerkung": null
+    },
+    {
+      "id": 7,
+      "qsreportId": 1,
+      "bauteilId": 3,
+      "bereichKapitelId": null,
+      "rueckmeldungstypId": null,
+      "positionsnummer": 7,
+      "bereichstitel": "Besondere Bemerkungen – Sanitär",
+      "bemerkung": "3.5 Arbeitsausführungen / ProbenIrgendwelche Rohrverbindungen dürfen keine Materialschwächung der Rohrenden aufweisen und müssen den freien Rohrquerschnitt garantieren.Wenn möglich müssen alle Rohrverbindungen geschweisst werden.Grundsätzlich werden im Häuslichem Sanitärbereich keine Rohre geschweisst.Die Leitungen sind auf Dichtigkeit zu prüfen (gemäss SVGW W3/E3) und von den zuständigen Werken oder Ämtern sowie von der Bauleitung abnehmen zu lassen. Die Prüfungen werden protokolliert an die Bauleitung abgegeben.Bei Frostgefahr sind sämtliche Leitungen nach der Druckprobe sorgfältig zu entleeren. Notfalls sind geeignete Frostschutzmittel zu verwenden.Frostschutzmittel haben im Sanitärbereich nichts zu suchen.\n\nNotiz: Strangabsperrventile ohne Entleerung",
+      "loeschbar": true,
+      "frist": "2025-11-15T17:15:34.851Z",
+      "erledigtAm": null,
+      "erledigt": false,
+      "rueckmeldungBemerkung": null
+    },
+    {
+      "id": 8,
+      "qsreportId": 1,
+      "bauteilId": 1,
+      "bereichKapitelId": null,
+      "rueckmeldungstypId": null,
+      "positionsnummer": 8,
+      "bereichstitel": "Wohnungstrennwand",
+      "bemerkung": "Wohnungstrennwand Schallschutz:Alle Geschosse: Keine Betonwand im Eckbereich\n\nNotiz: Problem bei Trennwand",
+      "loeschbar": true,
+      "frist": "2025-11-15T17:15:34.851Z",
+      "erledigtAm": null,
+      "erledigt": false,
+      "rueckmeldungBemerkung": null
+    },
+    {
+      "id": 9,
+      "qsreportId": 1,
+      "bauteilId": 3,
+      "bereichKapitelId": null,
+      "rueckmeldungstypId": null,
+      "positionsnummer": 9,
+      "bereichstitel": "Besondere Bemerkungen – Sanitär",
+      "bemerkung": "3.5 Arbeitsausführungen / ProbenIrgendwelche Rohrverbindungen dürfen keine Materialschwächung der Rohrenden aufweisen und müssen den freien Rohrquerschnitt garantieren.Wenn möglich müssen alle Rohrverbindungen geschweisst werden.Grundsätzlich werden im Häuslichem Sanitärbereich keine Rohre geschweisst.Die Leitungen sind auf Dichtigkeit zu prüfen (gemäss SVGW W3/E3) und von den zuständigen Werken oder Ämtern sowie von der Bauleitung abnehmen zu lassen. Die Prüfungen werden protokolliert an die Bauleitung abgegeben.Bei Frostgefahr sind sämtliche Leitungen nach der Druckprobe sorgfältig zu entleeren. Notfalls sind geeignete Frostschutzmittel zu verwenden.Frostschutzmittel haben im Sanitärbereich nichts zu suchen.\n\nNotiz: Strangabsperrventile ohne Entleerung",
+      "loeschbar": true,
+      "frist": "2025-11-15T17:15:34.851Z",
+      "erledigtAm": null,
+      "erledigt": false,
+      "rueckmeldungBemerkung": null
+    },
+    {
+      "id": 10,
+      "qsreportId": 1,
+      "bauteilId": 3,
+      "bereichKapitelId": null,
+      "rueckmeldungstypId": null,
+      "positionsnummer": 10,
+      "bereichstitel": "Besondere Bemerkungen – Sanitär",
+      "bemerkung": "3.5 Arbeitsausführungen / ProbenIrgendwelche Rohrverbindungen dürfen keine Materialschwächung der Rohrenden aufweisen und müssen den freien Rohrquerschnitt garantieren.Wenn möglich müssen alle Rohrverbindungen geschweisst werden.Grundsätzlich werden im Häuslichem Sanitärbereich keine Rohre geschweisst.Die Leitungen sind auf Dichtigkeit zu prüfen (gemäss SVGW W3/E3) und von den zuständigen Werken oder Ämtern sowie von der Bauleitung abnehmen zu lassen. Die Prüfungen werden protokolliert an die Bauleitung abgegeben.Bei Frostgefahr sind sämtliche Leitungen nach der Druckprobe sorgfältig zu entleeren. Notfalls sind geeignete Frostschutzmittel zu verwenden.Frostschutzmittel haben im Sanitärbereich nichts zu suchen.\n\nNotiz: Strangabsperrventile ohne Entleerung",
+      "loeschbar": true,
+      "frist": "2025-11-15T17:15:34.851Z",
+      "erledigtAm": null,
+      "erledigt": false,
+      "rueckmeldungBemerkung": null
+    },
+    {
+      "id": 11,
+      "qsreportId": 1,
+      "bauteilId": 3,
+      "bereichKapitelId": null,
+      "rueckmeldungstypId": null,
+      "positionsnummer": 11,
+      "bereichstitel": "Besondere Bemerkungen – Sanitär",
+      "bemerkung": "3.5 Arbeitsausführungen / ProbenIrgendwelche Rohrverbindungen dürfen keine Materialschwächung der Rohrenden aufweisen und müssen den freien Rohrquerschnitt garantieren.Wenn möglich müssen alle Rohrverbindungen geschweisst werden.Grundsätzlich werden im Häuslichem Sanitärbereich keine Rohre geschweisst.Die Leitungen sind auf Dichtigkeit zu prüfen (gemäss SVGW W3/E3) und von den zuständigen Werken oder Ämtern sowie von der Bauleitung abnehmen zu lassen. Die Prüfungen werden protokolliert an die Bauleitung abgegeben.Bei Frostgefahr sind sämtliche Leitungen nach der Druckprobe sorgfältig zu entleeren. Notfalls sind geeignete Frostschutzmittel zu verwenden.Frostschutzmittel haben im Sanitärbereich nichts zu suchen.\n\nNotiz: Strangabsperrventile ohne Entleerung",
+      "loeschbar": true,
+      "frist": "2025-11-15T17:15:34.851Z",
+      "erledigtAm": null,
+      "erledigt": false,
+      "rueckmeldungBemerkung": null
+    },
+    {
+      "id": 12,
+      "qsreportId": 1,
+      "bauteilId": 3,
+      "bereichKapitelId": null,
+      "rueckmeldungstypId": null,
+      "positionsnummer": 12,
+      "bereichstitel": "Besondere Bemerkungen – Sanitär",
+      "bemerkung": "3.5 Arbeitsausführungen / ProbenIrgendwelche Rohrverbindungen dürfen keine Materialschwächung der Rohrenden aufweisen und müssen den freien Rohrquerschnitt garantieren.Wenn möglich müssen alle Rohrverbindungen geschweisst werden.Grundsätzlich werden im Häuslichem Sanitärbereich keine Rohre geschweisst.Die Leitungen sind auf Dichtigkeit zu prüfen (gemäss SVGW W3/E3) und von den zuständigen Werken oder Ämtern sowie von der Bauleitung abnehmen zu lassen. Die Prüfungen werden protokolliert an die Bauleitung abgegeben.Bei Frostgefahr sind sämtliche Leitungen nach der Druckprobe sorgfältig zu entleeren. Notfalls sind geeignete Frostschutzmittel zu verwenden.Frostschutzmittel haben im Sanitärbereich nichts zu suchen.\n\nNotiz: Strangabsperrventile ohne Entleerung",
+      "loeschbar": true,
+      "frist": "2025-11-15T17:15:34.851Z",
+      "erledigtAm": null,
+      "erledigt": false,
+      "rueckmeldungBemerkung": null
+    },
+    {
+      "id": 13,
+      "qsreportId": 1,
+      "bauteilId": 3,
+      "bereichKapitelId": null,
+      "rueckmeldungstypId": null,
+      "positionsnummer": 13,
+      "bereichstitel": "Generelles",
+      "bemerkung": "Druckproben Alle Medien im Bereich Sanitäre Anlagen müssen einerfachgerechten protokollierten Druckprobe unterzogen werden.Unabhängig von der Fertigstellung der gesamten Installation, sind die montierten Leitungen, gemäss Aufforderung nach SVGW W3/E3 zu prüfen.Diese Punkte sind zu erfüllen:1. Druckprobe:Sämtliche Druckproben mit oelfreier Luft oder mitinerten Gasen (z.B.Stickstoff) auszuführen, wobei derPrüfdruck mindestens15 kPa (0.15 bar) betragen muss.2. Prüfzeit:Die Prüfzeit richtet sich nach dem Leitungsvolumen:- 50 Liter mind. 10. MinutenBei grösseren Leitungsvolumen ist die Prüfzeit pro 50 Literum 10 Minuten zu verlängern.Bei Anlagen mit einem grösseren Leitungsvolumen als400 Liter ist die Anlage strangweise zu prüfen.Es ist mindestens jeder Steigstrang als Etappe zu prüfen.Eine Gesamtprüfung pro Verteilerabgang muss vor der Befüllung erstellt werden. Von der Prüfung ausgenommen sind Apparate wieWassererwärmer usw. Messgeräte:Zur Druckprüfung sind entsprechende Messgeräte zu verwenden:- Elektronische Messgeräte - Manometer Ablesegenauigkeit < 1% 4. ev. undichte Stellen: Anfällige Undichtheiten sind mithilfe nicht korrosivwirkender, schaumbildender Mittel nach EN14291 zulokalisieren.\n\nNotiz: Dachwassereinlauf",
+      "loeschbar": true,
+      "frist": "2025-11-15T17:15:34.851Z",
+      "erledigtAm": null,
+      "erledigt": false,
+      "rueckmeldungBemerkung": null
+    },
+    {
+      "id": 14,
+      "qsreportId": 1,
+      "bauteilId": 3,
+      "bereichKapitelId": null,
+      "rueckmeldungstypId": null,
+      "positionsnummer": 14,
+      "bereichstitel": "Besondere Bemerkungen – Sanitär",
+      "bemerkung": "3.5 Arbeitsausführungen / ProbenIrgendwelche Rohrverbindungen dürfen keine Materialschwächung der Rohrenden aufweisen und müssen den freien Rohrquerschnitt garantieren.Wenn möglich müssen alle Rohrverbindungen geschweisst werden.Grundsätzlich werden im Häuslichem Sanitärbereich keine Rohre geschweisst.Die Leitungen sind auf Dichtigkeit zu prüfen (gemäss SVGW W3/E3) und von den zuständigen Werken oder Ämtern sowie von der Bauleitung abnehmen zu lassen. Die Prüfungen werden protokolliert an die Bauleitung abgegeben.Bei Frostgefahr sind sämtliche Leitungen nach der Druckprobe sorgfältig zu entleeren. Notfalls sind geeignete Frostschutzmittel zu verwenden.Frostschutzmittel haben im Sanitärbereich nichts zu suchen.\n\nNotiz: Strangabsperrventile ohne Entleerung",
+      "loeschbar": true,
+      "frist": "2025-11-15T17:15:34.851Z",
+      "erledigtAm": null,
+      "erledigt": false,
+      "rueckmeldungBemerkung": null
+    },
+    {
+      "id": 15,
+      "qsreportId": 1,
+      "bauteilId": 4,
+      "bereichKapitelId": null,
+      "rueckmeldungstypId": null,
+      "positionsnummer": 15,
+      "bereichstitel": "Besondere Bemerkungen – Wärmeverteilung",
+      "bemerkung": "2.5 Arbeitsausführungen / ProbenIrgendwelche Rohrverbindungen dürfen keine Materialschwächung der Rohrenden aufweisen und müssen den freien Rohrquerschnitt garantieren.Wenn möglich müssen alle Rohrverbindungen geschweisst werden.Die Leitungen sind auf Dichtigkeit zu prüfen (gemäss SWKI HE301-01) und von den zuständigen Werken oder Ämtern sowie von der Bauleitung abnehmen zu lassen. Die Prüfungen werden protokolliert an die Bauleitung abgegeben.Wurde dies mit der Bauherrschaft so vereinbart? Grundsätzlich können kleinere Leitungsdimensionen bis DN50 ohne Probleme gepresst werden.Auf Seite 37 werden gepresste Rohre ausgeschrieben!\n\nNotiz: Problem bei Trennwand",
+      "loeschbar": true,
+      "frist": "2025-11-15T17:15:34.851Z",
+      "erledigtAm": null,
+      "erledigt": false,
+      "rueckmeldungBemerkung": null
+    }
+  ],
+  "positionFotos": [
+    {
+      "id": 1,
+      "positionId": 1,
+      "fotoId": 1
+    },
+    {
+      "id": 2,
+      "positionId": 2,
+      "fotoId": 2
+    },
+    {
+      "id": 3,
+      "positionId": 3,
+      "fotoId": 3
+    },
+    {
+      "id": 4,
+      "positionId": 4,
+      "fotoId": 4
+    },
+    {
+      "id": 5,
+      "positionId": 5,
+      "fotoId": 5
+    },
+    {
+      "id": 6,
+      "positionId": 6,
+      "fotoId": 6
+    },
+    {
+      "id": 7,
+      "positionId": 7,
+      "fotoId": 7
+    },
+    {
+      "id": 8,
+      "positionId": 8,
+      "fotoId": 8
+    },
+    {
+      "id": 9,
+      "positionId": 9,
+      "fotoId": 9
+    },
+    {
+      "id": 10,
+      "positionId": 10,
+      "fotoId": 10
+    },
+    {
+      "id": 11,
+      "positionId": 11,
+      "fotoId": 11
+    },
+    {
+      "id": 12,
+      "positionId": 12,
+      "fotoId": 12
+    },
+    {
+      "id": 13,
+      "positionId": 13,
+      "fotoId": 13
+    },
+    {
+      "id": 14,
+      "positionId": 14,
+      "fotoId": 14
+    },
+    {
+      "id": 15,
+      "positionId": 15,
+      "fotoId": 15
+    }
+  ]
+}

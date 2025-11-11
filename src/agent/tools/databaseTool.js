@@ -15,6 +15,7 @@ export const databaseTool = defineTool({
     createBaurundgang: (payload) => LegacyDatabaseTool.createBaurundgang(payload),
     createQSReport: (payload) => LegacyDatabaseTool.createQSReport(payload),
     getQSReport: (payload) => LegacyDatabaseTool.getQSReport(payload),
+    getQSReportByBaurundgang: (payload) => LegacyDatabaseTool.getQSReportByBaurundgang(payload),
     instantiateBauteilFromTemplate: ({ bauteilId, force = false }) =>
       instantiateBauteilFromTemplate(LegacyDatabaseTool.client, bauteilId, { force }),
     rawClient: () => LegacyDatabaseTool.client,

@@ -2,6 +2,25 @@ import { PrismaClient } from "@prisma/client";
 
 import { attachBauteilInstantiationHook } from "../agent/bauteil/instantiateFromTemplate.js";
 
+const QS_REPORT_INCLUDE = {
+  baurundgang: { include: { fotos: true } },
+  objekt: true,
+  kunde: true,
+  projektleiter: true,
+  kontakt: true,
+  objekttyp: true,
+  positionen: {
+    include: {
+      bauteil: true,
+      bereichKapitel: true,
+      rueckmeldungstyp: true,
+      fotos: { include: { foto: true } },
+    },
+    orderBy: { positionsnummer: "asc" },
+  },
+  teilnehmer: { include: { kontakt: true } },
+};
+
 const prisma = globalThis.prisma ?? new PrismaClient();
 attachBauteilInstantiationHook(prisma);
 if (process.env.NODE_ENV !== "production") globalThis.prisma = prisma;
@@ -182,24 +201,18 @@ export const DatabaseTool = {
   async getQSReport(id) {
     return prisma.qSReport.findUnique({
       where: { id },
-      include: {
-        baurundgang: { include: { fotos: true } },
-        objekt: true,
-        kunde: true,
-        projektleiter: true,
-        kontakt: true,
-        objekttyp: true,
-        positionen: {
-          include: {
-            bauteil: true,
-            bereich: true,
-            rueckmeldungstyp: true,
-            fotos: { include: { foto: true } },
-          },
-          orderBy: { positionsnummer: "asc" },
-        },
-        teilnehmer: { include: { kontakt: true } },
-      },
+      include: QS_REPORT_INCLUDE,
+    });
+  },
+
+  async getQSReportByBaurundgang(baurundgangId) {
+    if (!baurundgangId) {
+      throw new Error("getQSReportByBaurundgang: 'baurundgangId' ist erforderlich.");
+    }
+
+    return prisma.qSReport.findUnique({
+      where: { baurundgangId },
+      include: QS_REPORT_INCLUDE,
     });
   },
 

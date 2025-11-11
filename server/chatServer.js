@@ -160,6 +160,50 @@ app.post("/qs-rundgang/position-clarify", async (req, res) => {
   }
 });
 
+app.get("/qs-rundgang/:id/report", async (req, res) => {
+  const parseId = (value) => {
+    if (value === undefined || value === null || value === "") return undefined;
+    const parsed = Number.parseInt(value, 10);
+    return Number.isNaN(parsed) ? undefined : parsed;
+  };
+
+  const baurundgangId = parseId(req.params.id);
+  if (!baurundgangId) {
+    res.status(400).json({ status: "ERROR", message: "Ungültige Baurundgang-ID." });
+    return;
+  }
+
+  try {
+    const result = await orchestrator.handleTask({
+      type: "report.generate",
+      payload: { baurundgangId },
+    });
+
+    if (result?.status !== "SUCCESS") {
+      console.error("[HTTP] report.generate unexpected status", {
+        status: result?.status,
+        message: result?.message,
+        context: result,
+      });
+      res.status(500).json({
+        status: result?.status ?? "ERROR",
+        message: result?.message ?? "Report konnte nicht generiert werden.",
+        context: result?.context,
+      });
+      return;
+    }
+
+    res.json({ status: "SUCCESS", pdfPath: result.pdfPath, reportId: result.reportId });
+  } catch (error) {
+    log.error("QS-Report Generierung fehlgeschlagen", { error, baurundgangId });
+    console.error("[HTTP] /qs-rundgang/:id/report failed", error);
+    res.status(500).json({
+      status: "ERROR",
+      message: error?.message ?? "Report konnte nicht generiert werden.",
+    });
+  }
+});
+
 app.post("/qs-rundgang/position-erfassen", qsPositionUpload, async (req, res) => {
   const parseId = (value) => {
     if (value === undefined || value === null || value === "") return undefined;
