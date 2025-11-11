@@ -115,6 +115,51 @@ app.post("/chat/upload", upload.single("file"), async (req, res) => {
   }
 });
 
+app.post("/qs-rundgang/position-clarify", async (req, res) => {
+  const parseId = (value) => {
+    if (value === undefined || value === null || value === "") return undefined;
+    const parsed = Number.parseInt(value, 10);
+    return Number.isNaN(parsed) ? undefined : parsed;
+  };
+
+  const baurundgangId = parseId(req.body?.baurundgangId);
+  const note = typeof req.body?.note === "string" ? req.body.note.trim() : "";
+  const option = typeof req.body?.option === "string" ? req.body.option.trim() : "";
+  const storedPhotoPath = typeof req.body?.storedPhotoPath === "string" ? req.body.storedPhotoPath.trim() : undefined;
+
+  if (!baurundgangId || !note || !option) {
+    res.status(400).json({
+      status: "ERROR",
+      message: "Erforderliche Felder fehlen.",
+      missing: [
+        ...(baurundgangId ? [] : ["baurundgangId"]),
+        ...(note ? [] : ["note"]),
+        ...(option ? [] : ["option"]),
+      ],
+    });
+    return;
+  }
+
+  try {
+    const result = await orchestrator.handleTask({
+      type: "qsRundgang.positionClarify",
+      payload: {
+        baurundgangId,
+        note,
+        option,
+        storedPhotoPath,
+        uploadedBy: req.body?.uploadedBy ?? "http-qs",
+      },
+    });
+
+    const statusCode = result?.status === "ERROR" ? 400 : 201;
+    res.status(statusCode).json(serializeResult(result));
+  } catch (error) {
+    log.error("QS-Rundgang Position clarify fehlgeschlagen", { error, baurundgangId });
+    res.status(500).json({ error: "Fehler beim Erstellen der QS-Position (Clarify)." });
+  }
+});
+
 app.post("/qs-rundgang/position-erfassen", qsPositionUpload, async (req, res) => {
   const parseId = (value) => {
     if (value === undefined || value === null || value === "") return undefined;
