@@ -9,6 +9,33 @@ Agent-Qualiflow stellt eine modulare Agenten-Architektur für Bau- und Qualität
 - **Tool Layer**: Einheitliche Schnittstelle für Datenbank (`DatabaseTool`), Dateiverwaltung (`FileTool`), Mail (`MailTool`) und Report-Erzeugung (`ReportTool`) unter `src/agent/tools/`.
 - **Session Handling**: `src/agent/chat/sessionStore.js` hält Konversationskontext bis zur Finalisierung.
 
+## Schnellstart
+
+1. **Abhängigkeiten installieren**
+   ```powershell
+   npm install
+   npx playwright install chromium # Für PDF-Export via Report-Agent
+   ```
+
+2. **Environment konfigurieren**
+   - `.env` anlegen und `DATABASE_URL` (sowie optional `SHADOW_DATABASE_URL`) auf die Ziel-Postgres-Instanz setzen.
+   - Für lokale Tests kann die Seed-Datei genutzt werden:
+     ```powershell
+     npm run prisma:seed
+     ```
+
+3. **Agenten-Server starten**
+   ```powershell
+   npm run chat:server
+   ```
+   Der Server lauscht standardmäßig auf Port `3001` (überschreibbar via `CHAT_SERVER_PORT`).
+
+4. **QS-Report generieren (Beispiel)**
+   ```powershell
+   Invoke-WebRequest -Uri http://localhost:3001/qs-rundgang/1/report
+   ```
+   Die PDF wird unter `storage/reports/qs/` abgelegt und der Pfad in der Response zurückgegeben.
+
 ## Bau-Beschrieb Flow
 
 1. **Upload** (`bauBeschrieb.upload`)
