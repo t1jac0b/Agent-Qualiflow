@@ -219,30 +219,17 @@ model Bauteil {
   template         BauteilTemplate?          @relation(fields: [bauteilTemplateId], references: [id])
   materialisierung MaterialisierungTemplate? @relation(fields: [materialisierungTemplateId], references: [id])
   risiko           BauteilRisiko?            @relation(fields: [bauteilRisikoId], references: [id])
-
-  bereiche   Bereich[]
-  positionen Position[]
-}
-
-model Bereich {
-  id           Int     @id @default(autoincrement())
-  bauteilId    Int
-  name         String
-  bereichstext String?
-
-  bauteil    Bauteil    @relation(fields: [bauteilId], references: [id])
-  fotos      Foto[]
-  positionen Position[]
   kapitel    BereichKapitel[]
+  positionen Position[]
 }
 
 model BereichKapitel {
   id          Int  @id @default(autoincrement())
-  bereichId   Int
+  bauteilId   Int
   name        String
   reihenfolge Int?
 
-  bereich Bereich @relation(fields: [bereichId], references: [id])
+  bauteil Bauteil @relation(fields: [bauteilId], references: [id])
   texte   BereichKapitelText[]
 }
 
@@ -258,13 +245,11 @@ model BereichKapitelText {
 model Foto {
   id                Int       @id @default(autoincrement())
   baurundgangId     Int
-  bereichId         Int?
   dateiURL          String
   hinweisMarkierung String?
   erstelltAm        DateTime? @default(now())
 
   baurundgang Baurundgang @relation(fields: [baurundgangId], references: [id])
-  bereich     Bereich?    @relation(fields: [bereichId], references: [id])
 
   positionVerknuepfungen PositionFoto[]
 }
@@ -319,7 +304,7 @@ model Position {
   id                    Int       @id @default(autoincrement())
   qsreportId            Int
   bauteilId             Int?
-  bereichId             Int?
+  bereichKapitelId      Int?
   rueckmeldungstypId    Int?
   positionsnummer       Int
   bereichstitel         String?
@@ -332,7 +317,7 @@ model Position {
 
   qsreport         QSReport          @relation(fields: [qsreportId], references: [id])
   bauteil          Bauteil?          @relation(fields: [bauteilId], references: [id])
-  bereich          Bereich?          @relation(fields: [bereichId], references: [id])
+  bereichKapitel   BereichKapitel?   @relation(fields: [bereichKapitelId], references: [id])
   rueckmeldungstyp Rueckmeldungstyp? @relation(fields: [rueckmeldungstypId], references: [id])
 
   fotos PositionFoto[]

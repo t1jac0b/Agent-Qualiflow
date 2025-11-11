@@ -6,7 +6,6 @@ import {
   baurundgangTypData,
   bauteilTemplateData,
   materialisierungTemplateData,
-  bereichTemplateData,
   bauteilRisikoData,
   rueckmeldungstypData,
   dummyKundenData,
@@ -18,69 +17,6 @@ function ensurePlainObject(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
-async function seedBereichTemplates() {
-  for (const group of bereichTemplateData) {
-    const groupData = ensurePlainObject(group);
-    const bauteilTemplate = await prisma.bauteilTemplate.findFirst({ where: { name: groupData.bauteilName } });
-    if (!bauteilTemplate) {
-      console.warn(`⚠️  Skipping Bereich-Templates für unbekanntes Bauteil "${groupData.bauteilName}"`);
-      continue;
-    }
-
-    for (const [bIndex, bereich] of (groupData.bereiche ?? []).entries()) {
-      const bereichTpl = await upsertByDelegate(
-        prisma.bereichTemplate,
-        { name: bereich.name, bauteilTemplateId: bauteilTemplate.id },
-        {
-          name: bereich.name,
-          reihenfolge: bIndex + 1,
-          aktiv: true,
-          bauteilTemplate: { connect: { id: bauteilTemplate.id } },
-        },
-        {
-          name: bereich.name,
-          reihenfolge: bIndex + 1,
-          aktiv: true,
-          bauteilTemplate: { connect: { id: bauteilTemplate.id } },
-        }
-      );
-
-      for (const [kIndex, kapitel] of (bereich.kapitel ?? []).entries()) {
-        const kapTpl = await upsertByDelegate(
-          prisma.bereichKapitelTemplate,
-          { name: kapitel.name, bereichTemplateId: bereichTpl.id },
-          {
-            name: kapitel.name,
-            reihenfolge: kIndex + 1,
-            bereichTemplate: { connect: { id: bereichTpl.id } },
-          },
-          {
-            name: kapitel.name,
-            reihenfolge: kIndex + 1,
-            bereichTemplate: { connect: { id: bereichTpl.id } },
-          }
-        );
-
-        for (const [tIndex, text] of (kapitel.texte ?? []).entries()) {
-          await upsertByDelegate(
-            prisma.bereichKapitelTextTemplate,
-            { text, bereichKapitelTemplateId: kapTpl.id },
-            {
-              text,
-              reihenfolge: tIndex + 1,
-              kapitelTemplate: { connect: { id: kapTpl.id } },
-            },
-            {
-              text,
-              reihenfolge: tIndex + 1,
-              kapitelTemplate: { connect: { id: kapTpl.id } },
-            }
-          );
-        }
-      }
-    }
-  }
-}
 
 async function upsertByDelegate(delegate, uniqueWhere, createData, updateData) {
   const existing = await delegate.findFirst({ where: uniqueWhere });
@@ -304,7 +240,6 @@ async function main() {
   await seedBaurundgangTypen();
   await seedBauteilTemplates();
   await seedMaterialisierungTemplates();
-  await seedBereichTemplates();
   await seedBauteilRisiken();
   await seedRueckmeldungstypen();
   await seedDummyKunden();

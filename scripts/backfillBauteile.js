@@ -127,7 +127,7 @@ async function fetchBauteilState(id) {
           kapitelTemplates: { select: { id: true } },
         },
       },
-      bereiche: { select: { id: true } },
+      kapitel: { select: { id: true } },
     },
   });
   return bauteil;
@@ -143,8 +143,8 @@ function summarizeDryRunEntry(bauteil, force) {
   if ((bauteil.template.kapitelTemplates?.length ?? 0) === 0) {
     return { status: "skipped", reason: "template_without_kapitel" };
   }
-  if (!force && bauteil.bereiche.length > 0) {
-    return { status: "skipped", reason: "already_has_bereiche" };
+  if (!force && bauteil.kapitel.length > 0) {
+    return { status: "skipped", reason: "already_has_kapitel" };
   }
   return { status: "would_create" };
 }
@@ -210,12 +210,12 @@ async function main() {
       continue;
     }
 
-    if (!parsed.force && bauteil.bereiche.length > 0) {
+    if (!parsed.force && bauteil.kapitel.length > 0) {
       results.push({
         status: "skipped",
-        reason: "already_has_bereiche",
+        reason: "already_has_kapitel",
         bauteilId,
-        created: { bereiche: 0, kapitel: 0, texte: 0 },
+        created: { kapitel: 0, texte: 0 },
       });
       continue;
     }
@@ -230,7 +230,7 @@ async function main() {
   if (!parsed.dryRun) {
     const summary = summarizeInstantiation(results);
     console.log(
-      `Summary: created=${summary.created}, skipped=${summary.skipped}, bereiche=${summary.bereiche}, kapitel=${summary.kapitel}, texte=${summary.texte}`
+      `Summary: created=${summary.created}, skipped=${summary.skipped}, kapitel=${summary.kapitel}, texte=${summary.texte}`
     );
   }
 }

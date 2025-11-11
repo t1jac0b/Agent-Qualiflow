@@ -40,7 +40,7 @@ export async function instantiateBauteilFromTemplate(prisma, bauteilId, options 
             },
           },
         },
-        bereiche: { select: { id: true } },
+        kapitel: { select: { id: true } },
       },
     });
 
@@ -52,40 +52,29 @@ export async function instantiateBauteilFromTemplate(prisma, bauteilId, options 
       throw new Error(`instantiateBauteilFromTemplate: Bauteil ${id} has no template.`);
     }
 
-    if (!force && bauteil.bereiche.length > 0) {
+    if (!force && bauteil.kapitel.length > 0) {
       return {
         status: 'skipped',
-        reason: 'already_has_bereiche',
+        reason: 'already_has_kapitel',
         bauteilId: id,
-        created: { bereiche: 0, kapitel: 0, texte: 0 },
+        created: { kapitel: 0, texte: 0 },
       };
     }
 
     if (force) {
-      await tx.bereichKapitelText.deleteMany({ where: { kapitel: { bereich: { bauteilId: id } } } });
-      await tx.bereichKapitel.deleteMany({ where: { bereich: { bauteilId: id } } });
-      await tx.bereich.deleteMany({ where: { bauteilId: id } });
+      await tx.bereichKapitelText.deleteMany({ where: { kapitel: { bauteilId: id } } });
+      await tx.bereichKapitel.deleteMany({ where: { bauteilId: id } });
     }
 
-    const counts = { bereiche: 0, kapitel: 0, texte: 0 };
+    const counts = { kapitel: 0, texte: 0 };
     const { kapitelTemplates = [] } = sanitizeTemplateNode(bauteil.template);
 
     for (const [kapitelIndex, rawKapitelTemplate] of kapitelTemplates.entries()) {
       const kapitelTemplate = sanitizeTemplateNode(rawKapitelTemplate);
 
-      const bereichRecord = await tx.bereich.create({
-        data: {
-          bauteilId: id,
-          name: kapitelTemplate.name ?? `Kapitel ${kapitelIndex + 1}`,
-          bereichstext: null,
-        },
-      });
-
-      counts.bereiche += 1;
-
       const kapitelRecord = await tx.bereichKapitel.create({
         data: {
-          bereichId: bereichRecord.id,
+          bauteilId: id,
           name: kapitelTemplate.name ?? `Kapitel ${kapitelIndex + 1}`,
           reihenfolge: resolveOrder(kapitelTemplate.reihenfolge, kapitelIndex),
         },
@@ -132,7 +121,6 @@ export function summarizeInstantiation(results = []) {
     (acc, entry) => {
       if (entry?.status === 'created') {
         acc.created += 1;
-        acc.bereiche += entry.created?.bereiche ?? 0;
         acc.kapitel += entry.created?.kapitel ?? 0;
         acc.texte += entry.created?.texte ?? 0;
       } else if (entry?.status === 'skipped') {
@@ -140,7 +128,7 @@ export function summarizeInstantiation(results = []) {
       }
       return acc;
     },
-    { created: 0, skipped: 0, bereiche: 0, kapitel: 0, texte: 0 }
+    { created: 0, skipped: 0, kapitel: 0, texte: 0 }
   );
 }
 
