@@ -28,6 +28,138 @@ if (process.env.NODE_ENV !== "production") globalThis.prisma = prisma;
 export const DatabaseTool = {
   client: prisma,
 
+  async findKundeByName(name) {
+    if (!name) return null;
+    const trimmed = name.trim();
+    if (!trimmed) return null;
+
+    return prisma.kunde.findFirst({
+      where: {
+        name: { equals: trimmed, mode: "insensitive" },
+      },
+    });
+  },
+
+  async updateKundeFields({ id, data }) {
+    if (!id) {
+      throw new Error("updateKundeFields: 'id' ist erforderlich.");
+    }
+
+    return prisma.kunde.update({ where: { id }, data });
+  },
+
+  async findObjektByName({ name, kundeId }) {
+    if (!name) return null;
+    const trimmed = name.trim();
+    if (!trimmed) return null;
+
+    const where = {
+      bezeichnung: { equals: trimmed, mode: "insensitive" },
+    };
+
+    if (kundeId) {
+      where.kundeId = kundeId;
+    }
+
+    return prisma.objekt.findFirst({ where });
+  },
+
+  async updateObjektFields({ id, data }) {
+    if (!id) {
+      throw new Error("updateObjektFields: 'id' ist erforderlich.");
+    }
+
+    return prisma.objekt.update({ where: { id }, data });
+  },
+
+  async autoCreateBaurundgaengeForObjekt(objektId) {
+    if (!objektId) {
+      throw new Error("autoCreateBaurundgaengeForObjekt: 'objektId' ist erforderlich.");
+    }
+
+    const [types, existing] = await Promise.all([
+      prisma.baurundgangTyp.findMany({
+        where: { aktiv: true },
+        orderBy: [{ reihenfolge: "asc" }, { nummer: "asc" }],
+      }),
+      prisma.baurundgang.findMany({
+        where: { objektId },
+        select: { baurundgangTypId: true },
+      }),
+    ]);
+
+    if (!types.length) {
+      return { created: 0 };
+    }
+
+    const existingIds = new Set(existing.map((item) => item.baurundgangTypId));
+    let created = 0;
+
+    for (const typ of types) {
+      if (existingIds.has(typ.id)) continue;
+      await prisma.baurundgang.create({
+        data: {
+          objekt: { connect: { id: objektId } },
+          typ: { connect: { id: typ.id } },
+          status: "geplant",
+        },
+      });
+      created += 1;
+    }
+
+    return { created };
+  },
+
+  async ensureQsReportForBaurundgang({ kundeId, objektId, baurundgangId }) {
+    if (!baurundgangId) {
+      throw new Error("ensureQsReportForBaurundgang: 'baurundgangId' ist erforderlich.");
+    }
+
+    const existing = await prisma.qSReport.findUnique({ where: { baurundgangId } });
+    if (existing) return existing;
+
+    if (!kundeId || !objektId) {
+      throw new Error(
+        "ensureQsReportForBaurundgang: 'kundeId' und 'objektId' sind erforderlich, wenn kein Report existiert.",
+      );
+    }
+
+    return prisma.qSReport.create({
+      data: {
+        baurundgang: { connect: { id: baurundgangId } },
+        objekt: { connect: { id: objektId } },
+        kunde: { connect: { id: kundeId } },
+        zusammenfassung: "Automatisch angelegter QS-Report",
+      },
+    });
+  },
+
+  async listErledigteBaurundgaenge({ kundeId, objektId } = {}) {
+    const where = {};
+    if (objektId) {
+      where.objektId = objektId;
+    } else if (kundeId) {
+      where.objekt = { kundeId };
+    }
+
+    where.OR = [{ status: { equals: "erledigt", mode: "insensitive" } }, { datumDurchgefuehrt: { not: null } }];
+
+    return prisma.baurundgang.findMany({
+      where,
+      orderBy: { datumDurchgefuehrt: "desc" },
+      select: {
+        id: true,
+        datumDurchgefuehrt: true,
+        datumGeplant: true,
+        status: true,
+        notiz: true,
+        typ: {
+          select: { name: true },
+        },
+      },
+    });
+  },
+
   /**
    * Erstellt oder aktualisiert einen Kunden anhand des Namens.
    * Bei bestehenden Einträgen werden optionale Felder nur ergänzt (keine Überschreibung).
@@ -153,7 +285,7 @@ export const DatabaseTool = {
 
     const uniqueBezeichnung = existingCount === 0 ? base : `${base} #${existingCount + 1}`;
 
-    return prisma.objekt.create({
+    const objekt = await prisma.objekt.create({
       data: {
         kunde: { connect: { id: kundeId } },
         bezeichnung: uniqueBezeichnung,
@@ -168,6 +300,9 @@ export const DatabaseTool = {
         erstellungsjahr: erstellungsjahr ?? undefined,
       },
     });
+
+    await this.autoCreateBaurundgaengeForObjekt(objekt.id);
+    return objekt;
   },
 
   async createKunde(data) {
@@ -175,7 +310,9 @@ export const DatabaseTool = {
   },
 
   async createObjekt(data) {
-    return prisma.objekt.create({ data });
+    const objekt = await prisma.objekt.create({ data });
+    await this.autoCreateBaurundgaengeForObjekt(objekt.id);
+    return objekt;
   },
 
   async createBaurundgang(data) {
@@ -254,6 +391,136 @@ export const DatabaseTool = {
         datumGeplant: true,
         datumDurchgefuehrt: true,
         notiz: true,
+      },
+    });
+  },
+
+  async listBauteileByBaurundgang(baurundgangId) {
+    if (!baurundgangId) {
+      throw new Error("listBauteileByBaurundgang: 'baurundgangId' ist erforderlich.");
+    }
+
+    return prisma.bauteil.findMany({
+      where: { baurundgangId },
+      include: {
+        template: true,
+      },
+      orderBy: { reihenfolge: "asc" },
+    });
+  },
+
+  async listBauteilTemplates() {
+    return prisma.bauteilTemplate.findMany({
+      where: { aktiv: true },
+      orderBy: { reihenfolge: "asc" },
+      select: {
+        id: true,
+        name: true,
+        reihenfolge: true,
+        kapitelTemplates: {
+          where: { aktiv: undefined },
+        },
+      },
+    });
+  },
+
+  async listKapitelTemplatesByBauteilTemplate(bauteilTemplateId) {
+    if (!bauteilTemplateId) {
+      throw new Error("listKapitelTemplatesByBauteilTemplate: 'bauteilTemplateId' ist erforderlich.");
+    }
+
+    return prisma.bereichKapitelTemplate.findMany({
+      where: { bauteilTemplateId },
+      orderBy: { reihenfolge: "asc" },
+      select: {
+        id: true,
+        name: true,
+        reihenfolge: true,
+      },
+    });
+  },
+
+  async listRueckmeldungstypen() {
+    return prisma.rueckmeldungstyp.findMany({
+      orderBy: { id: "asc" },
+      select: {
+        id: true,
+        name: true,
+        typCode: true,
+      },
+    });
+  },
+
+  async ensureBauteilForTemplate({ baurundgangId, bauteilTemplateId }) {
+    if (!baurundgangId || !bauteilTemplateId) {
+      throw new Error("ensureBauteilForTemplate: 'baurundgangId' und 'bauteilTemplateId' sind erforderlich.");
+    }
+
+    const existing = await prisma.bauteil.findFirst({
+      where: { baurundgangId, bauteilTemplateId },
+    });
+
+    if (existing) {
+      return existing;
+    }
+
+    const reihenfolge = (await prisma.bauteil.count({ where: { baurundgangId } })) + 1;
+
+    return prisma.bauteil.create({
+      data: {
+        baurundgang: { connect: { id: baurundgangId } },
+        template: { connect: { id: bauteilTemplateId } },
+        reihenfolge,
+      },
+    });
+  },
+
+  async ensureKapitelForBauteil({ bauteilId, kapitelTemplateId }) {
+    if (!bauteilId || !kapitelTemplateId) {
+      throw new Error("ensureKapitelForBauteil: 'bauteilId' und 'kapitelTemplateId' sind erforderlich.");
+    }
+
+    const existing = await prisma.bereichKapitel.findFirst({
+      where: { bauteilId, templateId: kapitelTemplateId },
+      include: { texte: true },
+    });
+
+    if (existing) {
+      return existing;
+    }
+
+    return prisma.bereichKapitel.create({
+      data: {
+        bauteil: { connect: { id: bauteilId } },
+        name: `Kapitel ${kapitelTemplateId}`,
+      },
+    });
+  },
+
+  async createPositionWithDefaults({
+    qsreportId,
+    bauteilId,
+    bereichKapitelId,
+    rueckmeldungstypId,
+    bemerkung,
+    frist,
+  }) {
+    if (!qsreportId) {
+      throw new Error("createPositionWithDefaults: 'qsreportId' ist erforderlich.");
+    }
+
+    const positionsnummer =
+      (await prisma.position.count({ where: { qsreportId } })) + 1;
+
+    return prisma.position.create({
+      data: {
+        qsreport: { connect: { id: qsreportId } },
+        bauteil: bauteilId ? { connect: { id: bauteilId } } : undefined,
+        bereichKapitel: bereichKapitelId ? { connect: { id: bereichKapitelId } } : undefined,
+        rueckmeldungstyp: rueckmeldungstypId ? { connect: { id: rueckmeldungstypId } } : undefined,
+        bemerkung: bemerkung || undefined,
+        frist: frist || undefined,
+        positionsnummer,
       },
     });
   },

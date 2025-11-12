@@ -22,6 +22,13 @@ function isNumericSelection(input, optionsLength) {
   return value - 1;
 }
 
+function findOptionByIdOrText(options, input, { labelKey = "name", valueKey = "id" }) {
+  const normalized = input.toLowerCase();
+  const byId = options.find((option) => String(option[valueKey]).toLowerCase() === normalized);
+  if (byId) return byId;
+  return options.find((option) => option[labelKey]?.toLowerCase?.() === normalized) ?? null;
+}
+
 function resolveSelection(input, options, { labelKey = "name", valueKey = "id" } = {}) {
   if (!options?.length) return null;
   const normalized = input.toLowerCase();
@@ -31,11 +38,41 @@ function resolveSelection(input, options, { labelKey = "name", valueKey = "id" }
     return options[numericIndex];
   }
 
-  const byId = options.find((option) => String(option[valueKey]).toLowerCase() === normalized);
-  if (byId) return byId;
-
-  return options.find((option) => option[labelKey]?.toLowerCase?.() === normalized) ?? null;
+  return findOptionByIdOrText(options, normalized, { labelKey, valueKey });
 }
+
+function isCaptureTrigger(input) {
+  const normalized = input.toLowerCase();
+  if (
+    normalized === "neue position" ||
+    normalized === "position" ||
+    normalized === "position erfassen" ||
+    normalized.includes("neue position") ||
+    normalized.includes("position erfassen") ||
+    normalized === "foto"
+  ) {
+    return true;
+  }
+  return normalized.startsWith("http://") || normalized.startsWith("https://");
+}
+
+function isCancelCommand(input) {
+  const normalized = input.toLowerCase();
+  return normalized === "abbrechen" || normalized === "stop" || normalized === "cancel";
+}
+
+function extractInitialNote(input) {
+  if (!input) return "";
+  const normalized = input.toLowerCase();
+  if (normalized === "neue position" || normalized === "position" || normalized === "position erfassen" || normalized === "foto") {
+    return "";
+  }
+  if (normalized.startsWith("http://") || normalized.startsWith("https://")) {
+    return "";
+  }
+  return input;
+}
+
 
 function describeOptions(options, { labelKey = "name", valueKey = "id", formatter } = {}) {
   if (!options?.length) {
@@ -53,16 +90,216 @@ function describeOptions(options, { labelKey = "name", valueKey = "id", formatte
     .join("\n");
 }
 
-export class AgentOrchestrator {
-  constructor({ tools = {}, logger = createLogger("agent:orchestrator") } = {}) {
+function composeSelectionSummary(path) {
+  if (!path) return null;
+  const bits = [];
+  if (path.kunde) {
+    bits.push(`Kunde: ${path.kunde.name ?? path.kunde.id}`);
+  }
+  if (path.objekt) {
+    bits.push(`Objekt: ${path.objekt.bezeichnung ?? path.objekt.id}`);
+  }
+  if (path.baurundgang) {
+    const datum = path.baurundgang.datumDurchgefuehrt ?? path.baurundgang.datumGeplant;
+    const formatted = datum ? new Date(datum).toISOString().slice(0, 10) : "kein Datum";
+    bits.push(`Baurundgang: ${path.baurundgang.id} – ${formatted}`);
+  }
+  return bits.length ? bits.join(" • ") : null;
+}
+
+const INTENTS = {
+  CAPTURE: "capture",
+  EDIT: "edit",
+  QUERY: "query",
+  DELETE: "delete",
+};
+
+function detectIntent(input) {
+  const lower = input.toLowerCase();
+  if (isCaptureTrigger(lower)) {
+    return INTENTS.CAPTURE;
+  }
+  if (/(löschen|delete|entfernen|weg damit)/i.test(lower)) {
+    return INTENTS.DELETE;
+  }
+  if (/(bearbeiten|ändern|aktualisieren|editieren)/i.test(lower)) {
+    return INTENTS.EDIT;
+  }
+  if (lower.includes("?") || /(welche|welcher|welches|was|zeige|liste|wie viele|status)/i.test(lower)) {
+    return INTENTS.QUERY;
+  }
+  return null;
+}
+
+function extractEntityName(message, keyword) {
+  const pattern = new RegExp(`${keyword}\\s+(.*?)\\s*(?:bearbeiten|ändern|aktualisieren|editieren|löschen|\n|$)`, "i");
+  const match = message.match(pattern);
+  if (match && match[1]) {
+    return match[1].trim();
+  }
+  return null;
+}
+
+function extractFieldUpdates(message) {
+  const updates = {};
+  const normalized = message.trim();
+  const fieldPatterns = [
+    { key: "name", variants: ["name", "bezeichnung", "titel"] },
+    { key: "adresse", variants: ["adresse", "address"] },
+    { key: "plz", variants: ["plz", "postleitzahl"] },
+    { key: "ort", variants: ["ort", "stadt", "city"] },
+    { key: "notiz", variants: ["notiz", "beschreibung", "hinweis"] },
+  ];
+
+  for (const { key, variants } of fieldPatterns) {
+    for (const variant of variants) {
+      const regex = new RegExp(`${variant}\\s*(?:ist|=|zu|auf|wird|:)?\\s*([^,]+)`, "i");
+      const match = normalized.match(regex);
+      if (match && match[1]) {
+        updates[key] = match[1].trim();
+        break;
+      }
+    }
+  }
+
+  return updates;
+}
+
+function computeFristDate(days = 14) {
+  const frist = new Date();
+  frist.setDate(frist.getDate() + days);
+  return frist;
+}
+
+const EDIT_FIELD_LABELS = {
+  kunde: {
+    name: "Name",
+    adresse: "Adresse",
+    plz: "PLZ",
+    ort: "Ort",
+    notiz: "Notiz",
+  },
+  objekt: {
+    bezeichnung: "Name",
+    adresse: "Adresse",
+    plz: "PLZ",
+    ort: "Ort",
+    notiz: "Notiz",
+  },
+};
+
+const EDIT_FIELD_SYNONYMS = {
+  kunde: {
+    name: ["name", "titel", "bezeichnung"],
+    adresse: ["adresse", "anschrift", "address", "strasse", "straße"],
+    plz: ["plz", "postleitzahl"],
+    ort: ["ort", "stadt", "city"],
+    notiz: ["notiz", "beschreibung", "hinweis", "kommentar"],
+  },
+  objekt: {
+    bezeichnung: ["name", "bezeichnung", "titel"],
+    adresse: ["adresse", "anschrift", "address", "strasse", "straße"],
+    plz: ["plz", "postleitzahl"],
+    ort: ["ort", "stadt", "city"],
+    notiz: ["notiz", "beschreibung", "hinweis", "kommentar"],
+  },
+};
+
+function listEditFieldOptions(entityType) {
+  const labels = EDIT_FIELD_LABELS[entityType];
+  if (!labels) return [];
+  return Object.entries(labels).map(([key, label]) => ({ id: key, name: label }));
+}
+
+function resolveEditFieldChoice(entityType, input) {
+  const normalized = input.trim().toLowerCase();
+  const synonyms = EDIT_FIELD_SYNONYMS[entityType];
+  if (!synonyms) return null;
+
+  for (const [field, variants] of Object.entries(synonyms)) {
+    if (variants.some((variant) => normalized === variant.toLowerCase())) {
+      return { field, label: EDIT_FIELD_LABELS[entityType]?.[field] ?? field };
+    }
+  }
+
+  return null;
+}
+
+export class QualiFlowAgent {
+  constructor({ tools = {}, logger = createLogger("agent:qualiflow"), sessionOptions = {} } = {}) {
     this.tools = tools;
     this.capabilities = new Map();
     this.subAgents = new Map();
     this.logger = logger;
     this.conversations = new Map();
-    this.logger.info("AgentOrchestrator initialisiert", {
+    this.sessionOptions = {
+      maxAgeMinutes: sessionOptions.maxAgeMinutes ?? 60,
+    };
+    this.setConversation = this.setConversation.bind(this);
+    this.pruneConversations = this.pruneConversations.bind(this);
+    this.logger.info("QualiFlow Agent initialisiert", {
       toolKeys: Object.keys(tools),
     });
+  }
+
+  resetToSetup(chatId) {
+    this.setConversation(chatId, { phase: "select-customer", path: {} });
+  }
+
+  async promptCustomerSelection({ chatId, database, prefix } = {}) {
+    if (!database) {
+      throw new Error("promptCustomerSelection: database tool nicht verfügbar.");
+    }
+
+    const kunden = await database.actions.listKunden();
+    if (!kunden?.length) {
+      this.setConversation(chatId, { phase: "idle", path: {} });
+      return {
+        status: "no_customers",
+        message: "Es wurden keine Kunden gefunden. Bitte lege zuerst Daten an.",
+      };
+    }
+
+    const options = kunden.map((kunde) => ({ id: kunde.id, name: kunde.name }));
+    this.setConversation(chatId, {
+      phase: "select-customer",
+      path: {},
+      options,
+    });
+
+    const lines = [];
+    if (prefix) {
+      lines.push(prefix);
+    }
+    lines.push("Um welchen Kunden geht es?");
+    lines.push(describeOptions(options, { labelKey: "name" }));
+
+    return {
+      status: "awaiting_customer",
+      message: lines.join("\n"),
+      context: { options, phase: "select-customer" },
+    };
+  }
+
+  async ensureSetupContext(chatId, { database } = {}) {
+    const session = this.getConversation(chatId);
+    if (!session || !session.path?.baurundgang) {
+      if (database) {
+        return this.promptCustomerSelection({
+          chatId,
+          database,
+          prefix: "Bitte führe zuerst den Setup-Flow aus.",
+        });
+      }
+
+      this.resetToSetup(chatId);
+      return {
+        status: "missing_setup",
+        message: 'Bitte führe zuerst den Setup-Flow aus. Tippe "start".',
+      };
+    }
+
+    return null;
   }
 
   pruneConversations({ maxAgeMinutes = DEFAULT_SESSION_TTL_MINUTES } = {}) {
@@ -217,6 +454,7 @@ export class AgentOrchestrator {
 
     const session = this.getConversation(chatId) ?? { phase: "idle", path: {} };
     const lower = trimmed.toLowerCase();
+    const currentPath = session.path ?? {};
 
     if (lower === "start") {
       const kunden = await database.actions.listKunden();
@@ -246,6 +484,38 @@ export class AgentOrchestrator {
       return {
         status: "hint",
         message: "Tippe \"start\", um den Setup-Flow zu beginnen.",
+      };
+    }
+
+    if (session.phase === "idle") {
+      const intent = detectIntent(trimmed);
+      if (!intent) {
+        return {
+          status: "hint",
+          message: 'Tippe "start", um den Setup-Flow zu beginnen.',
+        };
+      }
+
+      if (intent === INTENTS.CAPTURE) {
+        const ensured = await this.ensureSetupContext(chatId);
+        if (ensured) {
+          return ensured;
+        }
+
+        return this.beginCaptureFlow({ chatId, session: { ...session, path: currentPath }, initialNote: extractInitialNote(trimmed) });
+      }
+
+      if (intent === INTENTS.EDIT || intent === INTENTS.DELETE || intent === INTENTS.QUERY) {
+        const ensured = await this.ensureSetupContext(chatId);
+        if (ensured) {
+          return ensured;
+        }
+        return this.routeIntent({ chatId, intent, message: trimmed, session });
+      }
+
+      return {
+        status: "hint",
+        message: 'Tippe "start", um den Setup-Flow zu beginnen.',
       };
     }
 
@@ -395,9 +665,295 @@ export class AgentOrchestrator {
       };
     }
 
+    if (session.phase?.startsWith("capture:")) {
+      return this.continueCaptureFlow({ chatId, session, message: trimmed });
+    }
+
     return {
       status: "unknown_state",
       message: "Ich konnte deine Eingabe nicht verarbeiten. Tippe \"start\", um den Setup-Flow neu zu beginnen.",
     };
+  }
+
+  async routeIntent({ chatId, intent, message, session }) {
+    switch (intent) {
+      case INTENTS.CAPTURE:
+        return this.beginCaptureFlow({ chatId, session, initialNote: extractInitialNote(message) });
+      case INTENTS.DELETE:
+        return this.handleDeleteIntent({ chatId, message, session });
+      case INTENTS.EDIT:
+        return this.handleEditIntent({ chatId, message, session });
+      case INTENTS.QUERY:
+        return this.handleQueryIntent({ chatId, message, session });
+      default:
+        return {
+          status: "unhandled_intent",
+          message: "Ich konnte deine Eingabe nicht zuordnen.",
+        };
+    }
+  }
+
+  async beginCaptureFlow({ chatId, session, initialNote = "" }) {
+    const database = this.tools?.database;
+    if (!database) {
+      throw new Error("beginCaptureFlow: database tool nicht verfügbar.");
+    }
+
+    const { path } = session;
+    if (!path?.baurundgang?.id) {
+      return {
+        status: "missing_setup",
+        message: 'Bitte wähle zuerst einen Baurundgang über den Setup-Flow ("start").',
+      };
+    }
+
+    const templates = await database.actions.listBauteilTemplates();
+    if (!templates?.length) {
+      return {
+        status: "no_bauteile",
+        message: "Es wurden keine Bauteil-Templates gefunden. Bitte prüfe die Stammdaten.",
+      };
+    }
+
+    const options = templates.map((template) => ({
+      id: template.id,
+      name: template.name ?? template.bezeichnung ?? template.kuerzel ?? `Bauteil ${template.id}`,
+    }));
+
+    this.setConversation(chatId, {
+      ...session,
+      phase: "capture:select-bauteil",
+      capture: {
+        initialNote,
+      },
+      options,
+    });
+
+    return {
+      status: "capture_select_bauteil",
+      message: ["Welches Bauteil möchtest du erfassen?", describeOptions(options, { labelKey: "name" })].join("\n"),
+      context: { phase: "capture:select-bauteil", options },
+    };
+  }
+
+  async continueCaptureFlow({ chatId, session, message }) {
+    const database = this.tools?.database;
+    if (!database) {
+      throw new Error("continueCaptureFlow: database tool nicht verfügbar.");
+    }
+
+    const { phase, options, path, capture = {} } = session;
+    if (phase === "capture:select-bauteil") {
+      const selected = resolveSelection(message, options, { labelKey: "name" });
+      if (!selected) {
+        const list = describeOptions(options, { labelKey: "name" });
+        return {
+          status: "capture_retry_bauteil",
+          message: ["Bauteil nicht erkannt.", "Bitte wähle erneut:", list].join("\n"),
+        };
+      }
+
+      const kapitelTemplates = await database.actions.listKapitelTemplatesByBauteilTemplate(selected.id);
+      if (!kapitelTemplates?.length) {
+        return {
+          status: "capture_no_kapitel",
+          message: `Für das Bauteil wurden keine Bereichskapitel gefunden. Bitte wähle ein anderes Bauteil oder breche mit "abbrechen" ab.`,
+        };
+      }
+
+      const kapitelOptions = kapitelTemplates.map((template) => ({
+        id: template.id,
+        name: template.name ?? template.bezeichnung ?? template.kuerzel ?? `Kapitel ${template.id}`,
+      }));
+
+      this.setConversation(chatId, {
+        ...session,
+        phase: "capture:select-kapitel",
+        options: kapitelOptions,
+        capture: {
+          ...capture,
+          bauteilTemplate: selected,
+        },
+      });
+
+      return {
+        status: "capture_select_kapitel",
+        message: ["Welches Bereichskapitel?", describeOptions(kapitelOptions, { labelKey: "name" })].join("\n"),
+        context: { phase: "capture:select-kapitel", options: kapitelOptions },
+      };
+    }
+
+    if (phase === "capture:select-kapitel") {
+      const selected = resolveSelection(message, options, { labelKey: "name" });
+      if (!selected) {
+        const list = describeOptions(options, { labelKey: "name" });
+        return {
+          status: "capture_retry_kapitel",
+          message: ["Bereichskapitel nicht erkannt.", "Bitte wähle erneut:", list].join("\n"),
+        };
+      }
+
+      const rueckmeldungstypen = await database.actions.listRueckmeldungstypen();
+      if (!rueckmeldungstypen?.length) {
+        return {
+          status: "capture_no_rueckmeldung",
+          message: "Es wurden keine Rückmeldungsarten gefunden. Bitte prüfe die Stammdaten.",
+        };
+      }
+
+      const rueckOptions = rueckmeldungstypen.map((typ) => ({
+        id: typ.id,
+        name: typ.name ?? typ.bezeichnung ?? `Rückmeldung ${typ.id}`,
+      }));
+
+      this.setConversation(chatId, {
+        ...session,
+        phase: "capture:select-rueckmeldung",
+        options: rueckOptions,
+        capture: {
+          ...capture,
+          kapitelTemplate: selected,
+        },
+      });
+
+      return {
+        status: "capture_select_rueckmeldung",
+        message: ["Welche Rückmeldung?", describeOptions(rueckOptions, { labelKey: "name" })].join("\n"),
+        context: { phase: "capture:select-rueckmeldung", options: rueckOptions },
+      };
+    }
+
+    if (phase === "capture:select-rueckmeldung") {
+      const selected = resolveSelection(message, options, { labelKey: "name" });
+      if (!selected) {
+        const list = describeOptions(options, { labelKey: "name" });
+        return {
+          status: "capture_retry_rueckmeldung",
+          message: ["Rückmeldungsart nicht erkannt.", "Bitte wähle erneut:", list].join("\n"),
+        };
+      }
+
+      return this.finalizeCapture({ chatId, session, selectedRueckmeldung: selected });
+    }
+
+    if (phase === "capture:confirm") {
+      const choice = parseYesNo(message);
+      if (choice == null) {
+        return {
+          status: "capture_retry_confirm",
+          message: 'Bitte antworte mit ja oder nein, z.B. "ja".',
+        };
+      }
+
+      if (!choice) {
+        this.setConversation(chatId, { ...session, phase: "completed" });
+        return {
+          status: "capture_cancelled",
+          message: "Alles klar, die Position wird nicht erstellt.",
+        };
+      }
+
+      return this.performCaptureCreation({ chatId, session });
+    }
+
+    return {
+      status: "capture_unknown_state",
+      message: "Ich konnte deine Eingabe nicht verarbeiten. Tippe \"start\" für den Setup-Flow.",
+    };
+  }
+
+  async finalizeCapture({ chatId, session, selectedRueckmeldung }) {
+    const updatedCapture = {
+      ...(session.capture ?? {}),
+      rueckmeldungstyp: selectedRueckmeldung,
+    };
+
+    this.setConversation(chatId, {
+      ...session,
+      phase: "capture:confirm",
+      capture: updatedCapture,
+    });
+
+    const summary = [
+      "Bitte bestätige die Angaben:",
+      `Bauteil: ${updatedCapture.bauteilTemplate?.name ?? "?"}`,
+      `Bereichskapitel: ${updatedCapture.kapitelTemplate?.name ?? "?"}`,
+      `Rückmeldungsart: ${selectedRueckmeldung.name ?? selectedRueckmeldung.id}`,
+      updatedCapture.initialNote ? `Hinweis: ${updatedCapture.initialNote}` : null,
+    ].filter(Boolean);
+
+    return {
+      status: "capture_confirm",
+      message: [...summary, "Soll die Position angelegt werden? (ja/nein)"].join("\n"),
+      context: { phase: "capture:confirm", capture: updatedCapture },
+    };
+  }
+
+  async performCaptureCreation({ chatId, session }) {
+    const database = this.tools?.database;
+    if (!database) {
+      throw new Error("performCaptureCreation: database tool nicht verfügbar.");
+    }
+
+    const { path, capture } = session;
+    const baurundgangId = path?.baurundgang?.id;
+    if (!baurundgangId) {
+      return {
+        status: "missing_setup",
+        message: 'Der Baurundgang fehlt. Bitte starte den Setup-Flow erneut ("start").',
+      };
+    }
+
+    const qsReport = await database.actions.ensureQsReportForBaurundgang({
+      baurundgangId,
+      kundeId: path?.kunde?.id,
+      objektId: path?.objekt?.id,
+    });
+
+    if (!qsReport) {
+      return {
+        status: "capture_no_report",
+        message: "QS-Report konnte nicht erstellt werden. Bitte versuche es erneut.",
+      };
+    }
+
+    const payload = {
+      baurundgangId,
+      qsReportId: qsReport.id,
+      bauteilTemplateId: capture?.bauteilTemplate?.id,
+      kapitelTemplateId: capture?.kapitelTemplate?.id,
+      rueckmeldungstypId: capture?.rueckmeldungstyp?.id,
+      notiz: capture?.initialNote || "",
+      frist: computeFristDate(14),
+    };
+
+    try {
+      const created = await database.actions.createPositionWithDefaults(payload);
+      const summary = composeSelectionSummary(path);
+
+      this.setConversation(chatId, {
+        ...session,
+        phase: "completed",
+        capture: null,
+      });
+
+      return {
+        status: "capture_success",
+        message: [
+          "Position wurde angelegt.",
+          summary ? `Kontext: ${summary}` : null,
+          `Positions-ID: ${created?.id ?? "?"}`,
+        ]
+          .filter(Boolean)
+          .join("\n"),
+        context: { position: created, selection: path },
+      };
+    } catch (error) {
+      this.logger.error("Fehler beim Erstellen der Position", { error });
+      return {
+        status: "capture_error",
+        message: "Beim Anlegen der Position ist ein Fehler aufgetreten. Bitte versuche es erneut.",
+      };
+    }
   }
 }
