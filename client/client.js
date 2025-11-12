@@ -1,153 +1,246 @@
-const form = document.getElementById("capture-form");
-const logContainer = document.getElementById("log");
-const submitButton = form.querySelector("button[type='submit']");
+const chatLog = document.getElementById("chat-log");
+const chatForm = document.getElementById("chat-form");
+const chatInput = document.getElementById("chat-message");
+const sendButton = document.getElementById("send-button");
+const resetButton = document.getElementById("reset-chat");
+const sessionIdEl = document.getElementById("session-id");
 
-function formatJson(value) {
-  return JSON.stringify(value, null, 2);
+const STORAGE_KEY = "qualicasa-chat-session-id";
+
+const state = {
+  chatId: window.sessionStorage.getItem(STORAGE_KEY) || null,
+};
+
+function formatTimestamp(date = new Date()) {
+  return new Intl.DateTimeFormat("de-CH", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
 }
 
-function createLogEntry({ title, payload, options }) {
-  const wrapper = document.createElement("div");
-  wrapper.className = "log-entry";
+function updateSessionDisplay() {
+  if (!sessionIdEl) return;
+  sessionIdEl.textContent = state.chatId ?? "–";
+}
 
-  const heading = document.createElement("strong");
-  heading.textContent = title;
+function setChatId(id) {
+  if (!id) return;
+  state.chatId = id;
+  window.sessionStorage.setItem(STORAGE_KEY, id);
+  updateSessionDisplay();
+}
+
+function clearChatId() {
+  state.chatId = null;
+  window.sessionStorage.removeItem(STORAGE_KEY);
+  updateSessionDisplay();
+}
+
+function scrollLogToBottom() {
+  if (!chatLog) return;
+  chatLog.scrollTo({ top: chatLog.scrollHeight, behavior: "smooth" });
+}
+
+function describeOption(option) {
+  if (option == null) return "–";
+  if (typeof option === "string") return option;
+  if (typeof option === "number") return String(option);
+  if (option.name) {
+    return option.id ? `${option.name} (ID: ${option.id})` : option.name;
+  }
+  if (option.bezeichnung) {
+    return option.id ? `${option.bezeichnung} (ID: ${option.id})` : option.bezeichnung;
+  }
+  if (option.id) {
+    return `ID: ${option.id}`;
+  }
+  try {
+    return JSON.stringify(option);
+  } catch (error) {
+    console.error("describeOption failed", { option, error });
+    return String(option);
+  }
+}
+
+function renderSelectionSummary(selection) {
+  if (!selection) return null;
+
+  const items = [];
+  if (selection.kunde) {
+    const kundeLabel = selection.kunde.name ?? selection.kunde.id ?? "unbekannt";
+    items.push(`Kunde: ${kundeLabel}`);
+  }
+  if (selection.objekt) {
+    const objektLabel = selection.objekt.bezeichnung ?? selection.objekt.id ?? "unbekannt";
+    items.push(`Objekt: ${objektLabel}`);
+  }
+  if (selection.baurundgang) {
+    const datum = selection.baurundgang.datumDurchgefuehrt ?? selection.baurundgang.datumGeplant;
+    const formattedDate = datum ? new Date(datum).toISOString().slice(0, 10) : "kein Datum";
+    items.push(`Baurundgang: ${selection.baurundgang.id ?? "?"} – ${formattedDate}`);
+  }
+  if (selection.pruefpunkteGewuenscht !== undefined) {
+    items.push(`Prüfpunkte: ${selection.pruefpunkteGewuenscht ? "erfassen" : "überspringen"}`);
+  }
+
+  if (!items.length) return null;
+
+  const paragraph = document.createElement("p");
+  paragraph.className = "meta";
+  paragraph.textContent = items.join(" • ");
+  return paragraph;
+}
+
+function appendMessage({ role, text, status, options, context }) {
+  if (!chatLog) return;
+
+  const wrapper = document.createElement("article");
+  wrapper.className = `chat-message ${role}`;
+
+  const heading = document.createElement("h3");
+  heading.textContent = role === "user" ? "Du" : "Agent";
   wrapper.appendChild(heading);
 
-  if (payload !== undefined) {
-    const pre = document.createElement("pre");
-    pre.textContent = typeof payload === "string" ? payload : formatJson(payload);
-    wrapper.appendChild(pre);
-  }
+  const meta = document.createElement("div");
+  meta.className = "meta";
+  const bits = [];
+  if (status) bits.push(status.toUpperCase());
+  bits.push(formatTimestamp());
+  meta.textContent = bits.join(" • ");
+  wrapper.appendChild(meta);
 
-  if (Array.isArray(options) && options.length > 0) {
-    const optionsContainer = document.createElement("div");
-    optionsContainer.className = "options-container";
+  const messageText = text && text.trim() ? text : "(keine Nachricht)";
+  messageText.split(/\n+/).forEach((line) => {
+    const paragraph = document.createElement("p");
+    paragraph.textContent = line;
+    wrapper.appendChild(paragraph);
+  });
 
-    options.forEach(({ label, onSelect }) => {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.textContent = label;
-      button.addEventListener("click", onSelect);
-      optionsContainer.appendChild(button);
+  const resolvedOptions = Array.isArray(options)
+    ? options
+    : Array.isArray(context?.options)
+    ? context.options
+    : null;
+
+  if (resolvedOptions && resolvedOptions.length) {
+    const list = document.createElement("ul");
+    resolvedOptions.forEach((option) => {
+      const item = document.createElement("li");
+      item.textContent = describeOption(option);
+      list.appendChild(item);
     });
-
-    wrapper.appendChild(optionsContainer);
+    wrapper.appendChild(list);
   }
 
-  logContainer.prepend(wrapper);
+  const selectionSummary = context?.selection ? renderSelectionSummary(context.selection) : null;
+  if (selectionSummary) {
+    wrapper.appendChild(selectionSummary);
+  }
+
+  chatLog.appendChild(wrapper);
+  scrollLogToBottom();
 }
 
-async function sendPositionCapture({ baurundgangId, note, photo }) {
-  const formData = new FormData();
-  formData.set("baurundgangId", String(baurundgangId));
-  formData.set("note", note ?? "");
-  formData.set("photo", photo, photo.name || "upload.jpg");
+function setLoading(isLoading) {
+  if (isLoading) {
+    sendButton.textContent = "Senden…";
+  } else {
+    sendButton.textContent = "Senden";
+  }
+  sendButton.disabled = isLoading;
+  chatInput.disabled = isLoading;
+}
 
-  const response = await fetch("/qs-rundgang/position-erfassen", {
+async function sendChatMessage(message) {
+  const payload = { message };
+  if (state.chatId) {
+    payload.chatId = state.chatId;
+  }
+
+  const response = await fetch("/chat/message", {
     method: "POST",
-    body: formData,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(`Upload fehlgeschlagen (${response.status}): ${text}`);
+    throw new Error(text || `HTTP ${response.status}`);
   }
 
   return response.json();
 }
 
-async function sendClarification({ baurundgangId, note, option, storedPhotoPath }) {
-  const response = await fetch("/qs-rundgang/position-clarify", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ baurundgangId, note, option, storedPhotoPath }),
-  });
-
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`Klärung fehlgeschlagen (${response.status}): ${text}`);
-  }
-
-  return response.json();
-}
-
-function renderClarificationOptions({ baurundgangId, note, storedPhotoPath, options }) {
-  const optionEntries = options.map((label) => ({
-    label,
-    onSelect: async () => {
-      createLogEntry({
-        title: "➡️ Auswahl gesendet",
-        payload: { baurundgangId, note, option: label },
-      });
-
-      try {
-        const result = await sendClarification({ baurundgangId, note, option: label, storedPhotoPath });
-        createLogEntry({ title: "✅ Ergebnis", payload: result });
-      } catch (error) {
-        createLogEntry({ title: "❌ Fehler", payload: error.message });
-      }
-    },
-  }));
-
-  createLogEntry({
-    title: "ℹ️ Bitte Auswahl treffen",
-    payload: { baurundgangId, options },
-    options: optionEntries,
-  });
-}
-
-form.addEventListener("submit", async (event) => {
+chatForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
-
-  const formData = new FormData(form);
-  const baurundgangId = Number(formData.get("baurundgangId")) || 1;
-  const note = (formData.get("note") || "").toString().trim();
-  const photoFile = form.photo.files[0];
-
-  if (!photoFile) {
-    createLogEntry({ title: "❌ Fehler", payload: "Bitte ein Foto auswählen." });
+  const rawMessage = chatInput?.value ?? "";
+  const message = rawMessage.trim();
+  if (!message) {
     return;
   }
 
-  submitButton.disabled = true;
-  submitButton.textContent = "Senden…";
-
-  createLogEntry({
-    title: "📤 Sende Position",
-    payload: {
-      baurundgangId,
-      note,
-      photo: photoFile.name,
-    },
-  });
+  appendMessage({ role: "user", text: message, status: "gesendet" });
+  setLoading(true);
 
   try {
-    const result = await sendPositionCapture({
-      baurundgangId,
-      note,
-      photo: photoFile,
-    });
-
-    createLogEntry({ title: "✅ Antwort", payload: result });
-
-    if (result?.status === "NEEDS_INPUT" && Array.isArray(result.options)) {
-      const storedPhotoPath = result?.context?.storedPhoto?.storedPath;
-      renderClarificationOptions({
-        baurundgangId,
-        note,
-        storedPhotoPath,
-        options: result.options,
-      });
+    const result = await sendChatMessage(message);
+    if (result.chatId) {
+      setChatId(result.chatId);
     }
+    appendMessage({
+      role: "system",
+      text: result.message ?? "(keine Antwort)",
+      status: result.status ?? "info",
+      options: result.options,
+      context: result.context,
+    });
   } catch (error) {
-    createLogEntry({ title: "❌ Fehler", payload: error.message });
+    console.error("Chat send failed", error);
+    appendMessage({
+      role: "system",
+      text: `Fehler: ${error.message}`,
+      status: "error",
+    });
   } finally {
-    submitButton.disabled = false;
-    submitButton.textContent = "Senden";
-    form.reset();
-    form.querySelector("input[name='baurundgangId']").value = baurundgangId;
+    setLoading(false);
+    chatForm.reset();
+    chatInput?.focus();
   }
 });
+
+resetButton?.addEventListener("click", () => {
+  clearChatId();
+  if (chatLog) {
+    chatLog.innerHTML = "";
+  }
+  appendMessage({
+    role: "system",
+    text: "Neuer Chat initialisiert. Tippe \"start\", um zu beginnen.",
+    status: "reset",
+  });
+  chatInput?.focus();
+});
+
+function bootstrap() {
+  updateSessionDisplay();
+
+  if (chatLog && !chatLog.childElementCount) {
+    const introStatus = state.chatId ? "session" : "info";
+    const introMessage = state.chatId
+      ? "Bestehende Sitzung wiederhergestellt. Tippe eine Nachricht, um fortzufahren."
+      : "Willkommen! Tippe \"start\", um den Setup-Flow zu starten.";
+    appendMessage({ role: "system", text: introMessage, status: introStatus });
+  }
+
+  if (state.chatId) {
+    appendMessage({
+      role: "system",
+      text: `Aktive Chat-ID: ${state.chatId}`,
+      status: "session",
+    });
+  }
+
+  chatInput?.focus();
+}
+
+bootstrap();

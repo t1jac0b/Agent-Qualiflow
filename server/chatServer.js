@@ -315,12 +315,9 @@ app.post("/qs-rundgang/upload", qsUpload, async (req, res) => {
 });
 
 app.post("/chat/message", async (req, res) => {
-  const { chatId, message, uploadedBy } = req.body ?? {};
-  if (!chatId || typeof chatId !== "string") {
-    log.warn("chatId fehlt", { route: "/chat/message" });
-    res.status(400).json({ error: "chatId ist erforderlich." });
-    return;
-  }
+  const { chatId: requestedChatId, message, uploadedBy } = req.body ?? {};
+  const chatId = normalizeChatId(requestedChatId);
+
   if (!message || typeof message !== "string") {
     log.warn("message fehlt", { route: "/chat/message", chatId });
     res.status(400).json({ error: "message ist erforderlich." });
@@ -329,7 +326,11 @@ app.post("/chat/message", async (req, res) => {
 
   try {
     log.info("Verarbeite Nachricht", { chatId });
-    const result = await handleChatMessage({ chatId, message, uploadedBy: uploadedBy ?? "http-chat" });
+    const result = await orchestrator.handleMessage({
+      chatId,
+      message,
+      uploadedBy: uploadedBy ?? "http-chat",
+    });
     log.info("Nachricht verarbeitet", { chatId, status: result.status });
     res.json({ chatId, ...serializeResult(result) });
   } catch (error) {
