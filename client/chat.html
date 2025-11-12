@@ -29,16 +29,22 @@
         justify-content: center;
         align-items: center;
         padding: 32px;
-        background: radial-gradient(circle at 10% 20%, var(--sidebar) 0%, var(--background) 55%, var(--popover) 100%);
+        background: linear-gradient(
+          135deg,
+          color-mix(in srgb, var(--sidebar) 70%, var(--background)) 0%,
+          color-mix(in srgb, var(--accent) 45%, var(--background)) 45%,
+          color-mix(in srgb, var(--muted) 80%, var(--background)) 100%
+        );
         color: inherit;
       }
 
       .chat-shell {
         width: min(900px, 100%);
         max-height: 92vh;
-        background: rgba(255, 255, 255, 0.96);
+        background: var(--card);
         border-radius: 20px;
-        box-shadow: 0 28px 65px rgba(7, 19, 41, 0.38);
+        border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+        box-shadow: 0 32px 60px rgba(0, 0, 0, 0.12);
         padding: 28px;
         display: grid;
         grid-template-rows: auto auto 1fr auto;
@@ -72,7 +78,7 @@
 
       header p {
         margin: 0;
-        color: #4b5563;
+        color: var(--muted-foreground);
         font-size: 0.95rem;
       }
 
@@ -80,7 +86,7 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        background: color-mix(in srgb, var(--muted) 70%, transparent);
+        background: color-mix(in srgb, var(--muted) 85%, transparent);
         border-radius: 12px;
         padding: 12px 16px;
         font-size: 0.85rem;
@@ -90,19 +96,27 @@
       .session-info button {
         border: none;
         background: transparent;
-        color: var(--primary);
-        font-weight: 600;
+        color: color-mix(in srgb, var(--primary) 80%, var(--primary-foreground));
+        font-weight: var(--font-weight-medium);
         cursor: pointer;
+        padding: 6px 12px;
+        border-radius: calc(var(--radius) - 4px);
+        transition: background 0.2s ease;
+      }
+
+      .session-info button:hover {
+        background: color-mix(in srgb, var(--primary) 12%, transparent);
       }
 
       .chat-log {
-        background: color-mix(in srgb, var(--muted) 60%, transparent);
+        background: color-mix(in srgb, var(--muted) 92%, transparent);
         border-radius: 14px;
         padding: 20px;
         overflow-y: auto;
         display: flex;
         flex-direction: column;
         gap: 14px;
+        border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
       }
 
       .chat-message {
@@ -113,8 +127,8 @@
         padding: 12px 16px;
         border-radius: 14px;
         background: var(--card);
-        border: 1px solid var(--border);
-        box-shadow: 0 10px 20px rgba(17, 24, 39, 0.08);
+        border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.06);
       }
 
       .chat-message.user {
@@ -122,7 +136,7 @@
         background: var(--primary);
         color: var(--primary-foreground);
         border-color: color-mix(in srgb, var(--primary) 60%, transparent);
-        box-shadow: 0 12px 28px color-mix(in srgb, var(--primary) 35%, transparent);
+        box-shadow: 0 18px 34px color-mix(in srgb, var(--primary) 38%, transparent);
       }
 
       .chat-message.system {
@@ -162,8 +176,8 @@
         display: flex;
         border-radius: 12px;
         background: var(--input-background);
-        border: 1px solid var(--border);
-        box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+        border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
+        box-shadow: 0 16px 30px rgba(0, 0, 0, 0.08);
       }
 
       .chat-input input {
@@ -189,11 +203,12 @@
 
       .chat-input button:hover {
         transform: translateY(-1px);
-        box-shadow: 0 10px 24px color-mix(in srgb, var(--primary) 35%, transparent);
+        box-shadow: 0 12px 28px color-mix(in srgb, var(--primary) 38%, transparent);
       }
 
       .chat-input button:disabled {
-        background: var(--muted);
+        background: color-mix(in srgb, var(--secondary) 28%, var(--muted));
+        color: color-mix(in srgb, var(--secondary-foreground) 60%, var(--primary-foreground));
         box-shadow: none;
         cursor: not-allowed;
       }
