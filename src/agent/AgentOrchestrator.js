@@ -457,66 +457,59 @@ export class QualiFlowAgent {
     const currentPath = session.path ?? {};
 
     if (lower === "start") {
-      const kunden = await database.actions.listKunden();
-      if (!kunden?.length) {
-        this.setConversation(chatId, { phase: "idle", path: {} });
-        return {
-          status: "no_customers",
-          message: "Es wurden keine Kunden gefunden. Bitte lege zuerst Daten an.",
-        };
-      }
-
-      this.setConversation(chatId, {
-        phase: "select-customer",
-        path: {},
-        options: kunden,
-      });
-
-      const list = describeOptions(kunden, { labelKey: "name" });
-      return {
-        status: "awaiting_customer",
-        message: [`Welcher Kunde?`, list].join("\n"),
-        context: { options: kunden, phase: "select-customer" },
-      };
+      return this.promptCustomerSelection({ chatId, database });
     }
 
-    if (session.phase === "idle") {
-      return {
-        status: "hint",
-        message: "Tippe \"start\", um den Setup-Flow zu beginnen.",
-      };
-    }
-
-    if (session.phase === "idle") {
-      const intent = detectIntent(trimmed);
-      if (!intent) {
+    if (session.phase?.startsWith("capture:")) {
+      if (isCancelCommand(lower)) {
+        this.setConversation(chatId, {
+          ...session,
+          phase: currentPath?.baurundgang ? "completed" : "idle",
+          capture: null,
+          options: null,
+        });
         return {
-          status: "hint",
-          message: 'Tippe "start", um den Setup-Flow zu beginnen.',
+          status: "capture_cancelled",
+          message: "Erfassung abgebrochen.",
         };
       }
+      return this.continueCaptureFlow({ chatId, session, message: trimmed });
+    }
 
-      if (intent === INTENTS.CAPTURE) {
-        const ensured = await this.ensureSetupContext(chatId);
-        if (ensured) {
-          return ensured;
+    if (session.phase?.startsWith("edit:")) {
+      return this.continueEditFlow({ chatId, session, message: trimmed });
+    }
+
+    if (session.phase === "delete:confirm") {
+      return this.continueDeleteFlow({ chatId, session, message: trimmed });
+    }
+
+    const intent = detectIntent(trimmed);
+
+    if (session.phase === "idle") {
+      if (intent) {
+        if (intent === INTENTS.CAPTURE) {
+          const ensured = await this.ensureSetupContext(chatId, { database });
+          if (ensured) {
+            return ensured;
+          }
+          return this.beginCaptureFlow({
+            chatId,
+            session: { ...session, path: currentPath },
+            initialNote: extractInitialNote(trimmed),
+          });
         }
 
-        return this.beginCaptureFlow({ chatId, session: { ...session, path: currentPath }, initialNote: extractInitialNote(trimmed) });
-      }
-
-      if (intent === INTENTS.EDIT || intent === INTENTS.DELETE || intent === INTENTS.QUERY) {
-        const ensured = await this.ensureSetupContext(chatId);
-        if (ensured) {
-          return ensured;
+        if (intent === INTENTS.EDIT || intent === INTENTS.DELETE || intent === INTENTS.QUERY) {
+          const ensured = await this.ensureSetupContext(chatId, { database });
+          if (ensured) {
+            return ensured;
+          }
+          return this.routeIntent({ chatId, intent, message: trimmed, session });
         }
-        return this.routeIntent({ chatId, intent, message: trimmed, session });
       }
 
-      return {
-        status: "hint",
-        message: 'Tippe "start", um den Setup-Flow zu beginnen.',
-      };
+      return this.promptCustomerSelection({ chatId, database });
     }
 
     if (session.phase === "select-customer") {
