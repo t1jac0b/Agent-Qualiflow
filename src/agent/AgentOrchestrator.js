@@ -225,6 +225,41 @@ function resolveEditFieldChoice(entityType, input) {
   return null;
 }
 
+const EDIT_ENTITY_KEYWORDS = {
+  kunde: ["kunde", "kunden"],
+  objekt: ["objekt", "objekte", "bauobjekt"],
+};
+
+function detectEditEntityType(message, session) {
+  const lower = message.toLowerCase();
+
+  for (const [entityType, keywords] of Object.entries(EDIT_ENTITY_KEYWORDS)) {
+    if (keywords.some((keyword) => lower.includes(keyword))) {
+      return entityType;
+    }
+  }
+
+  if (session?.path?.objekt) {
+    return "objekt";
+  }
+
+  if (session?.path?.kunde) {
+    return "kunde";
+  }
+
+  return null;
+}
+
+function buildUpdateSummary(entityType, entity, field, value) {
+  const label = EDIT_FIELD_LABELS[entityType]?.[field] ?? field;
+  const entityLabel =
+    entityType === "kunde"
+      ? entity?.name ?? `Kunde #${entity?.id ?? "?"}`
+      : entity?.bezeichnung ?? entity?.name ?? `Objekt #${entity?.id ?? "?"}`;
+
+  return `Aktualisiert ${entityLabel} – ${label}: ${value}`;
+}
+
 export class QualiFlowAgent {
   constructor({ tools = {}, logger = createLogger("agent:qualiflow"), sessionOptions = {} } = {}) {
     this.tools = tools;
