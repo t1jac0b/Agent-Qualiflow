@@ -1,10 +1,11 @@
+import "dotenv/config";
 import express from "express";
 import multer from "multer";
 import process from "node:process";
 import path from "node:path";
 
 import { handleChatMessage } from "../src/agent/chat/handleChatMessage.js";
-import { getAgentOrchestrator } from "../src/agent/index.js";
+import { beginQualiFlowConversation, getAgentOrchestrator, handleQualiFlowMessage } from "../src/agent/index.js";
 import { createLogger } from "../src/utils/logger.js";
 
 const app = express();
@@ -317,20 +318,19 @@ app.post("/qs-rundgang/upload", qsUpload, async (req, res) => {
 app.post("/chat/message", async (req, res) => {
   const { chatId: requestedChatId, message, uploadedBy } = req.body ?? {};
   const chatId = normalizeChatId(requestedChatId);
-
-  if (!message || typeof message !== "string") {
-    log.warn("message fehlt", { route: "/chat/message", chatId });
-    res.status(400).json({ error: "message ist erforderlich." });
-    return;
-  }
-
   try {
-    log.info("Verarbeite Nachricht", { chatId });
-    const result = await orchestrator.handleMessage({
-      chatId,
-      message,
-      uploadedBy: uploadedBy ?? "http-chat",
-    });
+    const trimmed = typeof message === "string" ? message.trim() : "";
+
+    if (!trimmed) {
+      log.info("Proaktiven Gesprächsstart ausführen", { chatId });
+      const result = await beginQualiFlowConversation(chatId);
+      log.info("Proaktive Begrüßung gesendet", { chatId, status: result.status });
+      res.json({ chatId, ...serializeResult(result) });
+      return;
+    }
+
+    log.info("Verarbeite Nachricht (LLM)", { chatId });
+    const result = await handleQualiFlowMessage({ chatId, message });
     log.info("Nachricht verarbeitet", { chatId, status: result.status });
     res.json({ chatId, ...serializeResult(result) });
   } catch (error) {

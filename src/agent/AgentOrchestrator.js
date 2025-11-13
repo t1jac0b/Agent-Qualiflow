@@ -101,10 +101,18 @@ function composeSelectionSummary(path) {
   }
   if (path.baurundgang) {
     const datum = path.baurundgang.datumDurchgefuehrt ?? path.baurundgang.datumGeplant;
-    const formatted = datum ? new Date(datum).toISOString().slice(0, 10) : "kein Datum";
-    bits.push(`Baurundgang: ${path.baurundgang.id} – ${formatted}`);
+    const formatted = datum ? new Date(datum).toISOString().slice(0, 10) : null;
+    const label = path.baurundgang.typ?.name ?? (path.baurundgang.id ? `Baurundgang ${path.baurundgang.id}` : "Baurundgang");
+    bits.push(`Baurundgang: ${formatted ? `${label} – ${formatted}` : label}`);
   }
   return bits.length ? bits.join(" • ") : null;
+}
+
+function describeBaurundgang(baurundgang) {
+  if (!baurundgang) {
+    return "Baurundgang";
+  }
+  return baurundgang.typ?.name ?? (baurundgang.id ? `Baurundgang ${baurundgang.id}` : "Baurundgang");
 }
 
 const INTENTS = {
@@ -205,6 +213,23 @@ const EDIT_FIELD_SYNONYMS = {
   },
 };
 
+const EDIT_FIELD_DATABASE_KEYS = {
+  kunde: {
+    name: "name",
+    adresse: "adresse",
+    plz: "plz",
+    ort: "ort",
+    notiz: "notiz",
+  },
+  objekt: {
+    name: "bezeichnung",
+    adresse: "adresse",
+    plz: "plz",
+    ort: "ort",
+    notiz: "notiz",
+  },
+};
+
 function listEditFieldOptions(entityType) {
   const labels = EDIT_FIELD_LABELS[entityType];
   if (!labels) return [];
@@ -260,6 +285,70 @@ function buildUpdateSummary(entityType, entity, field, value) {
   return `Aktualisiert ${entityLabel} – ${label}: ${value}`;
 }
 
+function mapEditUpdates(entityType, updates) {
+  const mapping = EDIT_FIELD_DATABASE_KEYS[entityType];
+  if (!mapping) {
+    return { data: {}, applied: {} };
+  }
+
+  const data = {};
+  const applied = {};
+
+  for (const [key, value] of Object.entries(updates ?? {})) {
+    if (value == null || value === "") {
+      continue;
+    }
+
+    const mappedKey = mapping[key];
+    if (mappedKey) {
+      data[mappedKey] = value;
+      applied[key] = value;
+    }
+  }
+
+  return { data, applied };
+}
+
+function describeEntity(entityType, entity) {
+  if (!entity) {
+    return entityType === "objekt" ? "das Objekt" : "den Kunden";
+  }
+
+  if (entityType === "objekt") {
+    return `Objekt "${entity.bezeichnung ?? entity.name ?? entity.id}"`;
+  }
+
+  return `Kunde "${entity.name ?? entity.id}"`;
+}
+
+function updatePathWithEntity(path, entityType, updatedEntity) {
+  if (!path || !updatedEntity) {
+    return path;
+  }
+
+  if (entityType === "kunde" && path.kunde?.id === updatedEntity.id) {
+    return {
+      ...path,
+      kunde: {
+        ...path.kunde,
+        ...updatedEntity,
+      },
+    };
+  }
+
+  if (entityType === "objekt" && path.objekt?.id === updatedEntity.id) {
+    return {
+      ...path,
+      objekt: {
+        ...path.objekt,
+        ...updatedEntity,
+      },
+    };
+  }
+
+  return path;
+}
+
 export class QualiFlowAgent {
   constructor({ tools = {}, logger = createLogger("agent:qualiflow"), sessionOptions = {} } = {}) {
     this.tools = tools;
@@ -281,7 +370,7 @@ export class QualiFlowAgent {
     this.setConversation(chatId, { phase: "select-customer", path: {} });
   }
 
-  async promptCustomerSelection({ chatId, database, prefix } = {}) {
+  async promptCustomerSelection({ chatId, database, prefix, pendingIntent } = {}) {
     if (!database) {
       throw new Error("promptCustomerSelection: database tool nicht verfügbar.");
     }
@@ -295,19 +384,22 @@ export class QualiFlowAgent {
       };
     }
 
-    const options = kunden.map((kunde) => ({ id: kunde.id, name: kunde.name }));
-    this.setConversation(chatId, {
+    const existing = this.getConversation(chatId);
+    const options = kunden.map((kunde) => ({ id: kunde.id, name: kunde.name, inputValue: kunde.name }));
+    const nextState = {
       phase: "select-customer",
       path: {},
       options,
-    });
+      pendingIntent: pendingIntent ?? existing?.pendingIntent ?? null,
+    };
+
+    this.setConversation(chatId, { ...(existing ?? {}), ...nextState });
 
     const lines = [];
     if (prefix) {
       lines.push(prefix);
     }
-    lines.push("Um welchen Kunden geht es?");
-    lines.push(describeOptions(options, { labelKey: "name" }));
+    lines.push("Um welchen Kunden geht es? Du kannst einen Button anklicken oder den Namen eingeben.");
 
     return {
       status: "awaiting_customer",
@@ -316,25 +408,207 @@ export class QualiFlowAgent {
     };
   }
 
-  async ensureSetupContext(chatId, { database } = {}) {
-    const session = this.getConversation(chatId);
-    if (!session || !session.path?.baurundgang) {
-      if (database) {
-        return this.promptCustomerSelection({
-          chatId,
-          database,
-          prefix: "Bitte führe zuerst den Setup-Flow aus.",
-        });
-      }
+  async beginConversation(chatId) {
+    if (!chatId) {
+      throw new Error("beginConversation: 'chatId' ist erforderlich.");
+    }
 
-      this.resetToSetup(chatId);
+    const database = this.tools?.database;
+    if (!database) {
+      throw new Error("beginConversation: database tool nicht verfügbar.");
+    }
+
+    const existing = this.getConversation(chatId);
+    if (existing) {
+      const summary = composeSelectionSummary(existing.path);
+      const greeting = summary
+        ? `Willkommen zurück! Aktuelle Auswahl: ${summary}.`
+        : "Willkommen zurück! Wie kann ich dir helfen?";
+
       return {
-        status: "missing_setup",
-        message: 'Bitte führe zuerst den Setup-Flow aus. Tippe "start".',
+        status: existing.phase ?? "resume",
+        message: greeting,
+        context: {
+          phase: existing.phase,
+          selection: existing.path,
+          options: existing.options,
+        },
       };
     }
 
+    const prefix = "Hallo, ich bin der QualiFlow Agent.";
+    return this.promptCustomerSelection({ chatId, database, prefix });
+  }
+
+  async ensureSetupContext(
+    chatId,
+    { database, requireBaurundgang = true, intent, originalMessage } = {},
+  ) {
+    const session = this.getConversation(chatId) ?? { phase: "idle", path: {} };
+    const path = session.path ?? {};
+
+    const pendingIntent = intent
+      ? {
+          intent,
+          message: originalMessage,
+          requires: { baurundgang: requireBaurundgang },
+        }
+      : session.pendingIntent ?? null;
+
+    if (!path.kunde) {
+      if (!database) {
+        return {
+          status: "missing_setup",
+          message: "Bitte wähle zuerst Kunde, Objekt und Baurundgang aus.",
+        };
+      }
+
+      return this.promptCustomerSelection({
+        chatId,
+        database,
+        prefix: "Bitte wähle zuerst Kunde, Objekt und Baurundgang aus.",
+        pendingIntent,
+      });
+    }
+
+    if (!path.objekt) {
+      if (!database) {
+        return {
+          status: "missing_setup",
+          message: "Bitte wähle zuerst Kunde, Objekt und Baurundgang aus.",
+        };
+      }
+
+      const objekte = await database.actions.listObjekteByKunde(path.kunde.id);
+      if (!objekte?.length) {
+        this.setConversation(chatId, {
+          ...session,
+          phase: "select-customer",
+          options: session.options ?? [],
+          pendingIntent,
+        });
+        return {
+          status: "no_objects",
+          message: `Für ${path.kunde.name ?? "den Kunden"} wurden keine Objekte gefunden. Bitte wähle einen anderen Kunden oder erfasse zuerst Objekte im System.`,
+        };
+      }
+
+      const objektOptions = objekte.map((objekt) => ({
+        id: objekt.id,
+        bezeichnung: objekt.bezeichnung,
+        inputValue: objekt.bezeichnung,
+      }));
+
+      this.setConversation(chatId, {
+        ...session,
+        phase: "select-object",
+        path: { kunde: path.kunde },
+        options: objektOptions,
+        pendingIntent,
+      });
+
+      return {
+        status: "awaiting_object",
+        message: "Wähle das Objekt aus oder gib an, ob du ein neues Objekt erstellen möchtest.",
+        context: { options: objektOptions, phase: "select-object" },
+      };
+    }
+
+    if (requireBaurundgang && !path.baurundgang) {
+      if (!database) {
+        return {
+          status: "missing_setup",
+          message: "Bitte wähle zuerst Kunde, Objekt und Baurundgang aus.",
+        };
+      }
+
+      let baurundgaenge = await database.actions.listBaurundgaengeByObjekt(path.objekt.id);
+      let createdAuto = 0;
+      if (!baurundgaenge?.length) {
+        const autoCreate = await database.actions.autoCreateBaurundgaengeForObjekt(path.objekt.id);
+        createdAuto = autoCreate?.created ?? 0;
+        if (createdAuto > 0) {
+          baurundgaenge = await database.actions.listBaurundgaengeByObjekt(path.objekt.id);
+        }
+      }
+
+      if (!baurundgaenge?.length) {
+        this.setConversation(chatId, {
+          ...session,
+          phase: "select-object",
+          options: session.options ?? [],
+          pendingIntent,
+        });
+        return {
+          status: "no_baurundgaenge",
+          message: `Für das Objekt "${path.objekt.bezeichnung}" konnten keine Baurundgänge angelegt werden. Bitte prüfe die Stammdaten zu den Baurundgang-Typen.`,
+        };
+      }
+
+      const baurundgangOptions = baurundgaenge.map((item) => ({
+        ...item,
+        label: item.typ?.name ?? (item.id ? `Baurundgang ${item.id}` : "Baurundgang"),
+        inputValue: String(item.id),
+      }));
+
+      this.setConversation(chatId, {
+        ...session,
+        phase: "select-baurundgang",
+        path: { ...path },
+        options: baurundgangOptions,
+        pendingIntent,
+      });
+
+      const intro =
+        createdAuto > 0
+          ? `Ich habe für ${path.objekt.bezeichnung} automatisch ${createdAuto} Standard-Baurundgänge angelegt.`
+          : "Welcher Baurundgang soll bearbeitet werden?";
+
+      return {
+        status: "awaiting_baurundgang",
+        message: `${intro} Bitte wähle einen Baurundgang über die Buttons oder gib die ID ein.`,
+        context: { options: baurundgangOptions, phase: "select-baurundgang" },
+      };
+    }
+
+    if (database) {
+      const resumed = await this.resumePendingIntentIfReady({ chatId, database });
+      if (resumed) {
+        return resumed;
+      }
+    }
+
     return null;
+  }
+
+  async resumePendingIntentIfReady({ chatId, database }) {
+    const session = this.getConversation(chatId);
+    if (!session?.pendingIntent) {
+      return null;
+    }
+
+    const pending = session.pendingIntent;
+    const path = session.path ?? {};
+    const requiresBaurundgang = pending.requires?.baurundgang ?? true;
+    const contextReady = requiresBaurundgang
+      ? Boolean(path.baurundgang?.id)
+      : Boolean(path.objekt?.id ?? path.kunde?.id);
+
+    if (!contextReady) {
+      return null;
+    }
+
+    const updatedSession = { ...session, pendingIntent: null };
+    this.setConversation(chatId, updatedSession);
+
+    return this.routeIntent({
+      chatId,
+      intent: pending.intent,
+      message: pending.message,
+      session: updatedSession,
+      database,
+      skipEnsure: true,
+    });
   }
 
   pruneConversations({ maxAgeMinutes = DEFAULT_SESSION_TTL_MINUTES } = {}) {
@@ -490,12 +764,12 @@ export class QualiFlowAgent {
     const session = this.getConversation(chatId) ?? { phase: "idle", path: {} };
     const lower = trimmed.toLowerCase();
     const currentPath = session.path ?? {};
-
-    if (lower === "start") {
-      return this.promptCustomerSelection({ chatId, database });
-    }
+    const intent = detectIntent(trimmed);
 
     if (session.phase?.startsWith("capture:")) {
+      if (intent && intent !== INTENTS.CAPTURE) {
+        return this.routeIntent({ chatId, intent, message: trimmed, session, database });
+      }
       if (isCancelCommand(lower)) {
         this.setConversation(chatId, {
           ...session,
@@ -512,14 +786,18 @@ export class QualiFlowAgent {
     }
 
     if (session.phase?.startsWith("edit:")) {
-      return this.continueEditFlow({ chatId, session, message: trimmed });
+      if (intent && intent !== INTENTS.EDIT) {
+        return this.routeIntent({ chatId, intent, message: trimmed, session, database });
+      }
+      return this.continueEditFlow({ chatId, session, message: trimmed, database });
     }
 
     if (session.phase === "delete:confirm") {
+      if (intent && intent !== INTENTS.DELETE) {
+        return this.routeIntent({ chatId, intent, message: trimmed, session, database });
+      }
       return this.continueDeleteFlow({ chatId, session, message: trimmed });
     }
-
-    const intent = detectIntent(trimmed);
 
     if (session.phase === "idle") {
       if (intent) {
@@ -540,7 +818,7 @@ export class QualiFlowAgent {
           if (ensured) {
             return ensured;
           }
-          return this.routeIntent({ chatId, intent, message: trimmed, session });
+          return this.routeIntent({ chatId, intent, message: trimmed, session, database });
         }
       }
 
@@ -548,12 +826,25 @@ export class QualiFlowAgent {
     }
 
     if (session.phase === "select-customer") {
+      if (intent) {
+        const intentResult = await this.routeIntent({ chatId, intent, message: trimmed, session, database });
+        const reminder = "Lass uns mit der Kundenauswahl weitermachen. Bitte nutze die Buttons oder gib den Kundennamen ein.";
+        const context = { ...(intentResult.context ?? {}) };
+        if (!context.options && session.options) context.options = session.options;
+        context.phase = session.phase;
+        return {
+          ...intentResult,
+          message: [intentResult.message, reminder].filter(Boolean).join("\n\n"),
+          context,
+        };
+      }
+
       const selected = resolveSelection(trimmed, session.options, { labelKey: "name" });
       if (!selected) {
-        const list = describeOptions(session.options, { labelKey: "name" });
         return {
           status: "retry_customer",
-          message: [`Ich konnte den Kunden nicht zuordnen.`, `Bitte wähle erneut:`, list].join("\n"),
+          message: "Ich konnte den Kunden nicht zuordnen. Bitte wähle ihn über die Buttons oder gib den Namen ein.",
+          context: { options: session.options, phase: session.phase },
         };
       }
 
@@ -563,76 +854,120 @@ export class QualiFlowAgent {
           phase: "select-customer",
           path: session.path,
           options: session.options,
+          pendingIntent: session.pendingIntent ?? null,
         });
         return {
           status: "no_objects",
-          message: `Für ${selected.name} wurden keine Objekte gefunden. Bitte wähle einen anderen Kunden (oder gib \"start\" ein, um neu zu beginnen).`,
+          message: `Für ${selected.name} wurden keine Objekte gefunden. Bitte wähle einen anderen Kunden oder erfasse zuerst Objekte im System.`,
         };
       }
+
+      const objektOptions = objekte.map((objekt) => ({
+        id: objekt.id,
+        bezeichnung: objekt.bezeichnung,
+        inputValue: objekt.bezeichnung,
+      }));
 
       this.setConversation(chatId, {
         phase: "select-object",
         path: { ...session.path, kunde: selected },
-        options: objekte,
+        options: objektOptions,
+        pendingIntent: session.pendingIntent ?? null,
       });
 
-      const list = describeOptions(objekte, { labelKey: "bezeichnung" });
       return {
         status: "awaiting_object",
-        message: [`Welches Objekt?`, list].join("\n"),
-        context: { options: objekte, phase: "select-object" },
+        message: "Wähle das Objekt aus oder gib an, ob du ein neues Objekt erstellen möchtest.",
+        context: { options: objektOptions, phase: "select-object" },
       };
     }
 
     if (session.phase === "select-object") {
-      const selected = resolveSelection(trimmed, session.options, { labelKey: "bezeichnung" });
-      if (!selected) {
-        const list = describeOptions(session.options, { labelKey: "bezeichnung" });
+      if (intent) {
+        const intentResult = await this.routeIntent({ chatId, intent, message: trimmed, session, database });
+        const reminder = "Sag mir bitte weiterhin, welches Objekt zum Kunden gehört. Du kannst einen Button anklicken oder den Namen eingeben.";
+        const context = { ...(intentResult.context ?? {}) };
+        if (!context.options && session.options) context.options = session.options;
+        context.phase = session.phase;
         return {
-          status: "retry_object",
-          message: [`Objekt nicht erkannt.`, `Bitte wähle erneut:`, list].join("\n"),
+          ...intentResult,
+          message: [intentResult.message, reminder].filter(Boolean).join("\n\n"),
+          context,
         };
       }
 
-      const baurundgaenge = await database.actions.listBaurundgaengeByObjekt(selected.id);
+      const selected = resolveSelection(trimmed, session.options, { labelKey: "bezeichnung" });
+      if (!selected) {
+        return {
+          status: "retry_object",
+          message: "Ich habe das Objekt nicht erkannt. Bitte wähle es über die Buttons oder gib den Namen ein.",
+          context: { options: session.options, phase: session.phase },
+        };
+      }
+
+      let baurundgaenge = await database.actions.listBaurundgaengeByObjekt(selected.id);
+      let createdAuto = 0;
+      if (!baurundgaenge?.length) {
+        const autoCreate = await database.actions.autoCreateBaurundgaengeForObjekt(selected.id);
+        createdAuto = autoCreate?.created ?? 0;
+        if (createdAuto > 0) {
+          baurundgaenge = await database.actions.listBaurundgaengeByObjekt(selected.id);
+        }
+      }
+
       if (!baurundgaenge?.length) {
         this.setConversation(chatId, {
           phase: "select-object",
           path: session.path,
           options: session.options,
+          pendingIntent: session.pendingIntent ?? null,
         });
         return {
           status: "no_baurundgaenge",
-          message: `Für das Objekt \"${selected.bezeichnung}\" wurden keine Baurundgänge gefunden. Bitte wähle ein anderes Objekt oder gib \"start\" ein, um neu zu beginnen.`,
+          message: `Für das Objekt "${selected.bezeichnung}" konnten keine Baurundgänge angelegt werden. Bitte prüfe die Stammdaten zu den Baurundgang-Typen.`,
         };
       }
 
-      const formatter = (item) => {
-        const datum = item.datumDurchgefuehrt ?? item.datumGeplant;
-        const dateLabel = datum ? new Date(datum).toISOString().slice(0, 10) : "kein Datum";
-        return `${item.id} – ${dateLabel}${item.notiz ? ` (${item.notiz})` : ""}`;
-      };
+      const baurundgangOptions = baurundgaenge.map((item) => {
+        return {
+          ...item,
+          label: item.typ?.name ?? (item.id ? `Baurundgang ${item.id}` : "Baurundgang"),
+          inputValue: String(item.id),
+        };
+      });
 
       this.setConversation(chatId, {
         phase: "select-baurundgang",
         path: { ...session.path, objekt: selected },
-        options: baurundgaenge,
+        options: baurundgangOptions,
+        pendingIntent: session.pendingIntent ?? null,
       });
 
-      const list = describeOptions(baurundgaenge, { formatter });
+      const intro =
+        createdAuto > 0
+          ? `Ich habe für ${selected.bezeichnung} automatisch ${createdAuto} Standard-Baurundgänge angelegt.`
+          : "Welcher Baurundgang soll bearbeitet werden?";
+
       return {
         status: "awaiting_baurundgang",
-        message: [`Welchen Baurundgang (ID)?`, list].join("\n"),
-        context: { options: baurundgaenge, phase: "select-baurundgang" },
+        message: `${intro} Bitte wähle einen Baurundgang über die Buttons oder gib die ID ein.`,
+        context: { options: baurundgangOptions, phase: "select-baurundgang" },
       };
     }
 
     if (session.phase === "select-baurundgang") {
-      const formatter = (item) => {
-        const datum = item.datumDurchgefuehrt ?? item.datumGeplant;
-        const dateLabel = datum ? new Date(datum).toISOString().slice(0, 10) : "kein Datum";
-        return `${item.id} – ${dateLabel}`;
-      };
+      if (intent) {
+        const intentResult = await this.routeIntent({ chatId, intent, message: trimmed, session, database });
+        const reminder = "Bitte wähle weiterhin den passenden Baurundgang aus.";
+        const context = { ...(intentResult.context ?? {}) };
+        if (!context.options && session.options) context.options = session.options;
+        context.phase = session.phase;
+        return {
+          ...intentResult,
+          message: [intentResult.message, reminder].filter(Boolean).join("\n\n"),
+          context,
+        };
+      }
 
       const selected = resolveSelection(trimmed, session.options, {
         labelKey: "id",
@@ -640,10 +975,10 @@ export class QualiFlowAgent {
       });
 
       if (!selected) {
-        const list = describeOptions(session.options, { formatter });
         return {
           status: "retry_baurundgang",
-          message: [`Baurundgang nicht erkannt.`, `Bitte wähle erneut:`, list].join("\n"),
+          message: "Ich konnte den Baurundgang nicht zuordnen. Bitte wähle ihn über die Buttons oder gib die ID ein.",
+          context: { options: session.options, phase: session.phase },
         };
       }
 
@@ -651,6 +986,11 @@ export class QualiFlowAgent {
         phase: "pruefpunkte",
         path: { ...session.path, baurundgang: selected },
       });
+
+      const resumed = await this.resumePendingIntentIfReady({ chatId, database });
+      if (resumed) {
+        return resumed;
+      }
 
       return {
         status: "awaiting_pruefpunkte",
@@ -660,6 +1000,18 @@ export class QualiFlowAgent {
     }
 
     if (session.phase === "pruefpunkte") {
+      if (intent) {
+        const intentResult = await this.routeIntent({ chatId, intent, message: trimmed, session, database });
+        const reminder = "Bitte gib mir Bescheid, ob wir Prüfpunkte erfassen sollen (ja/nein).";
+        const context = { ...(intentResult.context ?? {}) };
+        context.phase = session.phase;
+        return {
+          ...intentResult,
+          message: [intentResult.message, reminder].filter(Boolean).join("\n\n"),
+          context,
+        };
+      }
+
       const choice = parseYesNo(trimmed);
       if (choice == null) {
         return {
@@ -678,6 +1030,11 @@ export class QualiFlowAgent {
         ? "Alles klar, wir erfassen Prüfpunkte."
         : "Alles klar, wir überspringen die Prüfpunkte.";
 
+      const resumed = await this.resumePendingIntentIfReady({ chatId, database });
+      if (resumed) {
+        return resumed;
+      }
+
       return {
         status: "setup_complete",
         message: `${confirmation} Setup abgeschlossen. Du kannst jetzt Positionen erfassen (Foto/Notiz).`,
@@ -686,15 +1043,29 @@ export class QualiFlowAgent {
     }
 
     if (session.phase === "completed") {
+      if (intent) {
+        if (intent === INTENTS.CAPTURE) {
+          const ensured = await this.ensureSetupContext(chatId, { database });
+          if (ensured) {
+            return ensured;
+          }
+          return this.beginCaptureFlow({
+            chatId,
+            session: { ...session, path: currentPath },
+            initialNote: extractInitialNote(trimmed),
+          });
+        }
+
+        if (intent === INTENTS.EDIT || intent === INTENTS.DELETE || intent === INTENTS.QUERY) {
+          return this.routeIntent({ chatId, intent, message: trimmed, session, database });
+        }
+      }
+
       return {
         status: "completed",
-        message: "Setup ist bereits abgeschlossen. Tippe \"start\" für einen neuen Durchlauf.",
+        message: "Setup ist bereits abgeschlossen. Was möchtest du als Nächstes tun?",
         context: { selection: session.path },
       };
-    }
-
-    if (session.phase?.startsWith("capture:")) {
-      return this.continueCaptureFlow({ chatId, session, message: trimmed });
     }
 
     return {
@@ -703,22 +1074,367 @@ export class QualiFlowAgent {
     };
   }
 
-  async routeIntent({ chatId, intent, message, session }) {
+  async routeIntent({ chatId, intent, message, session, database, skipEnsure = false }) {
     switch (intent) {
       case INTENTS.CAPTURE:
         return this.beginCaptureFlow({ chatId, session, initialNote: extractInitialNote(message) });
       case INTENTS.DELETE:
         return this.handleDeleteIntent({ chatId, message, session });
       case INTENTS.EDIT:
-        return this.handleEditIntent({ chatId, message, session });
+        return this.handleEditIntent({ chatId, message, session, database });
       case INTENTS.QUERY:
-        return this.handleQueryIntent({ chatId, message, session });
+        return this.handleQueryIntent({ chatId, message, session, database, skipEnsure });
       default:
         return {
           status: "unhandled_intent",
           message: "Ich konnte deine Eingabe nicht zuordnen.",
         };
     }
+  }
+
+  async handleEditIntent({ chatId, message, session, database }) {
+    if (!database) {
+      throw new Error("handleEditIntent: database tool nicht verfügbar.");
+    }
+
+    const entityType = detectEditEntityType(message, session);
+    if (!entityType) {
+      return {
+        status: "edit_unknown_entity",
+        message: "Möchtest du einen Kunden oder ein Objekt bearbeiten? Bitte gib das an.",
+      };
+    }
+
+    let entity = entityType === "kunde" ? session.path?.kunde : session.path?.objekt;
+    const extractedName = extractEntityName(message, entityType === "kunde" ? "kunde" : "objekt");
+
+    if (!entity && extractedName) {
+      try {
+        if (entityType === "kunde") {
+          entity = await database.actions.findKundeByName(extractedName);
+        } else {
+          const kundeId = session.path?.kunde?.id;
+          entity = await database.actions.findObjektByName({ name: extractedName, kundeId });
+        }
+      } catch (error) {
+        this.logger.error("handleEditIntent: Entity lookup fehlgeschlagen", { error, entityType, name: extractedName });
+      }
+    }
+
+    if (!entity) {
+      const hint =
+        entityType === "objekt"
+          ? "Bitte wähle zuerst ein Objekt im Setup (Kunde → Objekt → Baurundgang)."
+          : "Bitte wähle zuerst einen Kunden im Setup (Buttons oder Eingabe).";
+      return {
+        status: "edit_missing_context",
+        message: `Ich konnte ${entityType === "objekt" ? "kein Objekt" : "keinen Kunden"} zuordnen. ${hint}`,
+      };
+    }
+
+    const updates = extractFieldUpdates(message);
+    const { data, applied } = mapEditUpdates(entityType, updates);
+
+    if (Object.keys(data).length) {
+      try {
+        const updatedEntity =
+          entityType === "kunde"
+            ? await database.actions.updateKundeFields({ id: entity.id, data })
+            : await database.actions.updateObjektFields({ id: entity.id, data });
+
+        const newPath = updatePathWithEntity(session.path, entityType, updatedEntity);
+        this.setConversation(chatId, {
+          ...session,
+          phase: "completed",
+          path: newPath,
+          options: null,
+          edit: null,
+        });
+
+        const lines = Object.entries(applied).map(([field, value]) =>
+          buildUpdateSummary(entityType, updatedEntity, field, value),
+        );
+        const summary = composeSelectionSummary(newPath);
+
+        return {
+          status: "edit_success",
+          message: [...lines, summary ? `Kontext: ${summary}` : null].filter(Boolean).join("\n"),
+          context: { selection: newPath },
+        };
+      } catch (error) {
+        this.logger.error("handleEditIntent: Update fehlgeschlagen", { error, entityType, entityId: entity.id });
+        return {
+          status: "edit_error",
+          message: "Beim Aktualisieren ist ein Fehler aufgetreten. Bitte versuche es erneut.",
+        };
+      }
+    }
+
+    const options = listEditFieldOptions(entityType);
+    this.setConversation(chatId, {
+      ...session,
+      phase: "edit:select-field",
+      options,
+      edit: {
+        entityType,
+        entityId: entity.id,
+        entityName:
+          entityType === "kunde"
+            ? entity.name ?? extractedName ?? `Kunde #${entity.id}`
+            : entity.bezeichnung ?? entity.name ?? extractedName ?? `Objekt #${entity.id}`,
+      },
+    });
+
+    return {
+      status: "edit_select_field",
+      message: `Welches Feld soll für ${describeEntity(entityType, entity)} geändert werden? Bitte nutze die Buttons oder gib den Feldnamen ein.`,
+      context: { options, phase: "edit:select-field" },
+    };
+  }
+
+  async continueEditFlow({ chatId, session, message, database }) {
+    if (!database) {
+      throw new Error("continueEditFlow: database tool nicht verfügbar.");
+    }
+
+    const editState = session.edit;
+    if (!editState) {
+      this.setConversation(chatId, { ...session, phase: "completed", options: null });
+      return {
+        status: "edit_reset",
+        message: "Bearbeitungsmodus zurückgesetzt. Was möchtest du tun?",
+      };
+    }
+
+    if (isCancelCommand(message)) {
+      this.setConversation(chatId, { ...session, phase: "completed", options: null, edit: null });
+      return {
+        status: "edit_cancelled",
+        message: "Alles klar, keine Änderungen vorgenommen.",
+        context: { selection: session.path },
+      };
+    }
+
+    if (session.phase === "edit:select-field") {
+      const choice = resolveEditFieldChoice(editState.entityType, message);
+      if (!choice) {
+        return {
+          status: "edit_retry_field",
+          message: "Ich konnte das Feld nicht zuordnen. Bitte wähle eines der Buttons oder gib den Feldnamen ein.",
+          context: { options: session.options, phase: session.phase },
+        };
+      }
+
+      this.setConversation(chatId, {
+        ...session,
+        phase: "edit:await-value",
+        options: null,
+        edit: {
+          ...editState,
+          field: choice.field,
+          fieldLabel: choice.label,
+        },
+      });
+
+      return {
+        status: "edit_await_value",
+        message: `Bitte gib den neuen Wert für ${choice.label} an.`,
+      };
+    }
+
+    if (session.phase === "edit:await-value") {
+      const value = normalizeInput(message);
+      if (!value) {
+        return {
+          status: "edit_retry_value",
+          message: "Der neue Wert darf nicht leer sein. Bitte gib einen Text ein.",
+        };
+      }
+
+      const updates = { [editState.field]: value };
+      const { data } = mapEditUpdates(editState.entityType, updates);
+      if (!Object.keys(data).length) {
+        return {
+          status: "edit_retry_value",
+          message: "Ich konnte den Wert nicht zuordnen. Bitte formuliere ihn erneut.",
+        };
+      }
+
+      try {
+        const updatedEntity =
+          editState.entityType === "kunde"
+            ? await database.actions.updateKundeFields({ id: editState.entityId, data })
+            : await database.actions.updateObjektFields({ id: editState.entityId, data });
+
+        const newPath = updatePathWithEntity(session.path, editState.entityType, updatedEntity);
+        this.setConversation(chatId, {
+          ...session,
+          phase: "completed",
+          path: newPath,
+          edit: null,
+          options: null,
+        });
+
+        const summaryLine = buildUpdateSummary(editState.entityType, updatedEntity, editState.field, value);
+        const contextSummary = composeSelectionSummary(newPath);
+
+        return {
+          status: "edit_success",
+          message: [summaryLine, contextSummary ? `Kontext: ${contextSummary}` : null].filter(Boolean).join("\n"),
+          context: { selection: newPath },
+        };
+      } catch (error) {
+        this.logger.error("continueEditFlow: Update fehlgeschlagen", {
+          error,
+          entityType: editState.entityType,
+          entityId: editState.entityId,
+        });
+        return {
+          status: "edit_error",
+          message: "Beim Aktualisieren ist ein Fehler aufgetreten. Bitte versuche es erneut.",
+        };
+      }
+    }
+
+    return {
+      status: "edit_unknown_state",
+      message: "Ich konnte die Bearbeitung nicht fortsetzen. Bitte starte den Setup-Flow erneut oder wähle eine andere Aktion.",
+    };
+  }
+
+  async handleDeleteIntent({ chatId, message, session }) {
+    const entityType = detectEditEntityType(message, session);
+    if (!entityType) {
+      return {
+        status: "delete_unknown_entity",
+        message: "Bitte sag mir, ob du einen Kunden oder ein Objekt löschen möchtest.",
+      };
+    }
+
+    const entity = entityType === "kunde" ? session.path?.kunde : session.path?.objekt;
+    if (!entity) {
+      return {
+        status: "delete_missing_context",
+        message: "Ich kann derzeit nichts löschen, da kein passender Kontext ausgewählt ist.",
+      };
+    }
+
+    const label = describeEntity(entityType, entity);
+
+    this.setConversation(chatId, {
+      ...session,
+      phase: "delete:confirm",
+      delete: {
+        entityType,
+        label,
+      },
+    });
+
+    return {
+      status: "delete_confirm",
+      message: `${label} soll gelöscht werden. Bist du dir absolut sicher? Bitte bestätige mit ja/nein.`,
+    };
+  }
+
+  async continueDeleteFlow({ chatId, session, message }) {
+    const choice = parseYesNo(message);
+    if (choice == null) {
+      return {
+        status: "delete_retry",
+        message: 'Bitte bestätige mit ja oder nein (z.B. "ja" / "nein").',
+      };
+    }
+
+    const label = session.delete?.label ?? "Das Element";
+
+    this.setConversation(chatId, {
+      ...session,
+      phase: "completed",
+      delete: null,
+    });
+
+    if (!choice) {
+      return {
+        status: "delete_cancelled",
+        message: `${label} bleibt unverändert. Danke für die Rückmeldung!`,
+        context: { selection: session.path },
+      };
+    }
+
+    return {
+      status: "delete_guardrail",
+      message: `${label} wird nicht automatisch gelöscht.
+Zur Sicherheit erfolgt eine Löschung nur nach expliziter Freigabe durch den Administrator.`,
+      context: { selection: session.path },
+    };
+  }
+
+  async handleQueryIntent({ chatId, message, session, database, skipEnsure = false }) {
+    if (!database) {
+      throw new Error("handleQueryIntent: database tool nicht verfügbar.");
+    }
+
+    if (!skipEnsure) {
+      const ensured = await this.ensureSetupContext(chatId, {
+        database,
+        intent: INTENTS.QUERY,
+        originalMessage: message,
+      });
+      if (ensured) {
+        return ensured;
+      }
+    }
+
+    const lower = message.toLowerCase();
+    const path = session.path ?? this.getConversation(chatId)?.path;
+
+    if (!path?.baurundgang?.id) {
+      return {
+        status: "query_missing_context",
+        message: "Bitte wähle zuerst Kunde, Objekt und Baurundgang aus, bevor du Auswertungen abfragst.",
+      };
+    }
+
+    if (lower.includes("rückmeldung") || lower.includes("rueckmeldung")) {
+      try {
+        const summary = await database.actions.summarizeRueckmeldungen({ baurundgangId: path.baurundgang.id });
+        if (!summary.length) {
+          return {
+            status: "query_rueckmeldungen_empty",
+            message: "Es wurden noch keine Rückmeldungen erfasst.",
+            context: { selection: path },
+          };
+        }
+
+        const items = summary.map((entry) =>
+          `• ${entry.rueckmeldung}: ${entry.offen} offen, ${entry.erledigt} erledigt (gesamt ${entry.gesamt})`,
+        );
+        const header = composeSelectionSummary(path);
+
+        return {
+          status: "query_rueckmeldungen",
+          message: [header ? `Kontext: ${header}` : null, "Rückmeldungsübersicht:", ...items]
+            .filter(Boolean)
+            .join("\n"),
+          context: { selection: path },
+        };
+      } catch (error) {
+        this.logger.error("handleQueryIntent: Rueckmeldungs-Abfrage fehlgeschlagen", {
+          error,
+          baurundgangId: path.baurundgang.id,
+        });
+        return {
+          status: "query_error",
+          message: "Die Rückmeldungen konnten nicht geladen werden. Bitte versuche es erneut.",
+        };
+      }
+    }
+
+    return {
+      status: "query_unknown",
+      message: "Diese Frage kann ich noch nicht beantworten. Versuche es z.B. mit \"Welche Rückmeldungen fallen an?\"",
+      context: { selection: path },
+    };
   }
 
   async beginCaptureFlow({ chatId, session, initialNote = "" }) {
@@ -731,7 +1447,7 @@ export class QualiFlowAgent {
     if (!path?.baurundgang?.id) {
       return {
         status: "missing_setup",
-        message: 'Bitte wähle zuerst einen Baurundgang über den Setup-Flow ("start").',
+        message: "Bitte schließe zuerst den Setup-Flow mit Kunde, Objekt und Baurundgang ab.",
       };
     }
 
@@ -746,6 +1462,7 @@ export class QualiFlowAgent {
     const options = templates.map((template) => ({
       id: template.id,
       name: template.name ?? template.bezeichnung ?? template.kuerzel ?? `Bauteil ${template.id}`,
+      inputValue: template.name ?? template.bezeichnung ?? template.kuerzel ?? `Bauteil ${template.id}`,
     }));
 
     this.setConversation(chatId, {
@@ -759,7 +1476,7 @@ export class QualiFlowAgent {
 
     return {
       status: "capture_select_bauteil",
-      message: ["Welches Bauteil möchtest du erfassen?", describeOptions(options, { labelKey: "name" })].join("\n"),
+      message: "Welches Bauteil möchtest du erfassen? Bitte nutze die Buttons oder gib den Namen ein.",
       context: { phase: "capture:select-bauteil", options },
     };
   }
@@ -774,10 +1491,10 @@ export class QualiFlowAgent {
     if (phase === "capture:select-bauteil") {
       const selected = resolveSelection(message, options, { labelKey: "name" });
       if (!selected) {
-        const list = describeOptions(options, { labelKey: "name" });
         return {
           status: "capture_retry_bauteil",
-          message: ["Bauteil nicht erkannt.", "Bitte wähle erneut:", list].join("\n"),
+          message: "Bauteil nicht erkannt. Bitte wähle es über die Buttons oder gib den Namen ein.",
+          context: { options, phase },
         };
       }
 
@@ -792,6 +1509,7 @@ export class QualiFlowAgent {
       const kapitelOptions = kapitelTemplates.map((template) => ({
         id: template.id,
         name: template.name ?? template.bezeichnung ?? template.kuerzel ?? `Kapitel ${template.id}`,
+        inputValue: template.name ?? template.bezeichnung ?? template.kuerzel ?? `Kapitel ${template.id}`,
       }));
 
       this.setConversation(chatId, {
@@ -806,7 +1524,7 @@ export class QualiFlowAgent {
 
       return {
         status: "capture_select_kapitel",
-        message: ["Welches Bereichskapitel?", describeOptions(kapitelOptions, { labelKey: "name" })].join("\n"),
+        message: "Welches Bereichskapitel soll es sein? Bitte nutze die Buttons oder gib den Namen ein.",
         context: { phase: "capture:select-kapitel", options: kapitelOptions },
       };
     }
@@ -814,10 +1532,10 @@ export class QualiFlowAgent {
     if (phase === "capture:select-kapitel") {
       const selected = resolveSelection(message, options, { labelKey: "name" });
       if (!selected) {
-        const list = describeOptions(options, { labelKey: "name" });
         return {
           status: "capture_retry_kapitel",
-          message: ["Bereichskapitel nicht erkannt.", "Bitte wähle erneut:", list].join("\n"),
+          message: "Bereichskapitel nicht erkannt. Bitte wähle es über die Buttons oder gib den Namen ein.",
+          context: { options, phase },
         };
       }
 
@@ -832,6 +1550,7 @@ export class QualiFlowAgent {
       const rueckOptions = rueckmeldungstypen.map((typ) => ({
         id: typ.id,
         name: typ.name ?? typ.bezeichnung ?? `Rückmeldung ${typ.id}`,
+        inputValue: typ.name ?? typ.bezeichnung ?? `Rückmeldung ${typ.id}`,
       }));
 
       this.setConversation(chatId, {
@@ -846,7 +1565,7 @@ export class QualiFlowAgent {
 
       return {
         status: "capture_select_rueckmeldung",
-        message: ["Welche Rückmeldung?", describeOptions(rueckOptions, { labelKey: "name" })].join("\n"),
+        message: "Welche Rückmeldung möchtest du wählen? Bitte nutze die Buttons oder gib den Namen ein.",
         context: { phase: "capture:select-rueckmeldung", options: rueckOptions },
       };
     }
@@ -854,10 +1573,10 @@ export class QualiFlowAgent {
     if (phase === "capture:select-rueckmeldung") {
       const selected = resolveSelection(message, options, { labelKey: "name" });
       if (!selected) {
-        const list = describeOptions(options, { labelKey: "name" });
         return {
           status: "capture_retry_rueckmeldung",
-          message: ["Rückmeldungsart nicht erkannt.", "Bitte wähle erneut:", list].join("\n"),
+          message: "Rückmeldungsart nicht erkannt. Bitte wähle sie über die Buttons oder gib den Namen ein.",
+          context: { options, phase },
         };
       }
 
@@ -886,7 +1605,7 @@ export class QualiFlowAgent {
 
     return {
       status: "capture_unknown_state",
-      message: "Ich konnte deine Eingabe nicht verarbeiten. Tippe \"start\" für den Setup-Flow.",
+      message: "Ich konnte deine Eingabe nicht verarbeiten. Bitte starte den Setup-Flow erneut oder wähle eine andere Aktion.",
     };
   }
 
@@ -928,7 +1647,7 @@ export class QualiFlowAgent {
     if (!baurundgangId) {
       return {
         status: "missing_setup",
-        message: 'Der Baurundgang fehlt. Bitte starte den Setup-Flow erneut ("start").',
+        message: "Der Baurundgang fehlt. Bitte wähle Kunde, Objekt und Baurundgang erneut aus.",
       };
     }
 

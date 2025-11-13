@@ -23,10 +23,13 @@ export const databaseTool = defineTool({
     listKunden: () => LegacyDatabaseTool.listKunden(),
     listObjekteByKunde: (payload) => LegacyDatabaseTool.listObjekteByKunde(payload?.kundeId ?? payload),
     listBaurundgaengeByObjekt: (payload) => LegacyDatabaseTool.listBaurundgaengeByObjekt(payload?.objektId ?? payload),
+    autoCreateBaurundgaengeForObjekt: (payload) =>
+      LegacyDatabaseTool.autoCreateBaurundgaengeForObjekt(payload?.objektId ?? payload),
     listBauteilTemplates: () => LegacyDatabaseTool.listBauteilTemplates(),
     listKapitelTemplatesByBauteilTemplate: (payload) =>
       LegacyDatabaseTool.listKapitelTemplatesByBauteilTemplate(payload?.bauteilTemplateId ?? payload),
     listRueckmeldungstypen: () => LegacyDatabaseTool.listRueckmeldungstypen(),
+    summarizeRueckmeldungen: (payload) => LegacyDatabaseTool.summarizeRueckmeldungen(payload),
     ensureBauteilForTemplate: (payload) => LegacyDatabaseTool.ensureBauteilForTemplate(payload),
     ensureKapitelForBauteil: (payload) => LegacyDatabaseTool.ensureKapitelForBauteil(payload),
     createPositionWithDefaults: (payload) => LegacyDatabaseTool.createPositionWithDefaults(payload),

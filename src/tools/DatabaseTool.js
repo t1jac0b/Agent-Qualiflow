@@ -2,6 +2,21 @@ import { PrismaClient } from "@prisma/client";
 
 import { attachBauteilInstantiationHook } from "../agent/bauteil/instantiateFromTemplate.js";
 
+const STANDARD_BAURUNDGANG_ORDER = [
+  "Bodenplatte, Dichtigkeitsklasse",
+  "Einlagen in Decke über Wohngeschoss",
+  "Rohbauarbeiten, Wand- und Deckenlager",
+  "Flachdach / Fenstereinbauten",
+  "Vorwandinstallationen, GBT",
+  "Innenausbau Leichtbauwände, Gipserarbeiten",
+  "Fussbodenheizung",
+  "Fassadenarbeiten",
+  "Abdichtungs-und Plattenarbeiten Nasszellen",
+  "Duschen und Badewannensetzen",
+  "Küchenmontage",
+  "Gebäudetechnik",
+];
+
 const QS_REPORT_INCLUDE = {
   baurundgang: { include: { fotos: true } },
   objekt: true,
@@ -80,7 +95,7 @@ export const DatabaseTool = {
     const [types, existing] = await Promise.all([
       prisma.baurundgangTyp.findMany({
         where: { aktiv: true },
-        orderBy: [{ reihenfolge: "asc" }, { nummer: "asc" }],
+        select: { id: true, name: true },
       }),
       prisma.baurundgang.findMany({
         where: { objektId },
@@ -92,11 +107,27 @@ export const DatabaseTool = {
       return { created: 0 };
     }
 
+    const typesByName = new Map(
+      types.map((typ) => [typ.name?.trim().toLowerCase() ?? "", typ]).filter(([key]) => key),
+    );
+
+    const orderedTypes = STANDARD_BAURUNDGANG_ORDER.map((name) => {
+      const key = name.trim().toLowerCase();
+      return typesByName.get(key) ?? null;
+    }).filter((typ) => typ);
+
+    if (!orderedTypes.length) {
+      return { created: 0 };
+    }
+
     const existingIds = new Set(existing.map((item) => item.baurundgangTypId));
     let created = 0;
 
-    for (const typ of types) {
-      if (existingIds.has(typ.id)) continue;
+    for (const typ of orderedTypes) {
+      if (!typ || existingIds.has(typ.id)) {
+        continue;
+      }
+
       await prisma.baurundgang.create({
         data: {
           objekt: { connect: { id: objektId } },
@@ -391,6 +422,12 @@ export const DatabaseTool = {
         datumGeplant: true,
         datumDurchgefuehrt: true,
         notiz: true,
+        typ: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     });
   },
@@ -448,6 +485,60 @@ export const DatabaseTool = {
         name: true,
         typCode: true,
       },
+    });
+  },
+
+  async summarizeRueckmeldungen({ baurundgangId }) {
+    if (!baurundgangId) {
+      throw new Error("summarizeRueckmeldungen: 'baurundgangId' ist erforderlich.");
+    }
+
+    const positions = await prisma.position.findMany({
+      where: {
+        qsreport: { baurundgangId },
+      },
+      select: {
+        id: true,
+        erledigt: true,
+        rueckmeldungstyp: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    if (!positions.length) {
+      return [];
+    }
+
+    const summary = new Map();
+
+    for (const position of positions) {
+      const rueckmeldung = position.rueckmeldungstyp?.name ?? "Unbekannt";
+      const bucket = summary.get(rueckmeldung) ?? {
+        rueckmeldung,
+        offen: 0,
+        erledigt: 0,
+        gesamt: 0,
+      };
+
+      bucket.gesamt += 1;
+      if (position.erledigt) {
+        bucket.erledigt += 1;
+      } else {
+        bucket.offen += 1;
+      }
+
+      summary.set(rueckmeldung, bucket);
+    }
+
+    return Array.from(summary.values()).sort((a, b) => {
+      if (a.offen === b.offen) {
+        return b.gesamt - a.gesamt;
+      }
+      return b.offen - a.offen;
     });
   },
 

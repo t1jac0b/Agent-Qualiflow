@@ -43,27 +43,30 @@ function scrollLogToBottom() {
   chatLog.scrollTo({ top: chatLog.scrollHeight, behavior: "smooth" });
 }
 
-function describeOption(option, { preferName = false } = {}) {
+function optionLabel(option) {
   if (option == null) return "–";
   if (typeof option === "string") return option;
   if (typeof option === "number") return String(option);
-  if (option.name) {
-    if (preferName) return option.name;
-    return option.id ? `${option.name} (ID: ${option.id})` : option.name;
-  }
-  if (option.bezeichnung) {
-    if (preferName) return option.bezeichnung;
-    return option.id ? `${option.bezeichnung} (ID: ${option.id})` : option.bezeichnung;
-  }
-  if (option.id) {
-    return `ID: ${option.id}`;
-  }
+  if (option.label) return option.label;
+  if (option.name) return option.name;
+  if (option.bezeichnung) return option.bezeichnung;
+  if (option.title) return option.title;
+  if (option.value) return String(option.value);
+  if (option.id) return String(option.id);
   try {
     return JSON.stringify(option);
   } catch (error) {
-    console.error("describeOption failed", { option, error });
+    console.error("optionLabel failed", { option, error });
     return String(option);
   }
+}
+
+function optionValue(option) {
+  if (option == null) return "";
+  if (typeof option === "string" || typeof option === "number") {
+    return String(option);
+  }
+  return option.inputValue ?? optionLabel(option);
 }
 
 function renderSelectionSummary(selection) {
@@ -80,8 +83,9 @@ function renderSelectionSummary(selection) {
   }
   if (selection.baurundgang) {
     const datum = selection.baurundgang.datumDurchgefuehrt ?? selection.baurundgang.datumGeplant;
-    const formattedDate = datum ? new Date(datum).toISOString().slice(0, 10) : "kein Datum";
-    items.push(`Baurundgang: ${selection.baurundgang.id ?? "?"} – ${formattedDate}`);
+    const formattedDate = datum ? new Date(datum).toISOString().slice(0, 10) : null;
+    const typName = selection.baurundgang.typ?.name ?? selection.baurundgang.label ?? selection.baurundgang.id;
+    items.push(`Baurundgang: ${formattedDate ? `${typName} – ${formattedDate}` : typName}`);
   }
   if (selection.pruefpunkteGewuenscht !== undefined) {
     items.push(`Prüfpunkte: ${selection.pruefpunkteGewuenscht ? "erfassen" : "überspringen"}`);
@@ -99,9 +103,9 @@ function createOptionButton(option) {
   const button = document.createElement("button");
   button.type = "button";
   button.className = "option-button";
-  button.textContent = describeOption(option);
+  button.textContent = optionLabel(option);
   button.addEventListener("click", () => {
-    chatInput.value = describeOption(option, { preferName: true });
+    chatInput.value = optionValue(option);
     chatInput.focus();
   });
   return button;
@@ -166,14 +170,10 @@ function setLoading(isLoading) {
   chatInput.disabled = isLoading;
 }
 
-async function sendChatMessage({ message, options = {} }) {
-  const payload = { message };
-  if (state.chatId) {
+async function postChatMessage(body) {
+  const payload = { ...body };
+  if (state.chatId && !payload.chatId) {
     payload.chatId = state.chatId;
-  }
-
-  if (options?.capture) {
-    payload.context = { ...options.capture };
   }
 
   const response = await fetch("/chat/message", {
@@ -188,6 +188,16 @@ async function sendChatMessage({ message, options = {} }) {
   }
 
   return response.json();
+}
+
+async function sendChatMessage({ message, options = {} }) {
+  const payload = { message };
+
+  if (options?.capture) {
+    payload.context = { ...options.capture };
+  }
+
+  return postChatMessage(payload);
 }
 
 async function handleSubmit(message) {
@@ -278,34 +288,39 @@ resetButton?.addEventListener("click", () => {
   if (chatLog) {
     chatLog.innerHTML = "";
   }
-  appendMessage({
-    role: "system",
-    text: "Neuer Chat initialisiert. Tippe \"start\", um zu beginnen.",
-    status: "reset",
-  });
-  chatInput?.focus();
+  state.pendingCapture = null;
+  initializeConversation();
 });
+
+async function initializeConversation() {
+  try {
+    setLoading(true);
+    const result = await postChatMessage({ message: "" });
+    if (result.chatId) {
+      setChatId(result.chatId);
+    }
+    if (result.message || result.context || result.options) {
+      appendMessage({
+        role: "system",
+        text: result.message ?? "",
+        status: result.status ?? "info",
+        options: result.options,
+        context: result.context,
+      });
+    }
+  } catch (error) {
+    console.error("Konversationsstart fehlgeschlagen", error);
+    appendMessage({ role: "system", text: `Fehler: ${error.message}`, status: "error" });
+  } finally {
+    setLoading(false);
+    chatInput?.focus();
+  }
+}
 
 function bootstrap() {
   updateSessionDisplay();
 
-  if (chatLog && !chatLog.childElementCount) {
-    const introStatus = state.chatId ? "session" : "info";
-    const introMessage = state.chatId
-      ? "Bestehende Sitzung wiederhergestellt. Tippe eine Nachricht, um fortzufahren."
-      : "Willkommen! Tippe \"start\", um den Setup-Flow zu starten.";
-    appendMessage({ role: "system", text: introMessage, status: introStatus });
-  }
-
-  if (state.chatId) {
-    appendMessage({
-      role: "system",
-      text: `Aktive Chat-ID: ${state.chatId}`,
-      status: "session",
-    });
-  }
-
-  chatInput?.focus();
+  initializeConversation();
 }
 
 bootstrap();
