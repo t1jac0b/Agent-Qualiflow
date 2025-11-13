@@ -2,6 +2,98 @@ import { createLogger } from "../../utils/logger.js";
 import { getOpenAI, getOpenAIModel } from "./openaiClient.js";
 import { buildSystemPrompt } from "./qualiflowPrompt.js";
 
+const KUNDE_FIELD_ALIASES = {
+  name: ["name", "titel"],
+  adresse: ["adresse", "address", "strasse", "straße", "street"],
+  plz: ["plz", "postleitzahl", "zip"],
+  ort: ["ort", "stadt", "city"],
+  notiz: ["notiz", "hinweis", "kommentar", "note"],
+};
+
+const OBJEKT_FIELD_ALIASES = {
+  bezeichnung: ["name", "bezeichnung", "titel"],
+  adresse: ["adresse", "address", "strasse", "straße", "street"],
+  plz: ["plz", "postleitzahl", "zip"],
+  ort: ["ort", "stadt", "city"],
+  notiz: ["notiz", "hinweis", "kommentar", "note"],
+};
+
+function matchAlias(key, aliases) {
+  const lower = key.toLowerCase();
+  for (const [canonical, variants] of Object.entries(aliases)) {
+    if (variants.some((variant) => variant.toLowerCase() === lower)) {
+      return canonical;
+    }
+  }
+  return null;
+}
+
+function parseAddressComponents(value) {
+  if (typeof value !== "string") return {};
+  const trimmed = value.trim();
+  if (!trimmed) return {};
+  if (!trimmed.includes(",")) {
+    return { adresse: trimmed };
+  }
+  const segments = trimmed.split(",").map((part) => part.trim()).filter(Boolean);
+  if (!segments.length) {
+    return {};
+  }
+  const data = { adresse: segments[0] };
+  const remainder = segments.slice(1).join(" ").trim();
+  if (remainder) {
+    const match = remainder.match(/(\d{4,5})\s+(.+)/);
+    if (match) {
+      data.plz = match[1];
+      data.ort = match[2];
+    } else if (/^\d{4,5}$/.test(remainder)) {
+      data.plz = remainder;
+    } else {
+      data.ort = remainder;
+    }
+  }
+  return data;
+}
+
+function sanitizeEntityUpdate(input, aliases) {
+  if (!input) return {};
+
+  if (typeof input === "string") {
+    return parseAddressComponents(input) ?? {};
+  }
+
+  if (typeof input !== "object") return {};
+
+  const data = {};
+  for (const [key, value] of Object.entries(input)) {
+    if (value == null || value === "") continue;
+    const canonical = aliases[key] ? key : matchAlias(key, aliases);
+    if (!canonical) continue;
+
+    if (canonical === "adresse") {
+      Object.assign(data, parseAddressComponents(String(value)));
+    } else if (canonical === "plz" || canonical === "ort" || canonical === "notiz" || canonical === "name" || canonical === "bezeichnung") {
+      data[canonical] = String(value).trim();
+    }
+  }
+  return data;
+}
+
+function mergeContext(current = {}, patch = {}) {
+  return { ...current, ...patch };
+}
+
+function cloneDeep(value) {
+  if (value == null) {
+    return value;
+  }
+  try {
+    return JSON.parse(JSON.stringify(value));
+  } catch {
+    return value;
+  }
+}
+
 function safeParse(json) {
   try {
     return json ? JSON.parse(json) : {};
@@ -11,18 +103,22 @@ function safeParse(json) {
 }
 
 export class LLMOrchestrator {
-  constructor({ tools = {}, sessionOptions = {} } = {}) {
+  constructor({ tools = {}, sessionOptions = {}, openAIProvider } = {}) {
     this.tools = tools;
     this.logger = createLogger("agent:llm-orchestrator");
     this.sessionOptions = { maxHistory: sessionOptions.maxHistory ?? 40 };
     this.stateByChat = new Map();
+    this.openAIProvider = openAIProvider ?? {
+      getClient: () => getOpenAI(),
+      getModel: () => getOpenAIModel(),
+    };
   }
 
   getState(chatId) {
     if (!chatId) return null;
     let s = this.stateByChat.get(chatId);
     if (!s) {
-      s = { context: {}, history: [] };
+      s = { context: {}, history: [], contextStack: [] };
       this.stateByChat.set(chatId, s);
     }
     return s;
@@ -30,7 +126,13 @@ export class LLMOrchestrator {
 
   setContext(chatId, patch = {}) {
     const s = this.getState(chatId);
-    s.context = { ...(s.context ?? {}), ...(patch ?? {}) };
+    const sanitizedPatch = Object.entries(patch ?? {})
+      .filter(([, value]) => value !== undefined)
+      .reduce((acc, [key, value]) => {
+        acc[key] = value;
+        return acc;
+      }, {});
+    s.context = { ...(s.context ?? {}), ...sanitizedPatch };
     return s.context;
   }
 
@@ -58,6 +160,44 @@ export class LLMOrchestrator {
             },
             additionalProperties: true,
           },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "push_context",
+          description:
+            "Speichert den aktuellen Kontext auf einem Stack (z. B. vor Flow-Wechseln). Optional mit Label.",
+          parameters: {
+            type: "object",
+            properties: {
+              label: { type: "string" },
+            },
+            additionalProperties: false,
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "pop_context",
+          description:
+            "Entfernt den zuletzt gespeicherten Kontext. Bei restore=true wird er sofort als aktueller Kontext gesetzt.",
+          parameters: {
+            type: "object",
+            properties: {
+              restore: { type: "boolean" },
+            },
+            additionalProperties: false,
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "inspect_context_stack",
+          description: "Listet die gespeicherten Kontext-Snapshots (Label, Reihenfolge).",
+          parameters: { type: "object", properties: {}, additionalProperties: false },
         },
       },
       {
@@ -313,6 +453,38 @@ export class LLMOrchestrator {
     return {
       get_context: async () => this.getState(chatId).context,
       set_context: async (args) => this.setContext(chatId, args),
+      push_context: async ({ label } = {}) => {
+        const state = this.getState(chatId);
+        state.contextStack.push({ label: label ?? null, context: cloneDeep(state.context) });
+        return {
+          size: state.contextStack.length,
+          top: state.contextStack[state.contextStack.length - 1],
+        };
+      },
+      pop_context: async ({ restore } = {}) => {
+        const state = this.getState(chatId);
+        const entry = state.contextStack.pop();
+        if (!entry) {
+          return { restored: false, context: null };
+        }
+        if (restore) {
+          state.context = cloneDeep(entry.context) ?? {};
+        }
+        return {
+          restored: Boolean(restore && entry.context),
+          context: entry.context ?? null,
+          label: entry.label ?? null,
+          size: state.contextStack.length,
+        };
+      },
+      inspect_context_stack: async () => {
+        const state = this.getState(chatId);
+        return state.contextStack.map((entry, index) => ({
+          index,
+          label: entry.label ?? null,
+          hasContext: Boolean(entry.context && Object.keys(entry.context).length),
+        }));
+      },
       list_kunden: async () => db.actions.listKunden(),
       list_objekte: async ({ kundeId }) => db.actions.listObjekteByKunde(kundeId),
       list_baurundgaenge: async ({ objektId }) => db.actions.listBaurundgaengeByObjekt(objektId),
@@ -320,15 +492,63 @@ export class LLMOrchestrator {
         db.actions.autoCreateBaurundgaengeForObjekt(objektId),
       find_kunde_by_name: async ({ name }) => db.actions.findKundeByName(name),
       find_objekt_by_name: async ({ name, kundeId }) => db.actions.findObjektByName({ name, kundeId }),
-      create_kunde: async ({ name, adresse, plz, ort }) => db.actions.ensureKunde({ name, adresse, plz, ort }),
-      create_objekt: async (payload) => db.actions.createObjektForKunde(payload),
+      create_kunde: async ({ name, adresse, plz, ort }) => {
+        const state = this.getState(chatId);
+        const result = await db.actions.ensureKunde({ name, adresse, plz, ort });
+        const kundeContext = mergeContext(state.context?.kunde ?? {}, result);
+        this.setContext(chatId, mergeContext(state.context ?? {}, { kunde: kundeContext }));
+        return result;
+      },
+      create_objekt: async (payload) => {
+        const state = this.getState(chatId);
+        const result = await db.actions.createObjektForKunde(payload);
+        const objektContext = mergeContext(state.context?.objekt ?? {}, result);
+        const patch = { objekt: objektContext };
+        if (!state.context?.kunde && result?.kundeId) {
+          patch.kunde = { id: result.kundeId };
+        }
+        this.setContext(chatId, mergeContext(state.context ?? {}, patch));
+        return result;
+      },
       create_baurundgang: async (payload) => db.actions.createBaurundgang(payload),
       list_rueckmeldungstypen: async () => db.actions.listRueckmeldungstypen(),
       summarize_rueckmeldungen: async ({ baurundgangId }) => db.actions.summarizeRueckmeldungen({ baurundgangId }),
       ensure_qs_report_for_baurundgang: async (payload) => db.actions.ensureQsReportForBaurundgang(payload),
       create_position_with_defaults: async (payload) => db.actions.createPositionWithDefaults(payload),
-      update_kunde_fields: async ({ id, data }) => db.actions.updateKundeFields({ id, data }),
-      update_objekt_fields: async ({ id, data }) => db.actions.updateObjektFields({ id, data }),
+      update_kunde_fields: async ({ id, data }) => {
+        const state = this.getState(chatId);
+        let targetId = id ?? state.context?.kunde?.id;
+        if (!targetId) {
+          throw new Error("update_kunde_fields: 'id' fehlt und es ist kein Kunde im Kontext gesetzt.");
+        }
+
+        const sanitized = sanitizeEntityUpdate(data, KUNDE_FIELD_ALIASES);
+        if (!Object.keys(sanitized).length) {
+          throw new Error("update_kunde_fields: Keine gültigen Felder übergeben.");
+        }
+
+        const result = await db.actions.updateKundeFields({ id: targetId, data: sanitized });
+        const mergedKunde = mergeContext(state.context?.kunde ?? {}, result);
+        this.setContext(chatId, { ...state.context, kunde: mergedKunde });
+        return result;
+      },
+      update_objekt_fields: async ({ id, data }) => {
+        const state = this.getState(chatId);
+        let targetId = id ?? state.context?.objekt?.id;
+        if (!targetId) {
+          throw new Error("update_objekt_fields: 'id' fehlt und es ist kein Objekt im Kontext gesetzt.");
+        }
+
+        const sanitized = sanitizeEntityUpdate(data, OBJEKT_FIELD_ALIASES);
+        if (!Object.keys(sanitized).length) {
+          throw new Error("update_objekt_fields: Keine gültigen Felder übergeben.");
+        }
+
+        const result = await db.actions.updateObjektFields({ id: targetId, data: sanitized });
+        const mergedObjekt = mergeContext(state.context?.objekt ?? {}, result);
+        this.setContext(chatId, { ...state.context, objekt: mergedObjekt });
+        return result;
+      },
       reply: async (payload) => payload,
     };
   }
@@ -343,8 +563,8 @@ export class LLMOrchestrator {
 
   async runLLM(chatId, userMessage) {
     const state = this.getState(chatId);
-    const client = getOpenAI();
-    const model = getOpenAIModel();
+    const client = this.openAIProvider.getClient();
+    const model = this.openAIProvider.getModel();
 
     const messages = [
       { role: "system", content: buildSystemPrompt() },
