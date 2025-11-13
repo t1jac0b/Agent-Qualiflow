@@ -6,7 +6,8 @@
   "scripts": {
     "test": "node --test",
     "prisma:seed": "prisma db seed",
-    "chat:server": "node server/chatServer.js"
+    "chat:server": "node server/chatServer.js",
+    "reminders:send": "node scripts/sendReminders.js"
   },
   "repository": {
     "type": "git",

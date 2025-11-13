@@ -1493,7 +1493,7 @@ Zur Sicherheit erfolgt eine Löschung nur nach expliziter Freigabe durch den Adm
       if (!selected) {
         return {
           status: "capture_retry_bauteil",
-          message: "Bauteil nicht erkannt. Bitte wähle es über die Buttons oder gib den Namen ein.",
+          message: "Bauteil nicht erkannt. Bitte wähle eines der vorgeschlagenen Bauteile oder tippe den exakten Namen.",
           context: { options, phase },
         };
       }
@@ -1534,7 +1534,7 @@ Zur Sicherheit erfolgt eine Löschung nur nach expliziter Freigabe durch den Adm
       if (!selected) {
         return {
           status: "capture_retry_kapitel",
-          message: "Bereichskapitel nicht erkannt. Bitte wähle es über die Buttons oder gib den Namen ein.",
+          message: "Bereichskapitel nicht erkannt. Bitte wähle eines der vorgeschlagenen Kapitel oder tippe den exakten Namen.",
           context: { options, phase },
         };
       }
@@ -1575,7 +1575,7 @@ Zur Sicherheit erfolgt eine Löschung nur nach expliziter Freigabe durch den Adm
       if (!selected) {
         return {
           status: "capture_retry_rueckmeldung",
-          message: "Rückmeldungsart nicht erkannt. Bitte wähle sie über die Buttons oder gib den Namen ein.",
+          message: "Rückmeldungsart nicht erkannt. Bitte wähle eine der vorgeschlagenen Optionen oder tippe den exakten Namen.",
           context: { options, phase },
         };
       }
@@ -1648,6 +1648,13 @@ Zur Sicherheit erfolgt eine Löschung nur nach expliziter Freigabe durch den Adm
       return {
         status: "missing_setup",
         message: "Der Baurundgang fehlt. Bitte wähle Kunde, Objekt und Baurundgang erneut aus.",
+      };
+    }
+
+    if (!capture?.bauteilTemplate?.id || !capture?.kapitelTemplate?.id || !capture?.rueckmeldungstyp?.id) {
+      return {
+        status: "capture_missing_selection",
+        message: "Für die Positionserfassung müssen Bauteil, Bereichskapitel und Rückmeldung gesetzt sein. Bitte starte den Capture-Flow erneut.",
       };
     }
 

@@ -30,6 +30,10 @@ export const databaseTool = defineTool({
       LegacyDatabaseTool.listKapitelTemplatesByBauteilTemplate(payload?.bauteilTemplateId ?? payload),
     listRueckmeldungstypen: () => LegacyDatabaseTool.listRueckmeldungstypen(),
     summarizeRueckmeldungen: (payload) => LegacyDatabaseTool.summarizeRueckmeldungen(payload),
+    listPendingRueckmeldungen: (payload) =>
+      LegacyDatabaseTool.listPendingRueckmeldungen(payload),
+    schedulePositionReminder: (payload) => LegacyDatabaseTool.schedulePositionReminder(payload),
+    recordReminderDispatch: (payload) => LegacyDatabaseTool.recordReminderDispatch(payload),
     ensureBauteilForTemplate: (payload) => LegacyDatabaseTool.ensureBauteilForTemplate(payload),
     ensureKapitelForBauteil: (payload) => LegacyDatabaseTool.ensureKapitelForBauteil(payload),
     createPositionWithDefaults: (payload) => LegacyDatabaseTool.createPositionWithDefaults(payload),

@@ -40,6 +40,16 @@ const prisma = globalThis.prisma ?? new PrismaClient();
 attachBauteilInstantiationHook(prisma);
 if (process.env.NODE_ENV !== "production") globalThis.prisma = prisma;
 
+function normalizeDate(dateLike, fallback = new Date()) {
+  if (!dateLike) return new Date(fallback);
+  if (dateLike instanceof Date) return dateLike;
+  const parsed = new Date(dateLike);
+  if (Number.isNaN(parsed.getTime())) {
+    return new Date(fallback);
+  }
+  return parsed;
+}
+
 export const DatabaseTool = {
   client: prisma,
 
@@ -188,6 +198,134 @@ export const DatabaseTool = {
           select: { name: true },
         },
       },
+    });
+  },
+
+  async listPendingRueckmeldungen({ dueBefore, maxReminderCount = 5, includeCompleted = false } = {}) {
+    const now = normalizeDate(dueBefore, new Date());
+
+    const erledigtFilter = includeCompleted
+      ? {}
+      : {
+          OR: [{ erledigt: { not: true } }, { erledigt: null }],
+        };
+
+    return prisma.position.findMany({
+      where: {
+        ...erledigtFilter,
+        reminderCount: { lt: maxReminderCount },
+        OR: [
+          { frist: { lte: now } },
+          { reminderAt: { lte: now } },
+          { frist: null },
+        ],
+      },
+      orderBy: [
+        { reminderSentAt: "asc" },
+        { frist: "asc" },
+        { id: "asc" },
+      ],
+      include: {
+        rueckmeldungstyp: true,
+        qsreport: {
+          include: {
+            kunde: {
+              include: {
+                projektleiter: true,
+                kontakt: true,
+              },
+            },
+            kontakt: true,
+            projektleiter: true,
+            objekt: {
+              include: {
+                kontakt: true,
+                projektleiter: true,
+              },
+            },
+            baurundgang: {
+              include: { typ: true },
+            },
+          },
+        },
+        reminders: {
+          orderBy: { createdAt: "desc" },
+          take: 5,
+        },
+      },
+    });
+  },
+
+  async schedulePositionReminder({ positionId, channel = "email", scheduledFor, payload = null, status = "pending" }) {
+    if (!positionId) {
+      throw new Error("schedulePositionReminder: 'positionId' ist erforderlich.");
+    }
+
+    const scheduled = normalizeDate(scheduledFor, new Date());
+
+    return prisma.$transaction(async (tx) => {
+      const reminder = await tx.positionReminder.create({
+        data: {
+          positionId,
+          channel,
+          status,
+          scheduledFor: scheduled,
+          payload,
+        },
+      });
+
+      await tx.position.update({
+        where: { id: positionId },
+        data: {
+          reminderChannel: channel,
+          reminderAt: scheduled,
+        },
+      });
+
+      return reminder;
+    });
+  },
+
+  async recordReminderDispatch({ positionId, channel = "email", payload = null, sentAt, nextReminderAt, status = "sent" }) {
+    if (!positionId) {
+      throw new Error("recordReminderDispatch: 'positionId' ist erforderlich.");
+    }
+
+    const sent = normalizeDate(sentAt, new Date());
+    const hasNext = typeof nextReminderAt !== "undefined";
+    const nextReminder = hasNext ? (nextReminderAt === null ? null : normalizeDate(nextReminderAt, null)) : undefined;
+
+    return prisma.$transaction(async (tx) => {
+      const reminder = await tx.positionReminder.create({
+        data: {
+          positionId,
+          channel,
+          status,
+          scheduledFor: sent,
+          sentAt: status === "sent" ? sent : null,
+          payload,
+        },
+      });
+
+      const updateData = {
+        reminderChannel: channel,
+      };
+
+      if (status === "sent") {
+        updateData.reminderSentAt = sent;
+        updateData.reminderCount = { increment: 1 };
+      }
+
+      if (hasNext) {
+        updateData.reminderAt = nextReminder ?? null;
+      }
+
+      await tx.position.update({
+        where: { id: positionId },
+        data: updateData,
+      });
+
+      return reminder;
     });
   },
 

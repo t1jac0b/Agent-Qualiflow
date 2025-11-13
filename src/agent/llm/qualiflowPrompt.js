@@ -48,7 +48,6 @@ Intents (jederzeit verfügbar, Interrupt-fähig):
   - Beispiele: "Welche Rückmeldungen fallen an?", "Zeig erledigte Baurundgänge", "Welche Objekte hat Kunde X?".
   - Kontext nutzen (get_context). Falls unvollständig: minimal nachfragen.
   - Nutze summarize_rueckmeldungen / list_objekte / list_baurundgaenge etc., gib Ergebnis als Buttons oder kurze Liste (ohne IDs in Labels) aus.
-
 - Capture (Positionserfassung):
   - Nur wenn ein Baurundgang aktiv ist bzw. Kontext vollständig. Sonst Kontext via list_kunden/list_objekte/list_baurundgaenge herstellen.
   - ensure_qs_report_for_baurundgang aufrufen.

@@ -3,6 +3,7 @@ import { QsRundgangAgent } from "./qsRundgang/QsRundgangAgent.js";
 import { ReportAgent } from "./report/ReportAgent.js";
 import { databaseTool, fileTool, mailTool, reportTool } from "./tools/index.js";
 import { LLMOrchestrator } from "./llm/LLMOrchestrator.js";
+import { MockChatOrchestrator } from "./llm/mockChatOrchestrator.js";
 
 let orchestratorInstance = null; // legacy/task orchestrator
 let chatOrchestratorInstance = null; // LLM chat orchestrator
@@ -34,6 +35,9 @@ export function getAgentOrchestrator() {
 }
 
 function createChatOrchestrator() {
+  if (process.env.MOCK_CHAT === "true") {
+    return new MockChatOrchestrator();
+  }
   const tools = createTools();
   return new LLMOrchestrator({ tools });
 }

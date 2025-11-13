@@ -11,6 +11,31 @@ const MANDATORY_FIELDS = [
   "projektleiter",
 ];
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
+const PHONE_ALLOWED_CHARACTERS_REGEX = /^[+()\d\s.\/-]*$/;
+
+function normalizeEmail(email) {
+  return email?.trim().toLowerCase() ?? null;
+}
+
+function normalizePhone(telefon) {
+  return telefon?.trim() ?? null;
+}
+
+function isValidEmail(email) {
+  if (!email) return true;
+  return EMAIL_REGEX.test(email);
+}
+
+function isValidPhone(telefon) {
+  if (!telefon) return true;
+  if (!PHONE_ALLOWED_CHARACTERS_REGEX.test(telefon)) {
+    return false;
+  }
+  const digits = telefon.replace(/\D/g, "");
+  return digits.length >= 6;
+}
+
 function normalizeText(text) {
   return text
     .replaceAll("\r", "")
@@ -308,6 +333,14 @@ function mergeManualOverrides(extracted, overrides = {}) {
 
   merged.pendingFields = Array.isArray(merged.pendingFields) ? merged.pendingFields : [];
 
+  if (merged.projektleiterEmail !== undefined) {
+    merged.projektleiterEmail = normalizeEmail(merged.projektleiterEmail);
+  }
+
+  if (merged.projektleiterTelefon !== undefined) {
+    merged.projektleiterTelefon = normalizePhone(merged.projektleiterTelefon);
+  }
+
   return merged;
 }
 
@@ -391,10 +424,27 @@ async function persistBauBeschrieb({ extracted }) {
 
 export async function finalizeBauBeschrieb({ ingestion, extracted, overrides }) {
   const merged = mergeManualOverrides(extracted, overrides);
+  let normalizedEmail = merged.projektleiterEmail = normalizeEmail(merged.projektleiterEmail);
+  let normalizedTelefon = merged.projektleiterTelefon = normalizePhone(merged.projektleiterTelefon);
   const missingMandatory = collectMissingMandatory(merged);
-  const pendingFields = filterPendingFields(merged.pendingFields, merged, overrides, missingMandatory);
+  const validationErrors = [];
 
-  if (missingMandatory.length > 0) {
+  if (normalizedEmail && !isValidEmail(normalizedEmail)) {
+    validationErrors.push({ field: "projektleiterEmail", message: "Projektleiter E-Mail ist ungültig." });
+    normalizedEmail = merged.projektleiterEmail = null;
+  }
+
+  if (normalizedTelefon && !isValidPhone(normalizedTelefon)) {
+    validationErrors.push({ field: "projektleiterTelefon", message: "Projektleiter Telefon ist ungültig." });
+    normalizedTelefon = merged.projektleiterTelefon = null;
+  }
+
+  const pendingFields = [
+    ...filterPendingFields(merged.pendingFields, merged, overrides, missingMandatory),
+    ...validationErrors,
+  ];
+
+  if (missingMandatory.length > 0 || validationErrors.length > 0) {
     return {
       status: "needs_input",
       ingestion,
@@ -402,6 +452,11 @@ export async function finalizeBauBeschrieb({ ingestion, extracted, overrides }) 
       missingMandatory,
       pendingFields,
       reportPath: null,
+      projektleiter: merged.projektleiter?.trim() ? {
+        name: merged.projektleiter?.trim(),
+        email: normalizedEmail,
+        telefon: normalizedTelefon,
+      } : null,
     };
   }
 
@@ -414,7 +469,7 @@ export async function finalizeBauBeschrieb({ ingestion, extracted, overrides }) 
       objekt,
       objekttyp,
       ingestion,
-      extracted: merged,
+      objects: merged,
     });
   } catch (error) {
     console.warn("[finalizeBauBeschrieb] Report konnte nicht erzeugt werden:", error.message);

@@ -117,7 +117,7 @@ function mergeOverrides(base = {}, update = {}) {
 }
 
 export class LLMOrchestrator {
-  constructor({ tools = {}, sessionOptions = {}, openAIProvider } = {}) {
+  constructor({ tools = {}, sessionOptions = {}, openAIProvider, bauBeschriebHandlers } = {}) {
     this.tools = tools;
     this.logger = createLogger("agent:llm-orchestrator");
     this.sessionOptions = { maxHistory: sessionOptions.maxHistory ?? 40 };
@@ -125,6 +125,10 @@ export class LLMOrchestrator {
     this.openAIProvider = openAIProvider ?? {
       getClient: () => getOpenAI(),
       getModel: () => getOpenAIModel(),
+    };
+    this.bauBeschriebHandlers = {
+      process: bauBeschriebHandlers?.process ?? processBauBeschriebUpload,
+      finalize: bauBeschriebHandlers?.finalize ?? finalizeBauBeschrieb,
     };
   }
 
@@ -227,26 +231,49 @@ export class LLMOrchestrator {
     state.pendingAttachmentIds.delete(attachmentId);
     state.attachments.delete(attachmentId);
     state.bauBeschriebResults.delete(attachmentId);
+    state.bauBeschriebOverrides.delete(attachmentId);
     this.setContext(chatId, { pendingAttachments: state.pendingAttachmentIds.size });
   }
 
   applyBauBeschriebResultToContext(chatId, result = {}) {
     const patch = {};
-    if (result.kunde) {
+    const sourceKunde = result.kunde ?? result.extracted?.kunde;
+    if (sourceKunde) {
       patch.kunde = {
-        ...(result.kunde ?? {}),
+        ...(sourceKunde ?? {}),
       };
     }
-    if (result.objekt) {
+    const sourceObjekt = result.objekt ?? result.extracted?.objekt;
+    if (sourceObjekt) {
       patch.objekt = {
-        ...(result.objekt ?? {}),
+        ...(sourceObjekt ?? {}),
       };
-      if (result.objekt?.kundeId && !patch.kunde) {
-        patch.kunde = { id: result.objekt.kundeId };
+      if (sourceObjekt?.kundeId && !patch.kunde) {
+        patch.kunde = { id: sourceObjekt.kundeId };
       }
     }
     if (result.baurundgang) {
       patch.baurundgang = { ...(result.baurundgang ?? {}) };
+    }
+    const sourceProjektleiter = result.projektleiter ?? result.extracted?.projektleiter;
+    if (sourceProjektleiter) {
+      const details = sourceProjektleiter;
+      patch.projektleiter = {
+        id: details.id ?? null,
+        name: details.name ?? details.fullName ?? details,
+        email: details.email ?? details.projektleiterEmail ?? null,
+        telefon: details.telefon ?? details.phone ?? null,
+      };
+    } else if (result.pendingFields || result.missingMandatory) {
+      patch.projektleiter = patch.projektleiter ?? null;
+    }
+    if (Array.isArray(result.pendingFields) || Array.isArray(result.missingMandatory)) {
+      patch.pendingRequirements = {
+        missingMandatory: result.missingMandatory ?? [],
+        pendingFields: result.pendingFields ?? [],
+      };
+    } else if (result.status === "created") {
+      patch.pendingRequirements = null;
     }
 
     if (Object.keys(patch).length) {
@@ -280,6 +307,33 @@ export class LLMOrchestrator {
       ...lines,
       "Nutze 'list_pending_attachments', 'process_baubeschrieb_attachment' oder 'finalize_baubeschrieb_attachment', um sie weiterzuverarbeiten.",
     ].join("\n");
+  }
+
+  buildPendingRequirementsMessage(result = {}) {
+    const missingMandatory = Array.isArray(result.missingMandatory) ? result.missingMandatory : [];
+    const pendingFields = Array.isArray(result.pendingFields) ? result.pendingFields : [];
+
+    if (!missingMandatory.length && !pendingFields.length) {
+      return null;
+    }
+
+    const lines = ["⚠️ Es fehlen noch Pflichtangaben:"];
+
+    const findMessageForField = (field) => pendingFields.find((item) => item?.field === field)?.message;
+
+    for (const field of missingMandatory) {
+      const message = findMessageForField(field);
+      lines.push(`• ${message ?? field}`);
+    }
+
+    const additionalPrompts = pendingFields.filter((item) => item?.field && !missingMandatory.includes(item.field));
+    for (const item of additionalPrompts) {
+      lines.push(`• ${item.message ?? item.field}`);
+    }
+
+    lines.push("", "Bitte gib die fehlenden Informationen direkt hier im Chat an (z. B. 'Projektleiter: Name').");
+
+    return lines.join("\n");
   }
 
   getToolsSpec() {
@@ -697,7 +751,7 @@ export class LLMOrchestrator {
         if (!attachment.storedPath) {
           throw new Error("Attachment besitzt keinen gespeicherten Pfad.");
         }
-        const result = await processBauBeschriebUpload({
+        const result = await this.bauBeschriebHandlers.process({
           filePath: attachment.storedPath,
           originalFilename: attachment.originalFilename ?? attachment.name,
           uploadedBy: attachment.uploadedBy ?? "chat",
@@ -733,7 +787,7 @@ export class LLMOrchestrator {
         }
 
         const mergedOverrides = mergeOverrides(state.bauBeschriebOverrides.get(attachmentId) ?? {}, overrides ?? {});
-        const result = await finalizeBauBeschrieb({
+        const result = await this.bauBeschriebHandlers.finalize({
           ingestion: baseResult.ingestion,
           extracted: baseResult.extracted,
           overrides: mergedOverrides,

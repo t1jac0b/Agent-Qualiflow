@@ -159,6 +159,45 @@ function appendMessage({ role, text, status, options, context }) {
     wrapper.appendChild(selectionSummary);
   }
 
+  const pendingRequirements = context?.pendingRequirements;
+  if (pendingRequirements && (pendingRequirements.missingMandatory?.length || pendingRequirements.pendingFields?.length)) {
+    const requirementBox = document.createElement("div");
+    requirementBox.className = "pending-requirements";
+
+    const title = document.createElement("h4");
+    title.textContent = "Fehlende Pflichtangaben";
+    requirementBox.appendChild(title);
+
+    const list = document.createElement("ul");
+    const items = new Set([
+      ...(pendingRequirements.missingMandatory ?? []),
+      ...(pendingRequirements.pendingFields ?? []).map((item) => item.field ?? item),
+    ]);
+    Array.from(items)
+      .filter(Boolean)
+      .forEach((field) => {
+        const li = document.createElement("li");
+        li.textContent = field;
+        list.appendChild(li);
+      });
+    requirementBox.appendChild(list);
+    wrapper.appendChild(requirementBox);
+
+    if (pendingRequirements.missingMandatory?.includes("projektleiter")) {
+      const hint = document.createElement("p");
+      hint.className = "meta";
+      hint.textContent = "Tipp: Projektleiterdaten als 'Projektleiter: Name', 'Projektleiter E-Mail: …', 'Projektleiter Telefon: …' angeben.";
+      requirementBox.appendChild(hint);
+    }
+  }
+
+  if (context?.attachment) {
+    const uploadHint = document.createElement("p");
+    uploadHint.className = "meta";
+    uploadHint.textContent = `Upload gespeichert: ${context.attachment.name ?? context.attachment.id}`;
+    wrapper.appendChild(uploadHint);
+  }
+
   chatLog.appendChild(wrapper);
   scrollLogToBottom();
 }

@@ -49,6 +49,32 @@ Agent-Qualiflow stellt eine modulare Agenten-Architektur für Bau- und Qualität
    - Falls weiterhin Pflichtfelder fehlen, bleibt der Status `needs_input`.
    - Bei vollständigen Informationen: Persistierung in Prisma (Kunde, Objekt, Objekttyp) und HTML-Report unter `storage/reports/bau-beschrieb/…`.
 
+### Chat Attachment Workflow
+
+- Der Endpoint `POST /chat/upload` speichert Dateien im Bucket `storage/chat-uploads/<chatId>/` und registriert den Anhang beim `LLMOrchestrator`.
+- Über die neuen LLM-Tools kann der Agent Anhänge inspizieren (`list_pending_attachments`), Bau-Beschriebe verarbeiten (`process_baubeschrieb_attachment`) und finalisieren (`finalize_baubeschrieb_attachment`).
+- Nach der Verarbeitung werden Kontextfelder (`kunde`, `objekt`, `projektleiter`, `pendingRequirements`) automatisch aktualisiert. Fehlende Pflichtfelder erscheinen im UI als Liste.
+- Bei erfolgreicher Finalisierung wird der Anhang aus dem Pending-Stack entfernt und der Kontext bereinigt.
+
+### UI-Hinweise für Pflichtfelder
+
+- Das Chat-Frontend zeigt unter jeder Agent-Antwort offene Pflichtfelder an (z. B. `projektleiter`).
+- Projektleiterdaten lassen sich komfortabel über natürliche Texteingaben wie `Projektleiter: Max Beispiel` oder `Projektleiter E-Mail: max@example.com` ergänzen.
+- Gespeicherte Uploads werden unterhalb der Nachricht mit Dateiname markiert, sodass der Nutzer weiß, dass die Datei registriert ist.
+
+### Automatisches Nachfassen (Reminder)
+
+- Offene Rückmeldungen können automatisiert per E-Mail erinnert werden.
+- Befehl: `npm run reminders:send` (verwendet `scripts/sendReminders.js`).
+- Der Job nutzt die neuen Felder an `Position` (`reminderAt`, `reminderSentAt`, `reminderCount`) sowie die Tabelle `PositionReminder`.
+- E-Mails werden als JSON-Dateien im Verzeichnis `storage/mail/reminders/` abgelegt (`MAIL_OUTBOX_DIR` konfigurierbar) und können von externen Prozessen gesendet werden.
+- Konfiguration über Umgebungsvariablen:
+  - `REMINDER_INTERVAL_DAYS` (Standard 7 Tage) – legt fest, wann der nächste Reminder geplant wird.
+  - `REMINDER_MAX_COUNT` (Standard 5) – begrenzt die Anzahl Erinnerungen pro Position.
+  - `REMINDER_INCLUDE_COMPLETED` (optional) – prüft auch erledigte Positionen, falls `true`.
+  - `REMINDER_DUE_BEFORE` – ISO-Datum/Zeit für benutzerdefinierten Stichtag.
+- Ein Cronjob oder Task Scheduler kann den Befehl periodisch ausführen (z. B. täglich um 06:00 Uhr).
+
 ## CLI: Chat Flow testen
 
 Simuliere den Chatbot-Ablauf via CLI:
@@ -136,8 +162,16 @@ Antworten enthalten `status`, `message` und `context`, identisch zum CLI-Verhalt
 ## Tests & Entwicklung
 
 - **Unit Tests**: `npm test`
+- Enthält u. a. `test/llmOrchestrator.attachments.test.js` für Upload- und Finalisierungsszenarien.
+- Enthält `test/mailTool.queueReminder.test.js` zur Verifizierung der Reminder-Queue.
 - **Prisma Seed**: `npm run prisma:seed`
 - Prisma-Middleware-Hook (`instantiateFromTemplate`) wird im Test-Kontext deaktiviert, wenn `$use` nicht verfügbar ist.
+
+## Offene Follow-ups
+
+- Automatische E-Mail-Benachrichtigung bei fehlenden Pflichtfeldern (derzeit nur UI-Hinweis).
+- Erweiterte Validierung der Projektleiterdaten (Validierung auf korrekte Telefonnummer/E-Mail steht noch aus).
+- End-to-End-Tests für das Browser-Frontend (aktueller Fokus auf Unit Tests).
 
 ## Git-Workflow
 
