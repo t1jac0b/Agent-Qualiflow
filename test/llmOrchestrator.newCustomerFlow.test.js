@@ -5,6 +5,7 @@ import { LLMOrchestrator } from "../src/agent/llm/LLMOrchestrator.js";
 
 let completionsQueue = [];
 let recordedRequests = [];
+let ensureKundeCalls = [];
 
 function createOpenAIProvider() {
   return {
@@ -60,16 +61,29 @@ describe("LLMOrchestrator – neuer Kunde Flow", () => {
   };
 
   let orchestrator;
-  
+  let openAIProvider;
+
   beforeEach(() => {
     completionsQueue = [];
     recordedRequests = [];
+    ensureKundeCalls = [];
+    openAIProvider = createOpenAIProvider();
 
     orchestrator = new LLMOrchestrator({
       tools: {
-        database: { actions: {} },
+        database: {
+          actions: {
+            ensureKunde: async (payload) => {
+              ensureKundeCalls.push(payload);
+              return {
+                id: 501,
+                ...payload,
+              };
+            },
+          },
+        },
       },
-      openAIProvider: createOpenAIProvider(),
+      openAIProvider,
     });
 
     orchestrator.setContext(chatId, initialContext);
@@ -78,6 +92,7 @@ describe("LLMOrchestrator – neuer Kunde Flow", () => {
   afterEach(() => {
     completionsQueue = [];
     recordedRequests = [];
+    ensureKundeCalls = [];
   });
 
   test("bricht neuen Kunden anlegen nach Nein ab und stellt Kontext wieder her", async () => {
@@ -146,5 +161,84 @@ describe("LLMOrchestrator – neuer Kunde Flow", () => {
     const finalState = orchestrator.getState(chatId);
     assert.equal(finalState.contextStack.length, 0, "context stack should be empty after pop restore");
     assert.deepEqual(finalState.context, originalContextSnapshot, "context should be restored to original snapshot");
+    assert.equal(ensureKundeCalls.length, 0, "ensureKunde should not be called on cancellation");
+  });
+
+  test("legt neuen Kunden nach Bestätigung an und aktualisiert Kontext", async () => {
+    const originalContextSnapshot = JSON.parse(JSON.stringify(initialContext));
+
+    completionsQueue.push(
+      makeToolCompletion(makeToolCall("call_push", "push_context", { label: "kundenauswahl" })),
+    );
+    completionsQueue.push(
+      makeToolCompletion(
+        makeToolCall("call_reply_confirm", "reply", {
+          status: "confirm_new_customer",
+          message: "Soll ich den aktuellen Kundenkontext verlassen und einen neuen Kunden anlegen?",
+          options: [
+            { id: 1, label: "Ja, neuen Kunden anlegen", inputValue: "ja" },
+            { id: 2, label: "Nein, zurück", inputValue: "nein" },
+          ],
+          context: { phase: "confirm-new-customer" },
+        }),
+      ),
+    );
+
+    const confirmationReply = await orchestrator.handleMessage({
+      chatId,
+      message: "Bitte neuen Kunden anlegen",
+    });
+
+    assert.equal(confirmationReply.status, "confirm_new_customer");
+
+    completionsQueue.push(
+      makeToolCompletion(
+        makeToolCall("call_reset_context", "set_context", {
+          kunde: null,
+          objekt: null,
+          baurundgang: null,
+        }),
+        makeToolCall("call_create_kunde", "create_kunde", {
+          name: "Neukunde GmbH",
+          adresse: "Musterstrasse 1",
+          plz: "7000",
+          ort: "Chur",
+        }),
+        makeToolCall("call_pop", "pop_context", { restore: false }),
+        makeToolCall("call_reply_done", "reply", {
+          status: "new_customer_created",
+          message: "Neuer Kunde 'Neukunde GmbH' wurde angelegt. Wähle das zugehörige Objekt.",
+          options: [
+            { id: 10, label: "Objekt erfassen", inputValue: "objekt anlegen" },
+          ],
+          context: { phase: "select-object" },
+        }),
+      ),
+    );
+
+    const finalReply = await orchestrator.handleMessage({ chatId, message: "ja" });
+
+    assert.equal(finalReply.status, "new_customer_created");
+    assert.equal(ensureKundeCalls.length, 1, "ensureKunde should be invoked once");
+    assert.deepEqual(ensureKundeCalls[0], {
+      name: "Neukunde GmbH",
+      adresse: "Musterstrasse 1",
+      plz: "7000",
+      ort: "Chur",
+    });
+
+    const state = orchestrator.getState(chatId);
+    assert.equal(state.contextStack.length, 0, "context stack should be empty after pop without restore");
+    assert.deepEqual(state.context.kunde, {
+      id: 501,
+      name: "Neukunde GmbH",
+      adresse: "Musterstrasse 1",
+      plz: "7000",
+      ort: "Chur",
+    });
+    assert.equal(state.context.objekt, null);
+    assert.equal(state.context.baurundgang, null);
+
+    assert.deepEqual(originalContextSnapshot, initialContext, "Original snapshot remains unchanged for reference");
   });
 });

@@ -1,4 +1,5 @@
 import { createLogger } from "../../utils/logger.js";
+import { processBauBeschriebUpload, finalizeBauBeschrieb } from "../bauBeschrieb/processBauBeschrieb.js";
 import { getOpenAI, getOpenAIModel } from "./openaiClient.js";
 import { buildSystemPrompt } from "./qualiflowPrompt.js";
 
@@ -102,6 +103,19 @@ function safeParse(json) {
   }
 }
 
+function mergeOverrides(base = {}, update = {}) {
+  const merged = cloneDeep(base ?? {});
+  for (const [key, value] of Object.entries(update ?? {})) {
+    if (value === undefined) continue;
+    if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+      merged[key] = mergeOverrides(merged[key] ?? {}, value);
+    } else {
+      merged[key] = value;
+    }
+  }
+  return merged;
+}
+
 export class LLMOrchestrator {
   constructor({ tools = {}, sessionOptions = {}, openAIProvider } = {}) {
     this.tools = tools;
@@ -118,9 +132,22 @@ export class LLMOrchestrator {
     if (!chatId) return null;
     let s = this.stateByChat.get(chatId);
     if (!s) {
-      s = { context: {}, history: [], contextStack: [] };
+      s = {
+        context: {},
+        history: [],
+        contextStack: [],
+        attachments: new Map(),
+        pendingAttachmentIds: new Set(),
+        bauBeschriebResults: new Map(),
+        bauBeschriebOverrides: new Map(),
+      };
       this.stateByChat.set(chatId, s);
     }
+
+    if (!s.attachments) s.attachments = new Map();
+    if (!s.pendingAttachmentIds) s.pendingAttachmentIds = new Set();
+    if (!s.bauBeschriebResults) s.bauBeschriebResults = new Map();
+    if (!s.bauBeschriebOverrides) s.bauBeschriebOverrides = new Map();
     return s;
   }
 
@@ -132,8 +159,127 @@ export class LLMOrchestrator {
         acc[key] = value;
         return acc;
       }, {});
-    s.context = { ...(s.context ?? {}), ...sanitizedPatch };
+    s.context = mergeOverrides(s.context ?? {}, sanitizedPatch);
     return s.context;
+  }
+
+  registerAttachment(chatId, attachment = {}) {
+    if (!chatId) {
+      throw new Error("registerAttachment: 'chatId' ist erforderlich.");
+    }
+    const state = this.getState(chatId);
+    const generatedId = `attachment-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const id = String(attachment.id ?? attachment.storedPath ?? generatedId);
+    const name = attachment.name ?? attachment.originalFilename ?? attachment.storedFilename ?? id.split(/[\\/]/).pop();
+    const storedPath = attachment.storedPath ?? (typeof attachment.id === "string" ? attachment.id : null);
+
+    const normalized = {
+      id,
+      name,
+      mimeType: attachment.mimeType ?? attachment.mimetype ?? "application/octet-stream",
+      size: attachment.size ?? null,
+      storedPath,
+      storedFilename: attachment.storedFilename ?? null,
+      bucket: attachment.bucket ?? null,
+      uploadedAt: attachment.uploadedAt ?? new Date().toISOString(),
+      uploadedBy: attachment.uploadedBy ?? null,
+      originalFilename: attachment.originalFilename ?? name,
+      status: attachment.status ?? "uploaded",
+      processedAt: attachment.processedAt ?? null,
+    };
+
+    state.attachments.set(id, normalized);
+    state.pendingAttachmentIds.add(id);
+    this.setContext(chatId, {
+      pendingAttachments: state.pendingAttachmentIds.size,
+      lastAttachment: { id: normalized.id, name: normalized.name, mimeType: normalized.mimeType },
+    });
+    return normalized;
+  }
+
+  getAttachment(chatId, attachmentId) {
+    if (!attachmentId) return null;
+    const state = this.getState(chatId);
+    return state.attachments.get(attachmentId) ?? null;
+  }
+
+  markAttachmentPending(chatId, attachmentId, meta = {}) {
+    if (!attachmentId) return;
+    const state = this.getState(chatId);
+    const attachment = state.attachments.get(attachmentId);
+    if (!attachment) {
+      this.logger.warn("Attachment nicht gefunden", { chatId, attachmentId });
+      return;
+    }
+    state.pendingAttachmentIds.add(attachmentId);
+    if (meta.uploadedBy && !attachment.uploadedBy) {
+      attachment.uploadedBy = meta.uploadedBy;
+    }
+    if (!attachment.status || attachment.status === "processed") {
+      attachment.status = "uploaded";
+    }
+    this.setContext(chatId, { pendingAttachments: state.pendingAttachmentIds.size });
+  }
+
+  clearAttachment(chatId, attachmentId) {
+    if (!attachmentId) return;
+    const state = this.getState(chatId);
+    state.pendingAttachmentIds.delete(attachmentId);
+    state.attachments.delete(attachmentId);
+    state.bauBeschriebResults.delete(attachmentId);
+    this.setContext(chatId, { pendingAttachments: state.pendingAttachmentIds.size });
+  }
+
+  applyBauBeschriebResultToContext(chatId, result = {}) {
+    const patch = {};
+    if (result.kunde) {
+      patch.kunde = {
+        ...(result.kunde ?? {}),
+      };
+    }
+    if (result.objekt) {
+      patch.objekt = {
+        ...(result.objekt ?? {}),
+      };
+      if (result.objekt?.kundeId && !patch.kunde) {
+        patch.kunde = { id: result.objekt.kundeId };
+      }
+    }
+    if (result.baurundgang) {
+      patch.baurundgang = { ...(result.baurundgang ?? {}) };
+    }
+
+    if (Object.keys(patch).length) {
+      this.setContext(chatId, patch);
+    }
+  }
+
+  buildAttachmentSummary(state) {
+    if (!state?.pendingAttachmentIds?.size) {
+      return null;
+    }
+
+    const attachments = Array.from(state.pendingAttachmentIds)
+      .map((id) => state.attachments.get(id))
+      .filter(Boolean);
+
+    if (!attachments.length) {
+      return null;
+    }
+
+    const lines = attachments.map((attachment, index) => {
+      const label = attachment.name ?? attachment.originalFilename ?? `Datei ${index + 1}`;
+      const mime = attachment.mimeType ?? "unbekannt";
+      const size = attachment.size ? `${Math.round(attachment.size / 1024)} KB` : "?";
+      const status = attachment.status ?? "unbekannt";
+      return `- ${label} (${mime}, ${size}) – id: ${attachment.id} – status: ${status}`;
+    });
+
+    return [
+      "Es liegen neue Datei-Uploads vor, die noch nicht verarbeitet wurden.",
+      ...lines,
+      "Nutze 'list_pending_attachments', 'process_baubeschrieb_attachment' oder 'finalize_baubeschrieb_attachment', um sie weiterzuverarbeiten.",
+    ].join("\n");
   }
 
   getToolsSpec() {
@@ -198,6 +344,45 @@ export class LLMOrchestrator {
           name: "inspect_context_stack",
           description: "Listet die gespeicherten Kontext-Snapshots (Label, Reihenfolge).",
           parameters: { type: "object", properties: {}, additionalProperties: false },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "list_pending_attachments",
+          description: "Gibt alle noch nicht verarbeiteten Dateianhänge mit Metadaten zurück.",
+          parameters: { type: "object", properties: {}, additionalProperties: false },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "process_baubeschrieb_attachment",
+          description: "Verarbeitet einen hochgeladenen Bau-Beschrieb (PDF) und extrahiert Daten.",
+          parameters: {
+            type: "object",
+            properties: {
+              attachmentId: { type: "string" },
+            },
+            required: ["attachmentId"],
+            additionalProperties: false,
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "finalize_baubeschrieb_attachment",
+          description: "Finalisiert einen Bau-Beschrieb nach manuellen Ergänzungen (z. B. Projektleiter).",
+          parameters: {
+            type: "object",
+            properties: {
+              attachmentId: { type: "string" },
+              overrides: { type: "object" },
+            },
+            required: ["attachmentId"],
+            additionalProperties: true,
+          },
         },
       },
       {
@@ -484,6 +669,99 @@ export class LLMOrchestrator {
           label: entry.label ?? null,
           hasContext: Boolean(entry.context && Object.keys(entry.context).length),
         }));
+      },
+      list_pending_attachments: async () => {
+        const state = this.getState(chatId);
+        const attachments = Array.from(state.pendingAttachmentIds)
+          .map((id) => state.attachments.get(id))
+          .filter(Boolean)
+          .map((attachment) => ({
+            id: attachment.id,
+            name: attachment.name,
+            mimeType: attachment.mimeType,
+            size: attachment.size,
+            uploadedAt: attachment.uploadedAt,
+            status: attachment.status,
+          }));
+        return {
+          pendingCount: attachments.length,
+          attachments,
+        };
+      },
+      process_baubeschrieb_attachment: async ({ attachmentId }) => {
+        const state = this.getState(chatId);
+        const attachment = state.attachments.get(attachmentId);
+        if (!attachment) {
+          throw new Error(`Attachment ${attachmentId} wurde nicht gefunden.`);
+        }
+        if (!attachment.storedPath) {
+          throw new Error("Attachment besitzt keinen gespeicherten Pfad.");
+        }
+        const result = await processBauBeschriebUpload({
+          filePath: attachment.storedPath,
+          originalFilename: attachment.originalFilename ?? attachment.name,
+          uploadedBy: attachment.uploadedBy ?? "chat",
+        });
+        attachment.status = result?.status ?? "processed";
+        attachment.processedAt = new Date().toISOString();
+        state.bauBeschriebResults.set(attachmentId, result);
+        state.pendingAttachmentIds.delete(attachmentId);
+        this.applyBauBeschriebResultToContext(chatId, result);
+        this.setContext(chatId, { pendingAttachments: state.pendingAttachmentIds.size });
+        return {
+          status: result?.status,
+          context: {
+            ingestion: result?.ingestion,
+            extracted: result?.extracted,
+            pendingFields: result?.pendingFields,
+            missingMandatory: result?.missingMandatory,
+            attachment,
+          },
+          message: this.buildAttachmentSummary(state),
+        };
+      },
+      finalize_baubeschrieb_attachment: async ({ attachmentId, overrides }) => {
+        const state = this.getState(chatId);
+        const attachment = state.attachments.get(attachmentId);
+        if (!attachment) {
+          throw new Error(`Attachment ${attachmentId} wurde nicht gefunden.`);
+        }
+
+        const baseResult = state.bauBeschriebResults.get(attachmentId);
+        if (!baseResult) {
+          throw new Error(`Attachment ${attachmentId} wurde noch nicht verarbeitet.`);
+        }
+
+        const mergedOverrides = mergeOverrides(state.bauBeschriebOverrides.get(attachmentId) ?? {}, overrides ?? {});
+        const result = await finalizeBauBeschrieb({
+          ingestion: baseResult.ingestion,
+          extracted: baseResult.extracted,
+          overrides: mergedOverrides,
+        });
+
+        state.bauBeschriebResults.set(attachmentId, result);
+        state.bauBeschriebOverrides.set(attachmentId, mergedOverrides);
+        if (result?.status === "created") {
+          this.clearAttachment(chatId, attachmentId);
+          this.applyBauBeschriebResultToContext(chatId, result);
+        } else {
+          attachment.status = result?.status ?? "needs_input";
+          attachment.processedAt = new Date().toISOString();
+          state.pendingAttachmentIds.add(attachmentId);
+          this.setContext(chatId, { pendingAttachments: state.pendingAttachmentIds.size });
+        }
+
+        return {
+          status: result?.status,
+          context: {
+            ingestion: result?.ingestion,
+            extracted: result?.extracted,
+            pendingFields: result?.pendingFields,
+            missingMandatory: result?.missingMandatory,
+            attachment,
+          },
+          message: result?.status === "created" ? "Bau-Beschrieb wurde finalisiert." : "Es werden noch Angaben benötigt.",
+        };
       },
       list_kunden: async () => db.actions.listKunden(),
       list_objekte: async ({ kundeId }) => db.actions.listObjekteByKunde(kundeId),

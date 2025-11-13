@@ -49,8 +49,8 @@ export function beginQualiFlowConversation(chatId) {
   return getChatOrchestrator().beginConversation(chatId);
 }
 
-export function handleQualiFlowMessage({ chatId, message }) {
-  return getChatOrchestrator().handleMessage({ chatId, message });
+export function handleQualiFlowMessage({ chatId, message, attachmentId, uploadedBy }) {
+  return getChatOrchestrator().handleMessage({ chatId, message, attachmentId, uploadedBy });
 }
 
 export function resetAgentOrchestrator() {

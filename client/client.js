@@ -2,15 +2,18 @@ const chatLog = document.getElementById("chat-log");
 const chatForm = document.getElementById("chat-form");
 const chatInput = document.getElementById("chat-message");
 const fileInput = document.getElementById("chat-upload");
+const uploadButton = document.getElementById("upload-button");
 const sendButton = document.getElementById("send-button");
 const resetButton = document.getElementById("reset-chat");
 const sessionIdEl = document.getElementById("session-id");
+const attachmentsContainer = document.getElementById("chat-attachments");
 
 const STORAGE_KEY = "qualicasa-chat-session-id";
 
 const state = {
   chatId: window.sessionStorage.getItem(STORAGE_KEY) || null,
   pendingCapture: null,
+  pendingFile: null,
 };
 
 function formatTimestamp(date = new Date()) {
@@ -168,6 +171,7 @@ function setLoading(isLoading) {
   }
   sendButton.disabled = isLoading;
   chatInput.disabled = isLoading;
+  uploadButton.disabled = isLoading;
 }
 
 async function postChatMessage(body) {
@@ -190,38 +194,93 @@ async function postChatMessage(body) {
   return response.json();
 }
 
-async function sendChatMessage({ message, options = {} }) {
+async function sendChatMessage({ message, options = {}, attachment }) {
   const payload = { message };
 
   if (options?.capture) {
     payload.context = { ...options.capture };
   }
 
+  if (attachment) {
+    payload.attachmentId = attachment.id;
+  }
+
   return postChatMessage(payload);
+}
+
+async function uploadPendingFile() {
+  if (!state.pendingFile) return null;
+
+  const { file } = state.pendingFile;
+  const formData = new FormData();
+  if (state.chatId) {
+    formData.append("chatId", state.chatId);
+  }
+  formData.append("file", file);
+
+  const response = await fetch("/chat/upload", { method: "POST", body: formData });
+  if (!response.ok) {
+    throw new Error(await response.text());
+  }
+  const result = await response.json();
+  if (result.chatId) {
+    setChatId(result.chatId);
+  }
+
+  state.pendingFile = null;
+  attachmentsContainer.innerHTML = "";
+
+  return result;
 }
 
 async function handleSubmit(message) {
   const trimmed = message.trim();
-  if (!trimmed) {
+  if (!trimmed && !state.pendingFile) {
     return;
   }
 
-  appendMessage({ role: "user", text: trimmed, status: "gesendet" });
+  const userLines = [];
+  if (state.pendingFile) {
+    const description = state.pendingFile.description;
+    userLines.push(`${description}: ${state.pendingFile.file.name}`);
+  }
+  if (trimmed) {
+    userLines.push(trimmed);
+  }
+
+  appendMessage({ role: "user", text: userLines.join("\n"), status: "gesendet" });
   setLoading(true);
 
   try {
-    const result = await sendChatMessage({ message: trimmed, options: state.pendingCapture });
+    let uploadResult = null;
+    if (state.pendingFile) {
+      uploadResult = await uploadPendingFile();
+      if (uploadResult?.message) {
+        appendMessage({
+          role: "system",
+          text: uploadResult.message,
+          status: uploadResult.status ?? "upload",
+          options: uploadResult.options,
+          context: uploadResult.context,
+        });
+      }
+    }
+
+    const result = await sendChatMessage({
+      message: trimmed,
+      options: state.pendingCapture,
+      attachment: uploadResult?.context?.attachment,
+    });
     if (result.chatId) {
       setChatId(result.chatId);
     }
     appendMessage({
       role: "system",
-      text: result.message ?? "(keine Antwort)",
+      text: result.message ?? "",
       status: result.status ?? "info",
       options: result.options,
       context: result.context,
     });
-    state.pendingCapture = null;
   } catch (error) {
     console.error("Chat send failed", error);
     appendMessage({ role: "system", text: `Fehler: ${error.message}`, status: "error" });
@@ -229,6 +288,8 @@ async function handleSubmit(message) {
     setLoading(false);
     chatForm.reset();
     chatInput?.focus();
+    state.pendingFile = null;
+    attachmentsContainer.innerHTML = "";
   }
 }
 
@@ -238,49 +299,36 @@ chatForm?.addEventListener("submit", async (event) => {
   await handleSubmit(rawMessage);
 });
 
+uploadButton?.addEventListener("click", () => {
+  fileInput?.click();
+});
+
 fileInput?.addEventListener("change", async (event) => {
   const file = event.target?.files?.[0];
   if (!file) {
     return;
   }
 
-  appendMessage({ role: "user", text: `Foto ausgewählt: ${file.name}`, status: "upload" });
+  const description = file.type?.includes("pdf") ? "Dokument" : "Datei";
+  state.pendingFile = { file, description };
+  fileInput.value = "";
 
-  const formData = new FormData();
-  if (state.chatId) {
-    formData.append("chatId", state.chatId);
-  }
-  formData.append("file", file);
+  attachmentsContainer.innerHTML = "";
+  const chip = document.createElement("span");
+  chip.className = "attachment-chip";
+  chip.textContent = `${description}: ${file.name}`;
 
-  try {
-    setLoading(true);
-    const response = await fetch("/chat/upload", { method: "POST", body: formData });
-    if (!response.ok) {
-      throw new Error(await response.text());
-    }
-    const result = await response.json();
-    if (result.chatId) {
-      setChatId(result.chatId);
-    }
-    if (result.message) {
-      appendMessage({ role: "system", text: result.message, status: result.status ?? "upload" });
-    }
-    if (result.context?.captureTrigger) {
-      state.pendingCapture = {
-        attachment: {
-          fileName: file.name,
-          url: result.context.captureTrigger.url,
-          mimeType: file.type,
-        },
-      };
-    }
-  } catch (error) {
-    console.error("Upload failed", error);
-    appendMessage({ role: "system", text: `Upload fehlgeschlagen: ${error.message}`, status: "error" });
-  } finally {
-    setLoading(false);
-    fileInput.value = "";
-  }
+  const removeButton = document.createElement("button");
+  removeButton.type = "button";
+  removeButton.setAttribute("aria-label", "Datei entfernen");
+  removeButton.innerHTML = "&times;";
+  removeButton.addEventListener("click", () => {
+    state.pendingFile = null;
+    attachmentsContainer.innerHTML = "";
+  });
+
+  chip.appendChild(removeButton);
+  attachmentsContainer.appendChild(chip);
 });
 
 resetButton?.addEventListener("click", () => {
