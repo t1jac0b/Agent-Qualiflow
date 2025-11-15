@@ -19,8 +19,9 @@ const qsPositionUpload = upload.single("photo");
 const chatUpload = upload.single("file");
 
 app.use(express.json({ limit: "5mb" }));
-// Serve static UI from /client
+// Static assets
 app.use(express.static("client"));
+app.use("/storage", express.static(path.join(process.cwd(), "storage")));
 
 function normalizeChatId(requestedId) {
   if (requestedId && typeof requestedId === "string" && requestedId.trim()) {
@@ -122,7 +123,14 @@ app.get("/qs-rundgang/:id/report", async (req, res) => {
       return;
     }
 
-    res.json({ status: "SUCCESS", pdfPath: result.pdfPath, reportId: result.reportId });
+    const relativePath = path.relative(process.cwd(), result.pdfPath);
+    const downloadUrl = `/${relativePath.replace(/\\+/g, "/")}`;
+    res.json({
+      status: "SUCCESS",
+      pdfPath: result.pdfPath,
+      reportId: result.reportId,
+      downloadUrl,
+    });
   } catch (error) {
     log.error("QS-Report Generierung fehlgeschlagen", { error, baurundgangId });
     console.error("[HTTP] /qs-rundgang/:id/report failed", error);

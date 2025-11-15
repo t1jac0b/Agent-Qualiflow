@@ -103,6 +103,16 @@ function renderSelectionSummary(selection) {
 }
 
 function createOptionButton(option) {
+  if (option?.isLink || /^https?:\/\//i.test(option?.inputValue ?? "")) {
+    const link = document.createElement("a");
+    link.className = "option-button option-link";
+    link.textContent = optionLabel(option);
+    link.href = option.inputValue ?? optionLabel(option);
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    return link;
+  }
+
   const button = document.createElement("button");
   button.type = "button";
   button.className = "option-button";

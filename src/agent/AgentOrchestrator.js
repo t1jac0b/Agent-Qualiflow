@@ -1146,7 +1146,28 @@ export class QualiFlowAgent {
       ]);
 
       const statusLabel = formatStatusLabel(selected.status);
-      const hasQsReport = Boolean(selected.qsReport?.id ?? qsReport?.id);
+      let resolvedReport = qsReport ?? selected.qsReport ?? null;
+      let downloadUrl = resolvedReport?.downloadUrl ?? null;
+
+      if (resolvedReport?.id && !downloadUrl) {
+        try {
+          const generation = await this.handleTask({
+            type: "report.generate",
+            payload: { qsReportId: resolvedReport.id },
+          });
+          if (generation?.status === "SUCCESS") {
+            downloadUrl = generation.downloadUrl ?? downloadUrl;
+            resolvedReport = { ...resolvedReport, downloadUrl };
+          }
+        } catch (error) {
+          this.logger.warn("Report konnte nicht neu generiert werden", {
+            error: error?.message,
+            qsReportId: resolvedReport.id,
+          });
+        }
+      }
+
+      const hasQsReport = Boolean(resolvedReport?.id);
       const positionsSummary = formatPositionsSummary(qsReport?.positionen ?? []);
       const pruefpunkteSummary = formatPruefpunkteSummary(pruefpunkte ?? []);
       const rueckSummary = formatRueckmeldungSummaryList(rueckmeldungSummary);
@@ -1185,14 +1206,43 @@ export class QualiFlowAgent {
       let status = "awaiting_pruefpunkte";
       let followUpContext = { phase: "pruefpunkte", selection: path };
 
+      const prependDownloadOption = (options = []) =>
+        downloadUrl
+          ? [
+              { id: "view-report", label: "Report ansehen", inputValue: downloadUrl, isLink: true },
+              ...options,
+            ]
+          : options;
+
       if (selected.status && selected.status.toLowerCase() === "abgeschlossen") {
         status = "baurundgang_abgeschlossen";
         followUpMessage = hasQsReport
-          ? "Der Baurundgang ist abgeschlossen und der QS-Report liegt vor. Soll ich den Report anzeigen oder exportieren?"
+          ? [
+              "Der Baurundgang ist abgeschlossen und der QS-Report liegt vor.",
+              downloadUrl ? `Report ansehen: ${downloadUrl}` : null,
+              "Soll ich den Report anzeigen oder exportieren?",
+            ]
+              .filter(Boolean)
+              .join("\n")
           : "Der Baurundgang ist abgeschlossen. Soll ich den QS-Report jetzt erstellen?";
-        followUpContext = { ...followUpContext, qsReport: qsReport ?? null };
+        followUpContext = {
+          ...followUpContext,
+          qsReport: resolvedReport,
+          options: prependDownloadOption(followUpContext.options ?? []),
+        };
       } else if (hasQsReport) {
-        followUpMessage = "Es existiert bereits ein QS-Report für diesen offenen Baurundgang. Möchtest du weitere Prüfpunkte erfassen (ja/nein)?";
+        followUpMessage = [
+          "Es existiert bereits ein QS-Report für diesen offenen Baurundgang.",
+          downloadUrl ? `Report ansehen: ${downloadUrl}` : null,
+          "Möchtest du weitere Prüfpunkte erfassen (ja/nein)?",
+        ]
+          .filter(Boolean)
+          .join("\n");
+        followUpContext = {
+          ...followUpContext,
+          qsReport: resolvedReport,
+          options: prependDownloadOption(followUpContext.options ?? []),
+        };
       } else {
         followUpMessage = "Möchtest du weitere Prüfpunkte erfassen? (ja/nein)";
       }
