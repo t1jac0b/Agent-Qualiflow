@@ -79,9 +79,9 @@ test.describe("Chat Flow", () => {
     await page.fill("#chat-message", "Projektleiter: Max Beispiel");
     await page.click("#send-button");
 
-    await expect(page.locator(".chat-log .chat-message.system")).toContainText(
+    await expect(page.locator(".chat-log .chat-message.system").last()).toContainText(
       /Danke! Projektleiter wurde erfasst/i,
     );
-    await expect(page.locator(".pending-requirements")).toHaveCount(0);
+    await expect(page.locator(".chat-log .chat-message.system").last().locator(".pending-requirements")).toHaveCount(0);
   });
 });

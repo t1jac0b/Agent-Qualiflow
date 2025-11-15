@@ -15,6 +15,7 @@ const qsUpload = upload.fields([
   { name: "archive", maxCount: 1 },
   { name: "photos", maxCount: 20 },
 ]);
+const qsPositionUpload = upload.single("photo");
 const chatUpload = upload.single("file");
 
 app.use(express.json({ limit: "5mb" }));
