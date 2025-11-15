@@ -23,6 +23,8 @@ export const databaseTool = defineTool({
     listKunden: () => LegacyDatabaseTool.listKunden(),
     listObjekteByKunde: (payload) => LegacyDatabaseTool.listObjekteByKunde(payload?.kundeId ?? payload),
     listBaurundgaengeByObjekt: (payload) => LegacyDatabaseTool.listBaurundgaengeByObjekt(payload?.objektId ?? payload),
+    listPruefpunkteByBaurundgang: (payload) =>
+      LegacyDatabaseTool.listPruefpunkteByBaurundgang(payload?.baurundgangId ?? payload),
     autoCreateBaurundgaengeForObjekt: (payload) =>
       LegacyDatabaseTool.autoCreateBaurundgaengeForObjekt(payload?.objektId ?? payload),
     listBauteilTemplates: () => LegacyDatabaseTool.listBauteilTemplates(),

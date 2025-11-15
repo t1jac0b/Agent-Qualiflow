@@ -130,6 +130,88 @@ function extractInitialNote(input) {
   return input;
 }
 
+function truncateText(text, maxLength = 120) {
+  if (text == null) return "";
+  const normalized = String(text).trim();
+  if (normalized.length <= maxLength) {
+    return normalized;
+  }
+  return `${normalized.slice(0, Math.max(0, maxLength - 1))}…`;
+}
+
+function formatStatusLabel(status) {
+  if (!status) return "unbekannt";
+  const normalized = status.toLowerCase();
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+}
+
+function formatPositionsSummary(positions = [], { maxItems = 5 } = {}) {
+  if (!positions.length) {
+    return { lines: [], total: 0 };
+  }
+
+  const lines = positions.slice(0, maxItems).map((position) => {
+    const number = position.positionsnummer ?? position.id;
+    const status = position.erledigt ? "erledigt" : "offen";
+    const area = position.bereichKapitel?.name ?? position.bereichstitel ?? null;
+    const rueckmeldung = position.rueckmeldungstyp?.name ?? null;
+    const remark = position.bemerkung ? truncateText(position.bemerkung, 80) : null;
+    const photoCount = Array.isArray(position.fotos) ? position.fotos.length : 0;
+
+    const infoParts = [
+      rueckmeldung && rueckmeldung !== area ? rueckmeldung : null,
+      remark ? `Notiz: ${remark}` : null,
+      photoCount ? `${photoCount} Foto${photoCount > 1 ? "s" : ""}` : null,
+    ].filter(Boolean);
+
+    const detailSuffix = infoParts.length ? ` (${infoParts.join(", ")})` : "";
+    const label = area ?? rueckmeldung ?? `Prüfpunkt ${number}`;
+    return `#${number} ${label} – ${status}${detailSuffix}`;
+  });
+
+  if (positions.length > maxItems) {
+    lines.push(`… und ${positions.length - maxItems} weitere`);
+  }
+
+  return { lines, total: positions.length };
+}
+
+function formatPruefpunkteSummary(pruefpunkte = [], { maxItems = 5 } = {}) {
+  if (!pruefpunkte.length) {
+    return { lines: [], total: 0 };
+  }
+
+  const lines = pruefpunkte.slice(0, maxItems).map((item) => {
+    const status = item.erledigt ? "erledigt" : "offen";
+    const note = item.notiz ? truncateText(item.notiz, 60) : null;
+    const suffix = note ? ` – ${note}` : "";
+    return `${item.bezeichnung}${suffix} (${status})`;
+  });
+
+  if (pruefpunkte.length > maxItems) {
+    lines.push(`… und ${pruefpunkte.length - maxItems} weitere`);
+  }
+
+  return { lines, total: pruefpunkte.length };
+}
+
+function formatRueckmeldungSummaryList(summary = []) {
+  if (!Array.isArray(summary) || !summary.length) {
+    return [];
+  }
+
+  return summary.map((item) => {
+    const offen = item.offen ?? 0;
+    const erledigt = item.erledigt ?? 0;
+    const gesamt = item.gesamt ?? offen + erledigt;
+    return `${item.rueckmeldung ?? "Unbekannt"}: offen ${offen}, erledigt ${erledigt}, gesamt ${gesamt}`;
+  });
+}
+
+function withBullets(lines = []) {
+  return lines.filter(Boolean).map((line) => `• ${line}`);
+}
+
 
 function describeOptions(options, { labelKey = "name", valueKey = "id", formatter } = {}) {
   if (!options?.length) {
@@ -1055,10 +1137,87 @@ export class QualiFlowAgent {
         }, session.options);
       }
 
+      const path = { ...session.path, baurundgang: selected };
+      const baurundgangId = selected.id;
+      const [qsReport, pruefpunkte, rueckmeldungSummary] = await Promise.all([
+        database.actions.getQSReportByBaurundgang(baurundgangId),
+        database.actions.listPruefpunkteByBaurundgang(baurundgangId),
+        database.actions.summarizeRueckmeldungen({ baurundgangId }),
+      ]);
+
+      const statusLabel = formatStatusLabel(selected.status);
+      const hasQsReport = Boolean(selected.qsReport?.id ?? qsReport?.id);
+      const positionsSummary = formatPositionsSummary(qsReport?.positionen ?? []);
+      const pruefpunkteSummary = formatPruefpunkteSummary(pruefpunkte ?? []);
+      const rueckSummary = formatRueckmeldungSummaryList(rueckmeldungSummary);
+
+      const lines = [
+        `Der Baurundgang ${selected.label ?? describeBaurundgang(selected)} ist aktuell ${statusLabel}.`,
+        hasQsReport
+          ? "Für diesen Baurundgang existiert bereits ein QS-Report."
+          : "Es liegt noch kein QS-Report vor.",
+      ];
+
+      if (positionsSummary.total) {
+        lines.push(
+          positionsSummary.total === 1
+            ? "Es wurde bereits 1 Prüfpunkt erfasst:" 
+            : `Es wurden bereits ${positionsSummary.total} Prüfpunkte erfasst:`,
+        );
+        lines.push(...withBullets(positionsSummary.lines));
+      }
+
+      if (pruefpunkteSummary.total) {
+        lines.push(
+          pruefpunkteSummary.total === 1
+            ? "Es existiert 1 definierter Prüfpunkte-Hinweis:"
+            : `Es existieren ${pruefpunkteSummary.total} definierte Prüfpunkte:`,
+        );
+        lines.push(...withBullets(pruefpunkteSummary.lines));
+      }
+
+      if (rueckSummary.length) {
+        lines.push("Zusammenfassung nach Rückmeldungsarten:");
+        lines.push(...withBullets(rueckSummary));
+      }
+
+      let followUpMessage = null;
+      let status = "awaiting_pruefpunkte";
+      let followUpContext = { phase: "pruefpunkte", selection: path };
+
+      if (selected.status && selected.status.toLowerCase() === "abgeschlossen") {
+        status = "baurundgang_abgeschlossen";
+        followUpMessage = hasQsReport
+          ? "Der Baurundgang ist abgeschlossen und der QS-Report liegt vor. Soll ich den Report anzeigen oder exportieren?"
+          : "Der Baurundgang ist abgeschlossen. Soll ich den QS-Report jetzt erstellen?";
+        followUpContext = { ...followUpContext, qsReport: qsReport ?? null };
+      } else if (hasQsReport) {
+        followUpMessage = "Es existiert bereits ein QS-Report für diesen offenen Baurundgang. Möchtest du weitere Prüfpunkte erfassen (ja/nein)?";
+      } else {
+        followUpMessage = "Möchtest du weitere Prüfpunkte erfassen? (ja/nein)";
+      }
+
+      const message = [
+        ...lines,
+        "",
+        followUpMessage,
+      ]
+        .filter(Boolean)
+        .join("\n");
+
       this.setConversation(chatId, {
-        phase: "pruefpunkte",
-        path: { ...session.path, baurundgang: selected },
+        phase: status === "baurundgang_abgeschlossen" ? "completed" : "pruefpunkte",
+        path,
+        options: status === "baurundgang_abgeschlossen" ? null : session.options,
       });
+
+      if (status === "baurundgang_abgeschlossen") {
+        return {
+          status,
+          message,
+          context: followUpContext,
+        };
+      }
 
       const resumed = await this.resumePendingIntentIfReady({ chatId, database });
       if (resumed) {
@@ -1066,9 +1225,9 @@ export class QualiFlowAgent {
       }
 
       return {
-        status: "awaiting_pruefpunkte",
-        message: "Möchtest du Prüfpunkte erfassen? (ja/nein)",
-        context: { phase: "pruefpunkte" },
+        status,
+        message,
+        context: followUpContext,
       };
     }
 
