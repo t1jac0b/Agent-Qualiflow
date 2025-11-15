@@ -108,8 +108,12 @@ function createOptionButton(option) {
   button.className = "option-button";
   button.textContent = optionLabel(option);
   button.addEventListener("click", () => {
+    if (sendButton.disabled || chatInput.disabled) {
+      return;
+    }
     chatInput.value = optionValue(option);
     chatInput.focus();
+    void handleSubmit(chatInput.value);
   });
   return button;
 }
@@ -211,6 +215,10 @@ function setLoading(isLoading) {
   sendButton.disabled = isLoading;
   chatInput.disabled = isLoading;
   uploadButton.disabled = isLoading;
+  const optionButtons = chatLog?.querySelectorAll(".option-button");
+  optionButtons?.forEach((button) => {
+    button.disabled = isLoading;
+  });
 }
 
 async function postChatMessage(body) {

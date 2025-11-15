@@ -24,9 +24,66 @@ function isNumericSelection(input, optionsLength) {
 
 function findOptionByIdOrText(options, input, { labelKey = "name", valueKey = "id" }) {
   const normalized = input.toLowerCase();
-  const byId = options.find((option) => String(option[valueKey]).toLowerCase() === normalized);
-  if (byId) return byId;
-  return options.find((option) => option[labelKey]?.toLowerCase?.() === normalized) ?? null;
+
+  const normalizeValue = (value) => {
+    if (value == null) return null;
+    const text = String(value).trim();
+    return text ? text.toLowerCase() : null;
+  };
+
+  const stripPrefix = (value) => {
+    if (!value) return null;
+    return value.replace(/^br\s*\d+\s*/i, "").trim();
+  };
+
+  const getNestedValue = (option, key) => {
+    if (!option || !key) return null;
+    if (!key.includes(".")) {
+      return option[key];
+    }
+    return key.split(".").reduce((acc, part) => (acc == null ? acc : acc[part]), option);
+  };
+
+  const candidateKeys = [
+    valueKey,
+    labelKey,
+    "label",
+    "name",
+    "bezeichnung",
+    "title",
+    "typ.name",
+  ];
+
+  for (const option of options) {
+    const idValue = normalizeValue(option?.[valueKey]);
+    if (idValue && idValue === normalized) {
+      return option;
+    }
+  }
+
+  for (const option of options) {
+    const seen = new Set();
+    for (const key of candidateKeys) {
+      const raw = getNestedValue(option, key);
+      const normalizedValue = normalizeValue(raw);
+      if (normalizedValue && !seen.has(normalizedValue)) {
+        seen.add(normalizedValue);
+        if (normalizedValue === normalized) {
+          return option;
+        }
+      }
+
+      const stripped = normalizeValue(stripPrefix(typeof raw === "string" ? raw : null));
+      if (stripped && !seen.has(stripped)) {
+        seen.add(stripped);
+        if (stripped === normalized) {
+          return option;
+        }
+      }
+    }
+  }
+
+  return null;
 }
 
 function resolveSelection(input, options, { labelKey = "name", valueKey = "id" } = {}) {
@@ -349,6 +406,19 @@ function updatePathWithEntity(path, entityType, updatedEntity) {
   return path;
 }
 
+function normalizeOptions(result, options) {
+  if (!options?.length) {
+    return result;
+  }
+  if (!result.context) {
+    return { ...result, context: { options } };
+  }
+  if (!Array.isArray(result.context.options) || !result.context.options.length) {
+    return { ...result, context: { ...result.context, options } };
+  }
+  return result;
+}
+
 export class QualiFlowAgent {
   constructor({ tools = {}, logger = createLogger("agent:qualiflow"), sessionOptions = {} } = {}) {
     this.tools = tools;
@@ -401,11 +471,11 @@ export class QualiFlowAgent {
     }
     lines.push("Um welchen Kunden geht es? Du kannst einen Button anklicken oder den Namen eingeben.");
 
-    return {
+    return normalizeOptions({
       status: "awaiting_customer",
       message: lines.join("\n"),
       context: { options, phase: "select-customer" },
-    };
+    }, options);
   }
 
   async beginConversation(chatId) {
@@ -507,11 +577,11 @@ export class QualiFlowAgent {
         pendingIntent,
       });
 
-      return {
+      return normalizeOptions({
         status: "awaiting_object",
         message: "Wähle das Objekt aus oder gib an, ob du ein neues Objekt erstellen möchtest.",
         context: { options: objektOptions, phase: "select-object" },
-      };
+      }, objektOptions);
     }
 
     if (requireBaurundgang && !path.baurundgang) {
@@ -564,11 +634,11 @@ export class QualiFlowAgent {
           ? `Ich habe für ${path.objekt.bezeichnung} automatisch ${createdAuto} Standard-Baurundgänge angelegt.`
           : "Welcher Baurundgang soll bearbeitet werden?";
 
-      return {
+      return normalizeOptions({
         status: "awaiting_baurundgang",
         message: `${intro} Bitte wähle einen Baurundgang über die Buttons oder gib die ID ein.`,
         context: { options: baurundgangOptions, phase: "select-baurundgang" },
-      };
+      }, baurundgangOptions);
     }
 
     if (database) {
@@ -841,11 +911,11 @@ export class QualiFlowAgent {
 
       const selected = resolveSelection(trimmed, session.options, { labelKey: "name" });
       if (!selected) {
-        return {
+        return normalizeOptions({
           status: "retry_customer",
           message: "Ich konnte den Kunden nicht zuordnen. Bitte wähle ihn über die Buttons oder gib den Namen ein.",
           context: { options: session.options, phase: session.phase },
-        };
+        }, session.options);
       }
 
       const objekte = await database.actions.listObjekteByKunde(selected.id);
@@ -898,11 +968,11 @@ export class QualiFlowAgent {
 
       const selected = resolveSelection(trimmed, session.options, { labelKey: "bezeichnung" });
       if (!selected) {
-        return {
+        return normalizeOptions({
           status: "retry_object",
           message: "Ich habe das Objekt nicht erkannt. Bitte wähle es über die Buttons oder gib den Namen ein.",
           context: { options: session.options, phase: session.phase },
-        };
+        }, session.options);
       }
 
       let baurundgaenge = await database.actions.listBaurundgaengeByObjekt(selected.id);
@@ -929,9 +999,12 @@ export class QualiFlowAgent {
       }
 
       const baurundgangOptions = baurundgaenge.map((item) => {
+        const nummer = item.typ?.nummer;
+        const baseName = item.typ?.name ?? (item.id ? `Baurundgang ${item.id}` : "Baurundgang");
+        const label = nummer ? `BR ${nummer} ${baseName}` : baseName;
         return {
           ...item,
-          label: item.typ?.name ?? (item.id ? `Baurundgang ${item.id}` : "Baurundgang"),
+          label,
           inputValue: String(item.id),
         };
       });
@@ -975,11 +1048,11 @@ export class QualiFlowAgent {
       });
 
       if (!selected) {
-        return {
+        return normalizeOptions({
           status: "retry_baurundgang",
           message: "Ich konnte den Baurundgang nicht zuordnen. Bitte wähle ihn über die Buttons oder gib die ID ein.",
           context: { options: session.options, phase: session.phase },
-        };
+        }, session.options);
       }
 
       this.setConversation(chatId, {

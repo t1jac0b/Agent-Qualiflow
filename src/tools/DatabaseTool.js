@@ -557,15 +557,43 @@ export const DatabaseTool = {
       orderBy: { id: "asc" },
       select: {
         id: true,
+        status: true,
         datumGeplant: true,
         datumDurchgefuehrt: true,
         notiz: true,
+        qsReport: {
+          select: {
+            id: true,
+          },
+        },
         typ: {
           select: {
             id: true,
+            nummer: true,
             name: true,
           },
         },
+      },
+    });
+  },
+
+  async listPruefpunkteByBaurundgang(baurundgangId) {
+    if (!baurundgangId) {
+      throw new Error("listPruefpunkteByBaurundgang: 'baurundgangId' ist erforderlich.");
+    }
+
+    return prisma.pruefpunkt.findMany({
+      where: { baurundgangId },
+      orderBy: [
+        { reihenfolge: "asc" },
+        { id: "asc" },
+      ],
+      select: {
+        id: true,
+        bezeichnung: true,
+        erledigt: true,
+        notiz: true,
+        reihenfolge: true,
       },
     });
   },
