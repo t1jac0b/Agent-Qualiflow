@@ -598,6 +598,28 @@ export const DatabaseTool = {
     });
   },
 
+  async createPruefpunkt({ baurundgangId, bezeichnung, notiz, erledigt = false }) {
+    if (!baurundgangId) {
+      throw new Error("createPruefpunkt: 'baurundgangId' ist erforderlich.");
+    }
+    const label = (bezeichnung ?? "").trim();
+    if (!label) {
+      throw new Error("createPruefpunkt: 'bezeichnung' ist erforderlich.");
+    }
+
+    const reihenfolge = (await prisma.pruefpunkt.count({ where: { baurundgangId } })) + 1;
+
+    return prisma.pruefpunkt.create({
+      data: {
+        baurundgang: { connect: { id: baurundgangId } },
+        bezeichnung: label,
+        notiz: notiz ? String(notiz).trim() : undefined,
+        erledigt,
+        reihenfolge,
+      },
+    });
+  },
+
   async listBauteileByBaurundgang(baurundgangId) {
     if (!baurundgangId) {
       throw new Error("listBauteileByBaurundgang: 'baurundgangId' ist erforderlich.");

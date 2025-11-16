@@ -118,6 +118,11 @@ function isCancelCommand(input) {
   return normalized === "abbrechen" || normalized === "stop" || normalized === "cancel";
 }
 
+function isFinishCommand(input) {
+  const normalized = input.toLowerCase();
+  return normalized === "fertig" || normalized === "beenden" || normalized === "ende";
+}
+
 function extractInitialNote(input) {
   if (!input) return "";
   const normalized = input.toLowerCase();
@@ -918,6 +923,25 @@ export class QualiFlowAgent {
     const currentPath = session.path ?? {};
     const intent = detectIntent(trimmed);
 
+    if (session.phase?.startsWith("pruefpunkte:")) {
+      if (intent && intent !== INTENTS.CAPTURE) {
+        return this.routeIntent({ chatId, intent, message: trimmed, session, database });
+      }
+      if (isCancelCommand(lower)) {
+        this.setConversation(chatId, { ...session, phase: "completed", options: null });
+        return { status: "pruefpunkte_cancelled", message: "Prüfpunkte-Erfassung beendet." };
+      }
+      if (isFinishCommand(lower)) {
+        this.setConversation(chatId, { ...session, phase: "completed", options: null });
+        return {
+          status: "setup_complete",
+          message: "Prüfpunkte-Erfassung abgeschlossen. Setup abgeschlossen. Du kannst jetzt Positionen erfassen (Foto/Notiz).",
+          context: { selection: session.path },
+        };
+      }
+      return this.continuePruefpunkteFlow({ chatId, session, message: trimmed });
+    }
+
     if (session.phase?.startsWith("capture:")) {
       if (intent && intent !== INTENTS.CAPTURE) {
         return this.routeIntent({ chatId, intent, message: trimmed, session, database });
@@ -1303,14 +1327,11 @@ export class QualiFlowAgent {
       }
 
       const path = { ...(session.path ?? {}), pruefpunkteGewuenscht: choice };
-      this.setConversation(chatId, {
-        phase: "completed",
-        path,
-      });
+      if (choice) {
+        return this.beginPruefpunkteFlow({ chatId, session: { ...session, path } });
+      }
 
-      const confirmation = choice
-        ? "Alles klar, wir erfassen Prüfpunkte."
-        : "Alles klar, wir überspringen die Prüfpunkte.";
+      this.setConversation(chatId, { phase: "completed", path });
 
       const resumed = await this.resumePendingIntentIfReady({ chatId, database });
       if (resumed) {
@@ -1319,7 +1340,7 @@ export class QualiFlowAgent {
 
       return {
         status: "setup_complete",
-        message: `${confirmation} Setup abgeschlossen. Du kannst jetzt Positionen erfassen (Foto/Notiz).`,
+        message: "Alles klar, wir überspringen die Prüfpunkte. Setup abgeschlossen. Du kannst jetzt Positionen erfassen (Foto/Notiz).",
         context: { selection: path },
       };
     }
