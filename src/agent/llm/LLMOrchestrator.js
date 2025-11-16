@@ -1,6 +1,7 @@
 import { createLogger } from "../../utils/logger.js";
 import { processBauBeschriebUpload, finalizeBauBeschrieb } from "../bauBeschrieb/processBauBeschrieb.js";
 import { ReportAgent } from "../report/ReportAgent.js";
+import { getQualiFlowAgent } from "../orchestratorFactory.js";
 import { getOpenAI, getOpenAIModel } from "./openaiClient.js";
 import { buildSystemPrompt } from "./qualiflowPrompt.js";
 
@@ -170,6 +171,10 @@ export class LLMOrchestrator {
     };
   }
 
+  getQualiAgent() {
+    return getQualiFlowAgent();
+  }
+
   async deterministicFallback(chatId, userMessage) {
     try {
       const trimmed = typeof userMessage === "string" ? userMessage.trim() : "";
@@ -234,6 +239,7 @@ export class LLMOrchestrator {
         pendingAttachmentIds: new Set(),
         bauBeschriebResults: new Map(),
         bauBeschriebOverrides: new Map(),
+        lastReply: null,
       };
       this.stateByChat.set(chatId, s);
     }
@@ -255,6 +261,96 @@ export class LLMOrchestrator {
       }, {});
     s.context = mergeOverrides(s.context ?? {}, sanitizedPatch);
     return s.context;
+  }
+
+  resolveOptionInput(input, options = []) {
+    if (!options.length) return null;
+    const trimmed = input.trim();
+    const lower = trimmed.toLowerCase();
+    const numeric = Number.parseInt(trimmed, 10);
+
+    const normalize = (value) => {
+      if (value == null) return null;
+      const text = String(value).trim();
+      return text ? text.toLowerCase() : null;
+    };
+
+    if (!Number.isNaN(numeric) && numeric >= 1 && numeric <= options.length) {
+      return options[numeric - 1];
+    }
+
+    for (const option of options) {
+      const candidates = [option.inputValue, option.label, option.name, option.id]
+        .map(normalize)
+        .filter(Boolean);
+      if (candidates.includes(lower)) {
+        return option;
+      }
+    }
+
+    return null;
+  }
+
+  async tryHandleDeterministic(chatId, userMessage) {
+    const trimmed = typeof userMessage === "string" ? userMessage.trim() : "";
+    if (!trimmed) {
+      return null;
+    }
+
+    const state = this.getState(chatId);
+    const qualAgent = this.getQualiAgent();
+    
+    // Check if message looks like a question or conversation
+    const looksLikeQuestion = /(\?|^(was|wie|welche|wo|wann|warum|können|kann|sollte|würde|möchte)[\s\w])/i.test(trimmed);
+    
+    // Get current session to check phase
+    const session = qualAgent.getConversation(chatId);
+    const phase = session?.phase;
+    
+    // Let LLM handle questions and conversational input in capture/pruefpunkte phases
+    const isInFlexiblePhase = phase?.startsWith("pruefpunkte:") || phase?.startsWith("capture:");
+    if (looksLikeQuestion && isInFlexiblePhase) {
+      this.logger.info("Routing question to LLM", { chatId, phase, message: trimmed.slice(0, 50) });
+      return null; // Let LLM handle it
+    }
+    
+    // Try deterministic handling for clear inputs
+    try {
+      const result = await qualAgent.handleMessage({ chatId, message: trimmed });
+
+      if (result && result.status !== "unknown" && result.status !== "unknown_state") {
+        state.lastReply = result;
+        if (result.context?.selection) {
+          this.setContext(chatId, result.context.selection);
+        }
+
+        // Wenn eine Position erfolgreich angelegt wurde und ein Pending-Attachment existiert, Foto verknüpfen
+        if (result.status === "capture_success" && result.context?.position?.id) {
+          try {
+            const note = trimmed;
+            const patchedMessage = await this.linkPendingAttachmentToPosition(chatId, result, note);
+            if (patchedMessage) {
+              result.message = [result.message, patchedMessage].filter(Boolean).join("\n");
+            }
+          } catch (e) {
+            this.logger.warn("Verknüpfung des Attachments fehlgeschlagen", { chatId, error: e?.message });
+          }
+        }
+
+        state.history.push({ role: "user", content: trimmed });
+        state.history.push({ role: "assistant", content: result.message ?? "" });
+        state.history = state.history.slice(-this.sessionOptions.maxHistory);
+
+        return result;
+      }
+    } catch (error) {
+      this.logger.warn("QualiFlowAgent handling failed, falling back to LLM", {
+        chatId,
+        error: error?.message,
+      });
+    }
+
+    return null;
   }
 
   registerAttachment(chatId, attachment = {}) {
@@ -1036,11 +1132,118 @@ export class LLMOrchestrator {
   }
 
   async beginConversation(chatId) {
-    return this.runLLM(chatId, "");
+    const qualAgent = this.getQualiAgent();
+    const database = this.tools?.database;
+    
+    try {
+      const result = await qualAgent.promptCustomerSelection({ chatId, database });
+      const state = this.getState(chatId);
+      state.lastReply = result;
+      
+      if (result.context?.selection) {
+        this.setContext(chatId, result.context.selection);
+      }
+      
+      return result;
+    } catch (error) {
+      this.logger.error("beginConversation failed", { chatId, error: error?.message });
+      throw error;
+    }
   }
 
-  async handleMessage({ chatId, message }) {
+  async handleMessage({ chatId, message, attachmentId, uploadedBy }) {
+    // If a file attachment is referenced, handle it first to drive the capture flow deterministically
+    if (attachmentId) {
+      const handled = await this.handleIncomingAttachment({ chatId, message, attachmentId, uploadedBy });
+      if (handled) {
+        return handled;
+      }
+    }
     return this.runLLM(chatId, message ?? "");
+  }
+
+  async handleIncomingAttachment({ chatId, message, attachmentId, uploadedBy }) {
+    try {
+      const attachment = this.getAttachment(chatId, attachmentId);
+      const qualAgent = this.getQualiAgent();
+      const session = qualAgent.getConversation(chatId) ?? { phase: "idle", path: {} };
+
+      if (!attachment) {
+        this.logger.warn("AttachmentId nicht gefunden", { chatId, attachmentId });
+        return null;
+      }
+
+      // Merke das Attachment im LLM-Kontext für nachgelagerte Verknüpfung mit der Position
+      this.setContext(chatId, {
+        pendingCaptureAttachment: {
+          id: attachment.id,
+          storedPath: attachment.storedPath ?? attachment.id,
+          name: attachment.name,
+          uploadedAt: attachment.uploadedAt,
+          uploadedBy: uploadedBy ?? attachment.uploadedBy ?? "chat-ui",
+        },
+      });
+
+      // Wenn kein Baurundgang gewählt wurde, bitte erst Kontext herstellen
+      const path = session.path ?? {};
+      if (!path?.baurundgang?.id) {
+        return {
+          status: "missing_setup",
+          message: "Bitte wähle zuerst Kunde, Objekt und Baurundgang. Danach kannst du das Foto der Position zuweisen.",
+        };
+      }
+
+      // Falls wir noch nicht im Capture-Flow sind, direkt starten und Bauteil-Auswahl anzeigen
+      if (!String(session.phase || "").startsWith("capture:")) {
+        const initialNote = typeof message === "string" ? message.trim() : "";
+        const result = await qualAgent.beginCaptureFlow({ chatId, session, initialNote });
+        return result;
+      }
+
+      // Bereits im Capture-Flow: mit aktueller Nachricht normal fortfahren
+      const trimmed = typeof message === "string" ? message.trim() : "";
+      const result = await qualAgent.handleMessage({ chatId, message: trimmed || "" });
+      return result;
+    } catch (error) {
+      this.logger.error("handleIncomingAttachment fehlgeschlagen", { chatId, error: error?.message });
+      return null;
+    }
+  }
+
+  async linkPendingAttachmentToPosition(chatId, result, note) {
+    const state = this.getState(chatId);
+    const pending = state?.context?.pendingCaptureAttachment;
+    if (!pending || !pending.id) return null;
+
+    const db = this.tools?.database;
+    if (!db?.actions?.addFoto || !db?.actions?.linkPositionFoto) return null;
+
+    const selection = result.context?.selection ?? {};
+    const baurundgangId = selection?.baurundgang?.id;
+    const positionId = result.context?.position?.id;
+    if (!baurundgangId || !positionId) return null;
+
+    try {
+      const foto = await db.actions.addFoto({
+        data: {
+          baurundgang: { connect: { id: baurundgangId } },
+          dateiURL: pending.storedPath ?? pending.id,
+          hinweisMarkierung: note || undefined,
+        },
+      });
+      await db.actions.linkPositionFoto(positionId, foto.id);
+
+      this.clearAttachment(chatId, pending.id);
+      this.setContext(chatId, { pendingCaptureAttachment: null });
+
+      return `Foto verknüpft (Position #${positionId}).`;
+    } catch (error) {
+      this.logger.warn("linkPendingAttachmentToPosition: Fehler bei addFoto/linkPositionFoto", {
+        chatId,
+        error: error?.message,
+      });
+      return null;
+    }
   }
 
   async runLLM(chatId, userMessage) {
@@ -1048,6 +1251,12 @@ export class LLMOrchestrator {
     if (Array.isArray(state.history)) {
       state.history = sanitizeMessagesForToolResponses(state.history);
     }
+
+    const deterministic = await this.tryHandleDeterministic(chatId, userMessage);
+    if (deterministic) {
+      return deterministic;
+    }
+
     const client = this.openAIProvider.getClient();
     const model = this.openAIProvider.getModel();
 
@@ -1098,6 +1307,7 @@ export class LLMOrchestrator {
             }
             if (name === "reply") {
               replyResult = result ?? {};
+              state.lastReply = replyResult;
             }
           } catch (error) {
             const content = JSON.stringify({ error: String(error?.message || error) });
@@ -1131,11 +1341,14 @@ export class LLMOrchestrator {
       const fallback = await this.deterministicFallback(chatId, userMessage);
       if (fallback) {
         final = fallback;
+        state.lastReply = fallback;
       } else if (!final) {
         final = { status: "unknown", message: "Ich konnte keine Antwort erzeugen." };
+        state.lastReply = final;
       }
     }
 
+    state.lastReply = final;
     return final;
   }
 }

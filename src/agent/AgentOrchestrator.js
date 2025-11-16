@@ -170,7 +170,7 @@ function formatPositionsSummary(positions = [], { maxItems = 5 } = {}) {
     ].filter(Boolean);
 
     const detailSuffix = infoParts.length ? ` (${infoParts.join(", ")})` : "";
-    const label = area ?? rueckmeldung ?? `Prüfpunkt ${number}`;
+    const label = area ?? rueckmeldung ?? `Position ${number}`;
     return `#${number} ${label} – ${status}${detailSuffix}`;
   });
 
@@ -264,6 +264,7 @@ const INTENTS = {
   EDIT: "edit",
   QUERY: "query",
   DELETE: "delete",
+  START: "start",
 };
 
 function detectIntent(input) {
@@ -277,7 +278,13 @@ function detectIntent(input) {
   if (/(bearbeiten|ändern|aktualisieren|editieren)/i.test(lower)) {
     return INTENTS.EDIT;
   }
-  if (lower.includes("?") || /(welche|welcher|welches|was|zeige|liste|wie viele|status)/i.test(lower)) {
+  if (/(start|starte|starten|begin|beginne|beginnen|durchführ)/i.test(lower)) {
+    return INTENTS.START;
+  }
+  if (lower.includes("?") || /(welche|welcher|welches|was|zeige|zeigen|anzeigen|liste|wie viele|status)/i.test(lower)) {
+    return INTENTS.QUERY;
+  }
+  if (/(baurundgänge|baurundgaenge|baurundgang|rundgänge|rundgaenge)/i.test(lower)) {
     return INTENTS.QUERY;
   }
   return null;
@@ -924,7 +931,11 @@ export class QualiFlowAgent {
     const intent = detectIntent(trimmed);
 
     if (session.phase?.startsWith("pruefpunkte:")) {
-      if (intent && intent !== INTENTS.CAPTURE) {
+      if (intent) {
+        if (intent === INTENTS.CAPTURE) {
+          this.setConversation(chatId, { ...session, phase: "completed", options: null });
+          return this.beginCaptureFlow({ chatId, session: { ...session, phase: "completed", path: currentPath }, initialNote: extractInitialNote(trimmed) });
+        }
         return this.routeIntent({ chatId, intent, message: trimmed, session, database });
       }
       if (isCancelCommand(lower)) {
@@ -1206,8 +1217,8 @@ export class QualiFlowAgent {
       if (positionsSummary.total) {
         lines.push(
           positionsSummary.total === 1
-            ? "Es wurde bereits 1 Prüfpunkt erfasst:" 
-            : `Es wurden bereits ${positionsSummary.total} Prüfpunkte erfasst:`,
+            ? "Es wurde bereits 1 Position erfasst:" 
+            : `Es wurden bereits ${positionsSummary.total} Positionen erfasst:`,
         );
         lines.push(...withBullets(positionsSummary.lines));
       }
@@ -1230,13 +1241,15 @@ export class QualiFlowAgent {
       let status = "awaiting_pruefpunkte";
       let followUpContext = { phase: "pruefpunkte", selection: path };
 
+      const listPruefpunkteOption = { id: "show-pruefpunkte", label: "Prüfpunkte anzeigen", inputValue: "Prüfpunkte anzeigen" };
       const prependDownloadOption = (options = []) =>
         downloadUrl
           ? [
               { id: "view-report", label: "Report ansehen", inputValue: downloadUrl, isLink: true },
+              listPruefpunkteOption,
               ...options,
             ]
-          : options;
+          : [listPruefpunkteOption, ...options];
 
       if (selected.status && selected.status.toLowerCase() === "abgeschlossen") {
         status = "baurundgang_abgeschlossen";
@@ -1258,7 +1271,7 @@ export class QualiFlowAgent {
         followUpMessage = [
           "Es existiert bereits ein QS-Report für diesen offenen Baurundgang.",
           downloadUrl ? `Report ansehen: ${downloadUrl}` : null,
-          "Möchtest du weitere Prüfpunkte erfassen (ja/nein)?",
+          "Möchtest du Positionen erfassen (Foto/Notiz)?",
         ]
           .filter(Boolean)
           .join("\n");
@@ -1268,7 +1281,11 @@ export class QualiFlowAgent {
           options: prependDownloadOption(followUpContext.options ?? []),
         };
       } else {
-        followUpMessage = "Möchtest du weitere Prüfpunkte erfassen? (ja/nein)";
+        followUpMessage = "Möchtest du Prüfpunkte erfassen? (ja/nein)";
+        followUpContext = {
+          ...followUpContext,
+          options: prependDownloadOption(followUpContext.options ?? []),
+        };
       }
 
       const message = [
@@ -1279,10 +1296,11 @@ export class QualiFlowAgent {
         .filter(Boolean)
         .join("\n");
 
+      const nextPhase = hasQsReport || status === "baurundgang_abgeschlossen" ? "completed" : "pruefpunkte";
       this.setConversation(chatId, {
-        phase: status === "baurundgang_abgeschlossen" ? "completed" : "pruefpunkte",
+        phase: nextPhase,
         path,
-        options: status === "baurundgang_abgeschlossen" ? null : session.options,
+        options: nextPhase === "completed" ? null : session.options,
       });
 
       if (status === "baurundgang_abgeschlossen") {
@@ -1359,7 +1377,7 @@ export class QualiFlowAgent {
           });
         }
 
-        if (intent === INTENTS.EDIT || intent === INTENTS.DELETE || intent === INTENTS.QUERY) {
+        if (intent === INTENTS.START || intent === INTENTS.EDIT || intent === INTENTS.DELETE || intent === INTENTS.QUERY) {
           return this.routeIntent({ chatId, intent, message: trimmed, session, database });
         }
       }
@@ -1385,6 +1403,8 @@ export class QualiFlowAgent {
         return this.handleDeleteIntent({ chatId, message, session });
       case INTENTS.EDIT:
         return this.handleEditIntent({ chatId, message, session, database });
+      case INTENTS.START:
+        return this.handleStartIntent({ chatId, session, database });
       case INTENTS.QUERY:
         return this.handleQueryIntent({ chatId, message, session, database, skipEnsure });
       default:
@@ -1392,6 +1412,78 @@ export class QualiFlowAgent {
           status: "unhandled_intent",
           message: "Ich konnte deine Eingabe nicht zuordnen.",
         };
+    }
+  }
+
+  async handleStartIntent({ chatId, session, database }) {
+    if (!database) {
+      throw new Error("handleStartIntent: database tool nicht verfügbar.");
+    }
+
+    const { path } = session;
+    const baurundgangId = path?.baurundgang?.id;
+
+    if (!baurundgangId) {
+      return {
+        status: "missing_baurundgang",
+        message: "Es wurde noch kein Baurundgang ausgewählt. Bitte wähle zuerst einen Baurundgang.",
+      };
+    }
+
+    try {
+      // Update Baurundgang status to in_durchfuehrung
+      await database.actions.updateBaurundgang({
+        id: baurundgangId,
+        status: "in_durchfuehrung",
+        datumDurchgefuehrt: new Date(),
+      });
+
+      // Direkt in den Capture-Flow wechseln: Bauteil-Auswahl vorbereiten
+      const templates = await database.actions.listBauteilTemplates();
+      const options = (templates ?? []).map((template) => ({
+        id: template.id,
+        name: template.name ?? template.bezeichnung ?? template.kuerzel ?? `Bauteil ${template.id}`,
+        inputValue: template.name ?? template.bezeichnung ?? template.kuerzel ?? `Bauteil ${template.id}`,
+      }));
+
+      const updatedPath = {
+        ...path,
+        baurundgang: {
+          ...path.baurundgang,
+          status: "in_durchfuehrung",
+          datumDurchgefuehrt: new Date(),
+        },
+      };
+
+      this.setConversation(chatId, {
+        ...session,
+        phase: "capture:select-bauteil",
+        path: updatedPath,
+        capture: { initialNote: "" },
+        options,
+      });
+
+      const baurundgangLabel = describeBaurundgang(updatedPath.baurundgang);
+      const summary = composeSelectionSummary(updatedPath);
+
+      return {
+        status: "baurundgang_started",
+        message: [
+          `✅ Baurundgang "${baurundgangLabel}" wurde gestartet!`,
+          summary ? `Kontext: ${summary}` : null,
+          "Lade ein Foto hoch und wähle das zugehörige Bauteil.",
+          "Welches Bauteil möchtest du erfassen? Bitte nutze die Buttons oder gib den Namen ein.",
+        ]
+          .filter(Boolean)
+          .join("\n"),
+        context: { selection: updatedPath, phase: "capture:select-bauteil", options },
+      };
+    } catch (error) {
+      this.logger.error("handleStartIntent: Fehler beim Starten des Baurundgangs", { error, baurundgangId });
+      return {
+        status: "start_error",
+        message: "Beim Starten des Baurundgangs ist ein Fehler aufgetreten. Bitte versuche es erneut.",
+      };
     }
   }
 
@@ -1691,11 +1783,132 @@ Zur Sicherheit erfolgt eine Löschung nur nach expliziter Freigabe durch den Adm
     const lower = message.toLowerCase();
     const path = session.path ?? this.getConversation(chatId)?.path;
 
+    if (/(baurundgänge|baurundgaenge|baurundgang|rundgänge|rundgaenge)/.test(lower)) {
+      if (!path?.objekt?.id) {
+        return {
+          status: "query_missing_context",
+          message: "Bitte wähle zuerst Kunde und Objekt aus, bevor du Baurundgänge anzeigen lässt.",
+        };
+      }
+
+      try {
+        const baurundgaenge = await database.actions.listBaurundgaengeByObjekt(path.objekt.id);
+        if (!baurundgaenge?.length) {
+          return {
+            status: "query_baurundgaenge_empty",
+            message: "Für dieses Objekt wurden keine Baurundgänge gefunden.",
+            context: { selection: path },
+          };
+        }
+
+        const options = baurundgaenge.map((item) => {
+          const nummer = item.typ?.nummer;
+          const baseName = item.typ?.name ?? (item.id ? `Baurundgang ${item.id}` : "Baurundgang");
+          const label = nummer ? `BR ${nummer} ${baseName}` : baseName;
+          return {
+            ...item,
+            label,
+            inputValue: String(item.id),
+          };
+        });
+
+        const lines = options.map((option, index) => `${index + 1}. ${option.label}`);
+        const header = composeSelectionSummary(path);
+
+        this.setConversation(chatId, {
+          ...session,
+          phase: "select-baurundgang",
+          options,
+          path: { ...path },
+        });
+
+        return {
+          status: "awaiting_baurundgang",
+          message: [
+            header ? `Kontext: ${header}` : null,
+            "Hier sind alle geplanten Baurundgänge:",
+            ...lines,
+            "Bitte wähle einen Baurundgang (Button anklicken oder Nummer eingeben).",
+          ]
+            .filter(Boolean)
+            .join("\n"),
+          context: { selection: path, options, phase: "select-baurundgang" },
+        };
+      } catch (error) {
+        this.logger.error("handleQueryIntent: Baurundgänge konnten nicht geladen werden", {
+          error,
+          objektId: path.objekt.id,
+        });
+        return {
+          status: "query_error",
+          message: "Die Baurundgänge konnten nicht geladen werden. Bitte versuche es erneut.",
+        };
+      }
+    }
+
     if (!path?.baurundgang?.id) {
       return {
         status: "query_missing_context",
         message: "Bitte wähle zuerst Kunde, Objekt und Baurundgang aus, bevor du Auswertungen abfragst.",
       };
+    }
+
+    if (lower.includes("prüfpunkt") || lower.includes("pruefpunkt") || lower.includes("checkliste")) {
+      try {
+        const pruefpunkte = await database.actions.listPruefpunkteByBaurundgang(path.baurundgang.id);
+        const lines = [];
+        let options = [];
+        
+        if (!pruefpunkte?.length) {
+          lines.push("Es sind noch keine Prüfpunkte erfasst.");
+          lines.push("Möchtest du Prüfpunkte erfassen?");
+          options = [
+            { id: "pp-start-yes", label: "Ja, Prüfpunkte erfassen", inputValue: "ja" },
+            { id: "pp-start-no", label: "Nein, überspringen", inputValue: "nein" },
+          ];
+          this.setConversation(chatId, {
+            ...session,
+            phase: "pruefpunkte",
+            path,
+            options,
+          });
+          const header = composeSelectionSummary(path);
+          return {
+            status: "pruefpunkte_list_empty",
+            message: [header ? `Kontext: ${header}` : null, ...lines].filter(Boolean).join("\n"),
+            context: { selection: path, phase: "pruefpunkte", options },
+          };
+        } else {
+          lines.push("Prüfpunkte:");
+          for (const p of pruefpunkte) {
+            const box = p.erledigt ? "[x]" : "[ ]";
+            const note = p.notiz ? ` – ${truncateText(p.notiz, 60)}` : "";
+            lines.push(`• ${box} #${p.id} ${p.bezeichnung}${note}`);
+          }
+          
+          options = pruefpunkte.map((p) => ({
+            id: `pp-${p.id}-${p.erledigt ? "unset" : "set"}`,
+            label: p.erledigt ? `#${p.id} Unerledigt setzen` : `#${p.id} Erledigt setzen`,
+            inputValue: `pp:toggle:${p.id}:${p.erledigt ? "false" : "true"}`,
+          }));
+          options.unshift({ id: "pp-refresh", label: "Aktualisieren", inputValue: "pp:refresh" });
+        }
+
+        this.setConversation(chatId, { ...session, phase: "pruefpunkte:list", options });
+
+        const header = composeSelectionSummary(path);
+        return {
+          status: "pruefpunkte_list",
+          message: [header ? `Kontext: ${header}` : null, ...lines].filter(Boolean).join("\n"),
+          context: { selection: path, options, phase: "pruefpunkte:list" },
+        };
+      } catch (error) {
+        this.logger.error("handleQueryIntent: Prüfpunkte-Abfrage fehlgeschlagen", { error, baurundgangId: path.baurundgang.id });
+        return {
+          status: "query_error",
+          message: "Die Prüfpunkte konnten nicht geladen werden. Bitte versuche es erneut.",
+        };
+      }
     }
 
     if (lower.includes("rückmeldung") || lower.includes("rueckmeldung")) {
@@ -1868,7 +2081,7 @@ Zur Sicherheit erfolgt eine Löschung nur nach expliziter Freigabe durch den Adm
 
       return {
         status: "capture_select_rueckmeldung",
-        message: "Welche Rückmeldung möchtest du wählen? Bitte nutze die Buttons oder gib den Namen ein.",
+        message: "Benötigt die Position eine Rückmeldung? Bitte wähle die Rückmeldungsart (Button anklicken oder Name eingeben).",
         context: { phase: "capture:select-rueckmeldung", options: rueckOptions },
       };
     }
@@ -1909,6 +2122,137 @@ Zur Sicherheit erfolgt eine Löschung nur nach expliziter Freigabe durch den Adm
     return {
       status: "capture_unknown_state",
       message: "Ich konnte deine Eingabe nicht verarbeiten. Bitte starte den Setup-Flow erneut oder wähle eine andere Aktion.",
+    };
+  }
+
+  async beginPruefpunkteFlow({ chatId, session }) {
+    const database = this.tools?.database;
+    if (!database) {
+      throw new Error("beginPruefpunkteFlow: database tool nicht verfügbar.");
+    }
+
+    const { path } = session;
+    if (!path?.baurundgang?.id) {
+      return {
+        status: "missing_setup",
+        message: "Bitte schließe zuerst den Setup-Flow mit Kunde, Objekt und Baurundgang ab.",
+      };
+    }
+
+    this.setConversation(chatId, {
+      ...session,
+      phase: "pruefpunkte:enter-title",
+      options: null,
+      pruefpunkteCapture: null,
+    });
+
+    return {
+      status: "pruefpunkte_enter_title",
+      message: "Bitte gib den Prüfpunkttitel ein (z.B. 'Fluchtweg beschildert'). Tippe 'fertig' zum Beenden.",
+      context: { phase: "pruefpunkte:enter-title" },
+    };
+  }
+
+  async continuePruefpunkteFlow({ chatId, session, message }) {
+    const database = this.tools?.database;
+    if (!database) {
+      throw new Error("continuePruefpunkteFlow: database tool nicht verfügbar.");
+    }
+
+    const { phase, path } = session;
+    if (phase === "pruefpunkte:list") {
+      const lower = message.toLowerCase();
+      if (lower === "pp:refresh" || lower === "aktualisieren") {
+        // re-list
+        return this.handleQueryIntent({ chatId, message: "prüfpunkte anzeigen", session, database: this.tools.database, skipEnsure: true });
+      }
+
+      const match = lower.match(/pp:toggle:(\d+):(true|false)/);
+      if (!match) {
+        return {
+          status: "pruefpunkte_list_hint",
+          message: "Bitte nutze die Buttons, um Prüfpunkte auf erledigt/unerledigt zu setzen, oder tippe 'fertig' zum Beenden.",
+          context: { phase, options: session.options },
+        };
+      }
+
+      const id = Number.parseInt(match[1], 10);
+      const flag = match[2] === "true";
+      try {
+        await this.tools.database.actions.setPruefpunktErledigt({ id, erledigt: flag });
+        // re-list after toggle
+        return this.handleQueryIntent({ chatId, message: "prüfpunkte anzeigen", session, database: this.tools.database, skipEnsure: true });
+      } catch (error) {
+        this.logger.error("continuePruefpunkteFlow: Toggle fehlgeschlagen", { error, id, flag });
+        return {
+          status: "pruefpunkte_toggle_error",
+          message: "Status konnte nicht geändert werden. Bitte versuche es erneut.",
+        };
+      }
+    }
+    if (phase === "pruefpunkte:enter-title") {
+      const title = message?.trim();
+      if (!title) {
+        return {
+          status: "pruefpunkte_retry_title",
+          message: "Bitte gib einen Titel für den Prüffpunkt ein (z.B. 'Fluchtweg beschildert').",
+          context: { phase },
+        };
+      }
+
+      this.setConversation(chatId, {
+        ...session,
+        phase: "pruefpunkte:enter-note",
+        pruefpunkteCapture: { title },
+      });
+
+      return {
+        status: "pruefpunkte_enter_note",
+        message: "Optional: Notiz eingeben und senden. Oder tippe 'weiter' um ohne Notiz zu speichern.",
+        context: { phase: "pruefpunkte:enter-note" },
+      };
+    }
+
+    if (phase === "pruefpunkte:enter-note") {
+      const capture = session.pruefpunkteCapture ?? {};
+      const title = capture.title?.trim();
+      if (!title) {
+        // Fallback: zurück zum Titel
+        this.setConversation(chatId, { ...session, phase: "pruefpunkte:enter-title", pruefpunkteCapture: null });
+        return {
+          status: "pruefpunkte_retry_title",
+          message: "Bitte gib einen Titel für den Prüffpunkt ein.",
+          context: { phase: "pruefpunkte:enter-title" },
+        };
+      }
+
+      const normalized = message?.trim().toLowerCase();
+      const noNote = normalized === "weiter" || normalized === "skip" || normalized === "ohne notiz";
+
+      const created = await database.actions.createPruefpunkt({
+        baurundgangId: session.path?.baurundgang?.id,
+        bezeichnung: title,
+        notiz: noNote ? undefined : message?.trim(),
+      });
+
+      this.setConversation(chatId, {
+        ...session,
+        phase: "pruefpunkte:enter-title",
+        pruefpunkteCapture: null,
+        options: null,
+        pruefpunkte: { count: (session.pruefpunkte?.count ?? 0) + 1 },
+      });
+
+      return {
+        status: "pruefpunkte_saved",
+        message: `Prüfpunkt gespeichert (#${created.id}): ${title}. Nächster Prüffpunkt? Gib den Titel ein oder tippe 'fertig' zum Beenden.`,
+        context: { phase: "pruefpunkte:enter-title", createdPruefpunkt: created },
+      };
+    }
+
+    return {
+      status: "pruefpunkte_unknown_state",
+      message: "Ich konnte deine Eingabe nicht verarbeiten. Tippe 'fertig' zum Beenden oder versuche es erneut.",
     };
   }
 
@@ -1976,7 +2320,7 @@ Zur Sicherheit erfolgt eine Löschung nur nach expliziter Freigabe durch den Adm
 
     const payload = {
       baurundgangId,
-      qsReportId: qsReport.id,
+      qsreportId: qsReport.id,
       bauteilTemplateId: capture?.bauteilTemplate?.id,
       kapitelTemplateId: capture?.kapitelTemplate?.id,
       rueckmeldungstypId: capture?.rueckmeldungstyp?.id,

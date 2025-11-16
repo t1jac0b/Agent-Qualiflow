@@ -65,6 +65,16 @@ export const DatabaseTool = {
     });
   },
 
+  async getPruefpunkt(id) {
+    if (!id) {
+      throw new Error("getPruefpunkt: 'id' ist erforderlich.");
+    }
+    return prisma.pruefpunkt.findUnique({
+      where: { id },
+      select: { id: true, bezeichnung: true, erledigt: true, notiz: true, baurundgangId: true },
+    });
+  },
+
   async updateKundeFields({ id, data }) {
     if (!id) {
       throw new Error("updateKundeFields: 'id' ist erforderlich.");
@@ -488,6 +498,23 @@ export const DatabaseTool = {
     return prisma.baurundgang.create({ data });
   },
 
+  async updateBaurundgang({ id, status, datumGeplant, datumDurchgefuehrt, notiz }) {
+    if (!id) {
+      throw new Error("updateBaurundgang: 'id' ist erforderlich.");
+    }
+    
+    const data = {};
+    if (status !== undefined) data.status = status;
+    if (datumGeplant !== undefined) data.datumGeplant = datumGeplant;
+    if (datumDurchgefuehrt !== undefined) data.datumDurchgefuehrt = datumDurchgefuehrt;
+    if (notiz !== undefined) data.notiz = notiz;
+    
+    return prisma.baurundgang.update({
+      where: { id },
+      data,
+    });
+  },
+
   async createQSReport(data) {
     return prisma.qSReport.create({ data });
   },
@@ -618,6 +645,14 @@ export const DatabaseTool = {
         reihenfolge,
       },
     });
+  },
+
+  async setPruefpunktErledigt({ id, erledigt }) {
+    if (!id) {
+      throw new Error("setPruefpunktErledigt: 'id' ist erforderlich.");
+    }
+    const flag = Boolean(erledigt);
+    return prisma.pruefpunkt.update({ where: { id }, data: { erledigt: flag } });
   },
 
   async listBauteileByBaurundgang(baurundgangId) {

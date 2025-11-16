@@ -17,6 +17,7 @@ export const databaseTool = defineTool({
     findObjektByName: (payload) => LegacyDatabaseTool.findObjektByName(payload),
     updateObjektFields: (payload) => LegacyDatabaseTool.updateObjektFields(payload),
     createBaurundgang: (payload) => LegacyDatabaseTool.createBaurundgang(payload),
+    updateBaurundgang: (payload) => LegacyDatabaseTool.updateBaurundgang(payload),
     createQSReport: (payload) => LegacyDatabaseTool.createQSReport(payload),
     getQSReport: (payload) => LegacyDatabaseTool.getQSReport(payload),
     getQSReportByBaurundgang: (payload) => LegacyDatabaseTool.getQSReportByBaurundgang(payload),
@@ -25,6 +26,8 @@ export const databaseTool = defineTool({
     listBaurundgaengeByObjekt: (payload) => LegacyDatabaseTool.listBaurundgaengeByObjekt(payload?.objektId ?? payload),
     listPruefpunkteByBaurundgang: (payload) =>
       LegacyDatabaseTool.listPruefpunkteByBaurundgang(payload?.baurundgangId ?? payload),
+    createPruefpunkt: (payload) => LegacyDatabaseTool.createPruefpunkt(payload),
+    setPruefpunktErledigt: (payload) => LegacyDatabaseTool.setPruefpunktErledigt(payload),
     autoCreateBaurundgaengeForObjekt: (payload) =>
       LegacyDatabaseTool.autoCreateBaurundgaengeForObjekt(payload?.objektId ?? payload),
     listBauteilTemplates: () => LegacyDatabaseTool.listBauteilTemplates(),
