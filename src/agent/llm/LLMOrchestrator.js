@@ -1,5 +1,6 @@
 import { createLogger } from "../../utils/logger.js";
 import { processBauBeschriebUpload, finalizeBauBeschrieb } from "../bauBeschrieb/processBauBeschrieb.js";
+import { ReportAgent } from "../report/ReportAgent.js";
 import { getOpenAI, getOpenAIModel } from "./openaiClient.js";
 import { buildSystemPrompt } from "./qualiflowPrompt.js";
 
@@ -116,6 +117,43 @@ function mergeOverrides(base = {}, update = {}) {
   return merged;
 }
 
+function messageHasToolInvocation(message) {
+  if (!message) return false;
+  if (Array.isArray(message.tool_calls) && message.tool_calls.length > 0) {
+    return true;
+  }
+  return Boolean(message.function_call);
+}
+
+function sanitizeMessagesForToolResponses(messages = []) {
+  const sanitized = [];
+  let skipToolSequence = false;
+  for (const entry of messages) {
+    if (!entry) continue;
+    // Drop assistant messages with tool_calls from history to avoid dangling sequences
+    if (entry.role === "assistant" && Array.isArray(entry.tool_calls) && entry.tool_calls.length > 0) {
+      skipToolSequence = true; // also drop subsequent tool responses
+      continue;
+    }
+    if (entry.role === "tool") {
+      // Drop tool messages unless directly preceded (in sanitized) by an assistant tool_call (which we don't keep)
+      // or when we are skipping a tool-call sequence.
+      if (skipToolSequence) {
+        continue;
+      }
+      const previous = sanitized[sanitized.length - 1];
+      if (!messageHasToolInvocation(previous)) {
+        continue;
+      }
+    } else {
+      // Any non-tool message ends the skip state
+      skipToolSequence = false;
+    }
+    sanitized.push(entry);
+  }
+  return sanitized;
+}
+
 export class LLMOrchestrator {
   constructor({ tools = {}, sessionOptions = {}, openAIProvider, bauBeschriebHandlers } = {}) {
     this.tools = tools;
@@ -130,6 +168,58 @@ export class LLMOrchestrator {
       process: bauBeschriebHandlers?.process ?? processBauBeschriebUpload,
       finalize: bauBeschriebHandlers?.finalize ?? finalizeBauBeschrieb,
     };
+  }
+
+  async deterministicFallback(chatId, userMessage) {
+    try {
+      const trimmed = typeof userMessage === "string" ? userMessage.trim() : "";
+      if (!trimmed) return null;
+      const db = this.tools?.database;
+      if (!db?.actions) return null;
+
+      const lower = trimmed.toLowerCase();
+
+      // Try direct Kunde-Auswahl per Name (case-insensitive, exakte Übereinstimmung)
+      const kunden = await db.actions.listKunden();
+      const kunde = Array.isArray(kunden)
+        ? kunden.find((k) => (k?.name ?? "").toLowerCase() === lower)
+        : null;
+      if (kunde) {
+        this.setContext(chatId, { kunde: { ...kunde } });
+        const objekte = await db.actions.listObjekteByKunde(kunde.id);
+        const options = Array.isArray(objekte) && objekte.length
+          ? objekte.map((o) => ({
+              id: String(o.id ?? o.bezeichnung ?? o.name ?? Math.random()),
+              label: o.bezeichnung ?? o.name ?? `Objekt ${o.id}`,
+              inputValue: o.bezeichnung ?? o.name ?? `Objekt ${o.id}`,
+            }))
+          : [
+              {
+                id: "create-objekt",
+                label: "Neues Objekt anlegen",
+                inputValue: "Neues Objekt anlegen",
+              },
+            ];
+
+        const hasObjekte = Array.isArray(objekte) && objekte.length > 0;
+        return {
+          status: "SUCCESS",
+          message: hasObjekte
+            ? "Bitte wähle ein Objekt aus der Liste aus:"
+            : `Es gibt derzeit keine Objekte für den Kunden "${kunde.name}". Möchtest du ein neues Objekt anlegen?`,
+          options,
+          context: {
+            selection: { kunde },
+            options,
+          },
+        };
+      }
+
+      return null;
+    } catch (error) {
+      this.logger.warn("deterministicFallback failed", { error: error?.message });
+      return null;
+    }
   }
 
   getState(chatId) {
@@ -597,6 +687,21 @@ export class LLMOrchestrator {
       {
         type: "function",
         function: {
+          name: "generate_report_pdf",
+          description: "Generiert das QS-Report PDF und liefert downloadUrl zurück.",
+          parameters: {
+            type: "object",
+            properties: {
+              qsReportId: { type: "number" },
+              baurundgangId: { type: "number" },
+            },
+            additionalProperties: false,
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
           name: "ensure_qs_report_for_baurundgang",
           description: "Stellt sicher, dass ein QS-Report existiert (liefert QSReport).",
           parameters: {
@@ -669,9 +774,10 @@ export class LLMOrchestrator {
                 items: {
                   type: "object",
                   properties: {
-                    id: { type: "number" },
+                    id: { type: "string" },
                     label: { type: "string" },
                     inputValue: { type: "string" },
+                    isLink: { type: "boolean" },
                   },
                   required: ["id", "label", "inputValue"],
                   additionalProperties: true,
@@ -822,8 +928,28 @@ export class LLMOrchestrator {
       list_baurundgaenge: async ({ objektId }) => db.actions.listBaurundgaengeByObjekt(objektId),
       auto_create_baurundgaenge_for_objekt: async ({ objektId }) =>
         db.actions.autoCreateBaurundgaengeForObjekt(objektId),
-      find_kunde_by_name: async ({ name }) => db.actions.findKundeByName(name),
-      find_objekt_by_name: async ({ name, kundeId }) => db.actions.findObjektByName({ name, kundeId }),
+      find_kunde_by_name: async ({ name }) => {
+        const result = await db.actions.findKundeByName(name);
+        if (result) {
+          const state = this.getState(chatId);
+          const kundeContext = mergeContext(state.context?.kunde ?? {}, result);
+          this.setContext(chatId, mergeContext(state.context ?? {}, { kunde: kundeContext }));
+        }
+        return result;
+      },
+      find_objekt_by_name: async ({ name, kundeId }) => {
+        const state = this.getState(chatId);
+        const result = await db.actions.findObjektByName({ name, kundeId: kundeId ?? state.context?.kunde?.id });
+        if (result) {
+          const objektContext = mergeContext(state.context?.objekt ?? {}, result);
+          const patch = { objekt: objektContext };
+          if (!state.context?.kunde && result?.kundeId) {
+            patch.kunde = { id: result.kundeId };
+          }
+          this.setContext(chatId, mergeContext(state.context ?? {}, patch));
+        }
+        return result;
+      },
       create_kunde: async ({ name, adresse, plz, ort }) => {
         const state = this.getState(chatId);
         const result = await db.actions.ensureKunde({ name, adresse, plz, ort });
@@ -833,7 +959,11 @@ export class LLMOrchestrator {
       },
       create_objekt: async (payload) => {
         const state = this.getState(chatId);
-        const result = await db.actions.createObjektForKunde(payload);
+        const withKunde = { ...payload, kundeId: payload?.kundeId ?? state.context?.kunde?.id };
+        if (!withKunde.kundeId) {
+          throw new Error("create_objekt: 'kundeId' fehlt und ist nicht im Kontext vorhanden.");
+        }
+        const result = await db.actions.createObjektForKunde(withKunde);
         const objektContext = mergeContext(state.context?.objekt ?? {}, result);
         const patch = { objekt: objektContext };
         if (!state.context?.kunde && result?.kundeId) {
@@ -842,11 +972,31 @@ export class LLMOrchestrator {
         this.setContext(chatId, mergeContext(state.context ?? {}, patch));
         return result;
       },
-      create_baurundgang: async (payload) => db.actions.createBaurundgang(payload),
+      create_baurundgang: async (payload) => {
+        const state = this.getState(chatId);
+        const withObjekt = { ...payload, objektId: payload?.objektId ?? state.context?.objekt?.id };
+        if (!withObjekt.objektId) {
+          throw new Error("create_baurundgang: 'objektId' fehlt und ist nicht im Kontext vorhanden.");
+        }
+        const result = await db.actions.createBaurundgang(withObjekt);
+        const patch = { baurundgang: mergeContext(state.context?.baurundgang ?? {}, result) };
+        this.setContext(chatId, mergeContext(state.context ?? {}, patch));
+        return result;
+      },
       list_rueckmeldungstypen: async () => db.actions.listRueckmeldungstypen(),
       summarize_rueckmeldungen: async ({ baurundgangId }) => db.actions.summarizeRueckmeldungen({ baurundgangId }),
       ensure_qs_report_for_baurundgang: async (payload) => db.actions.ensureQsReportForBaurundgang(payload),
       create_position_with_defaults: async (payload) => db.actions.createPositionWithDefaults(payload),
+      generate_report_pdf: async ({ qsReportId, baurundgangId } = {}) => {
+        const agent = new ReportAgent({ tools: this.tools });
+        const result = await agent.handleReportGenerate({ qsReportId, baurundgangId });
+        return {
+          status: result?.status ?? "unknown",
+          message: result?.message ?? "",
+          reportId: result?.reportId ?? null,
+          downloadUrl: result?.downloadUrl ?? null,
+        };
+      },
       update_kunde_fields: async ({ id, data }) => {
         const state = this.getState(chatId);
         let targetId = id ?? state.context?.kunde?.id;
@@ -895,6 +1045,9 @@ export class LLMOrchestrator {
 
   async runLLM(chatId, userMessage) {
     const state = this.getState(chatId);
+    if (Array.isArray(state.history)) {
+      state.history = sanitizeMessagesForToolResponses(state.history);
+    }
     const client = this.openAIProvider.getClient();
     const model = this.openAIProvider.getModel();
 
@@ -925,6 +1078,7 @@ export class LLMOrchestrator {
 
       if (msg.tool_calls?.length) {
         messages.push({ role: "assistant", tool_calls: msg.tool_calls, content: msg.content ?? "" });
+        let replyResult = null;
         for (const call of msg.tool_calls) {
           const name = call.function?.name;
           const args = safeParse(call.function?.arguments);
@@ -943,15 +1097,17 @@ export class LLMOrchestrator {
               this.setContext(chatId, result ?? args ?? {});
             }
             if (name === "reply") {
-              final = result ?? {};
-              break;
+              replyResult = result ?? {};
             }
           } catch (error) {
             const content = JSON.stringify({ error: String(error?.message || error) });
             messages.push({ role: "tool", tool_call_id: call.id, content });
           }
         }
-        if (final) break;
+        if (replyResult) {
+          final = replyResult;
+          break;
+        }
         // Continue next LLM step
         continue;
       }
@@ -966,11 +1122,18 @@ export class LLMOrchestrator {
     }
 
     // Save limited history
-    state.history = messages.slice(0, 1) // keep system out of history
-      .concat(messages.slice(1)).slice(-this.sessionOptions.maxHistory);
+    const historyWithoutSystem = messages.slice(1);
+    state.history = sanitizeMessagesForToolResponses(historyWithoutSystem).slice(
+      -this.sessionOptions.maxHistory,
+    );
 
-    if (!final) {
-      final = { status: "unknown", message: "Ich konnte keine Antwort erzeugen." };
+    if (!final || final?.status === "unknown") {
+      const fallback = await this.deterministicFallback(chatId, userMessage);
+      if (fallback) {
+        final = fallback;
+      } else if (!final) {
+        final = { status: "unknown", message: "Ich konnte keine Antwort erzeugen." };
+      }
     }
 
     return final;

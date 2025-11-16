@@ -103,11 +103,14 @@ function renderSelectionSummary(selection) {
 }
 
 function createOptionButton(option) {
-  if (option?.isLink || /^https?:\/\//i.test(option?.inputValue ?? "")) {
+  const rawValue = option?.inputValue ?? optionLabel(option) ?? "";
+  const trimmedValue = typeof rawValue === "string" ? rawValue.trim() : String(rawValue);
+  const looksLikeUrl = /^https?:\/\//i.test(trimmedValue);
+  if (option?.isLink || looksLikeUrl) {
     const link = document.createElement("a");
     link.className = "option-button option-link";
     link.textContent = optionLabel(option);
-    link.href = option.inputValue ?? optionLabel(option);
+    link.href = trimmedValue || optionLabel(option);
     link.target = "_blank";
     link.rel = "noopener noreferrer";
     return link;

@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 async function mockReportDownloadFlow(page) {
-  const downloadUrl = "/storage/reports/qs/mock-report.pdf";
+  const downloadUrl = "http://localhost:3001/storage/reports/qs/mock-report.pdf";
   await page.route("**/chat/message", async (route) => {
     const request = route.request();
     const payload = request.postDataJSON?.() ?? {};
@@ -72,13 +72,13 @@ test.describe("Report download link", () => {
 
     const link = page.locator(".chat-log .chat-message.system .option-list a.option-link").first();
     await expect(link).toHaveText("Report ansehen");
-    await expect(link).toHaveAttribute("href", "/storage/reports/qs/mock-report.pdf");
+    await expect(link).toHaveAttribute("href", "http://localhost:3001/storage/reports/qs/mock-report.pdf");
 
     await page.fill("#chat-message", "Bericht herunterladen");
     await page.click("#send-button");
 
     await expect(sysMessages.last()).toContainText("Der Bericht ist jetzt bereit zum Herunterladen");
     const followUpLink = page.locator(".chat-log .chat-message.system .option-list a.option-link").last();
-    await expect(followUpLink).toHaveAttribute("href", "/storage/reports/qs/mock-report.pdf");
+    await expect(followUpLink).toHaveAttribute("href", "http://localhost:3001/storage/reports/qs/mock-report.pdf");
   });
 });

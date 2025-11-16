@@ -331,25 +331,62 @@ async function ensurePosition(
     });
   }
 
-  const remarkParts = [];
-  if (template?.text) {
-    remarkParts.push(template.text);
+  const kapitelName = template?.kapitelName ?? bauteilName ?? null;
+
+  // Try to find an existing position for same bauteil and same bereich/kapitel
+  const where = { qsreportId: qsReportId };
+  if (bauteilId || bauteil?.id) {
+    where.bauteilId = bauteilId ?? bauteil?.id;
+  } else {
+    where.bauteilId = null;
   }
+  if (kapitelName) {
+    where.bereichstitel = kapitelName;
+  }
+
+  let existing = null;
+  try {
+    existing = await prisma.position.findFirst({ where, orderBy: { id: "asc" } });
+  } catch (e) {
+    existing = null;
+  }
+
+  // Build remark fragment for current capture
+  const parts = [];
+  if (template?.text) parts.push(template.text);
   if (originalNote) {
     const normalizedNote = originalNote.trim();
-    if (normalizedNote && (!template?.text || !template.text.includes(normalizedNote))) {
-      remarkParts.push(`Notiz: ${normalizedNote}`);
-    }
+    if (normalizedNote) parts.push(`Notiz: ${normalizedNote}`);
   }
-  const bemerkung = remarkParts.length ? remarkParts.join("\n\n") : template?.text ?? originalNote ?? null;
+  const fragment = parts.length ? parts.join("\n\n") : null;
 
+  if (existing) {
+    const base = existing.bemerkung ?? "";
+    let newBemerkung = base;
+    if (fragment && !base.includes(fragment)) {
+      newBemerkung = base ? `${base}\n\n${fragment}` : fragment;
+    }
+    const needsKapitel = kapitelName && !existing.bereichstitel;
+    if (newBemerkung !== base || needsKapitel) {
+      existing = await prisma.position.update({
+        where: { id: existing.id },
+        data: {
+          bemerkung: newBemerkung,
+          bereichstitel: needsKapitel ? kapitelName : existing.bereichstitel,
+        },
+      });
+    }
+    return existing;
+  }
+
+  const bemerkung = fragment ?? null;
   return prisma.position.create({
     data: {
       qsreportId: qsReportId,
       positionsnummer: existingCount + 1,
       bauteilId: bauteilId ?? bauteil?.id ?? null,
       bemerkung,
-      bereichstitel: template?.kapitelName ?? bauteilName ?? undefined,
+      bereichstitel: kapitelName ?? undefined,
       frist: frist ?? undefined,
     },
   });

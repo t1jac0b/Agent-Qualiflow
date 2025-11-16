@@ -26,7 +26,7 @@ const QS_REPORT_INCLUDE = {
   objekttyp: true,
   positionen: {
     include: {
-      bauteil: true,
+      bauteil: { include: { template: true } },
       bereichKapitel: true,
       rueckmeldungstyp: true,
       fotos: { include: { foto: true } },

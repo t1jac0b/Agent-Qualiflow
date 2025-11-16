@@ -73,7 +73,9 @@ export class ReportAgent {
       }
 
       const relativePath = path.relative(process.cwd(), pdfPath);
-      const downloadUrl = `/${relativePath.replace(/\\+/g, "/")}`;
+      const relativeUrl = `/${relativePath.replace(/\\+/g, "/")}`;
+      const base = (process.env.PUBLIC_BASE_URL ?? `http://localhost:${process.env.CHAT_SERVER_PORT ?? 3001}`).replace(/\/+$/, "");
+      const downloadUrl = `${base}${relativeUrl}`;
 
       return {
         status: "SUCCESS",

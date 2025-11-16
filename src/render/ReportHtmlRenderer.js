@@ -45,6 +45,18 @@ export function renderHtml(report) {
   const supersignLogo = getAssetDataUri("qualicasa-supersign.svg");
 
   const positions = [...(report.positionen ?? [])].sort((a, b) => {
+    const ar = a.bauteil?.template?.reihenfolge ?? Number.MAX_SAFE_INTEGER;
+    const br = b.bauteil?.template?.reihenfolge ?? Number.MAX_SAFE_INTEGER;
+    if (ar !== br) return ar - br;
+
+    const ak = a.bereichKapitel?.reihenfolge ?? null;
+    const bk = b.bereichKapitel?.reihenfolge ?? null;
+    if (ak != null && bk != null && ak !== bk) return ak - bk;
+
+    const as = (a.bereichstitel ?? "").toLowerCase();
+    const bs = (b.bereichstitel ?? "").toLowerCase();
+    if (as && bs && as !== bs) return as < bs ? -1 : 1;
+
     const aPos = a.positionsnummer ?? Number.MAX_SAFE_INTEGER;
     const bPos = b.positionsnummer ?? Number.MAX_SAFE_INTEGER;
     return aPos - bPos;
