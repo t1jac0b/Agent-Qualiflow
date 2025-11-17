@@ -290,7 +290,7 @@ app.post("/chat/upload", chatUpload, async (req, res) => {
     res.status(200).json({
       chatId,
       status: "attachment_stored",
-      message: `Die Datei "${file.originalname}" ist bereit. Bitte beschreibe in deiner Nachricht, was passieren soll.`,
+      message: `Die Datei "${file.originalname}" ist bereit. Optional: Du kannst ohne Text fortfahren – ich frage nach Bauteil und Bereich.`,
       context: { attachment: registered },
     });
   } catch (error) {
@@ -305,6 +305,15 @@ app.post("/chat/message", async (req, res) => {
   try {
     const trimmed = typeof message === "string" ? message.trim() : "";
 
+    // Allow photo-only: if no text but an attachmentId is provided, forward to orchestrator
+    if (!trimmed && attachmentId) {
+      log.info("Verarbeite Foto ohne Text", { chatId, attachmentId });
+      const result = await handleQualiFlowMessage({ chatId, message: "", attachmentId, uploadedBy });
+      log.info("Nachricht verarbeitet (Foto-only)", { chatId, status: result.status });
+      res.json({ chatId, ...serializeResult(result) });
+      return;
+    }
+
     if (!trimmed) {
       log.info("Proaktiven Gesprächsstart ausführen", { chatId });
       const result = await beginQualiFlowConversation(chatId);
@@ -314,7 +323,7 @@ app.post("/chat/message", async (req, res) => {
     }
 
     log.info("Verarbeite Nachricht (LLM)", { chatId });
-    const result = await handleQualiFlowMessage({ chatId, message, attachmentId, uploadedBy });
+    const result = await handleQualiFlowMessage({ chatId, message: trimmed, attachmentId, uploadedBy });
     log.info("Nachricht verarbeitet", { chatId, status: result.status });
     res.json({ chatId, ...serializeResult(result) });
   } catch (error) {

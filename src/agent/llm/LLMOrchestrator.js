@@ -1136,7 +1136,18 @@ export class LLMOrchestrator {
     const database = this.tools?.database;
     
     try {
-      const result = await qualAgent.promptCustomerSelection({ chatId, database });
+      // Prüfe offene Rückmeldungen beim Chat-Start
+      let reminderPrefix = null;
+      if (database?.actions?.listPendingRueckmeldungen) {
+        const pending = await database.actions.listPendingRueckmeldungen({ dueBefore: new Date() });
+        if (pending?.length) {
+          const count = pending.length;
+          const positions = count === 1 ? "Position" : "Positionen";
+          reminderPrefix = `⚠️ **Hinweis:** Es gibt ${count} offene Rückmeldung${count === 1 ? "" : "en"} zu ${positions} mit fälliger oder überfälliger Frist. Bitte überprüfe die Rückmeldungen.\n\n`;
+        }
+      }
+
+      const result = await qualAgent.promptCustomerSelection({ chatId, database, prefix: reminderPrefix });
       const state = this.getState(chatId);
       state.lastReply = result;
       

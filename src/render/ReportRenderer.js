@@ -49,12 +49,28 @@ export function renderMarkdown(report) {
   lines.push("");
   lines.push("| Pos | Bauteil/Bereich | Fotos | Aktion |");
   lines.push("| ---:| ---------------- | ----- | ------ |");
-  for (const p of (report.positionen ?? [])) {
-    const pos = p.positionsnummer ?? "-";
+  const positions = [...(report.positionen ?? [])].sort((a, b) => {
+    const ar = a.bauteil?.template?.reihenfolge ?? Number.MAX_SAFE_INTEGER;
+    const br = b.bauteil?.template?.reihenfolge ?? Number.MAX_SAFE_INTEGER;
+    if (ar !== br) return ar - br;
+    const ak = a.bereichKapitel?.reihenfolge ?? null;
+    const bk = b.bereichKapitel?.reihenfolge ?? null;
+    if (ak != null && bk != null && ak !== bk) return ak - bk;
+    const as = (a.bereichstitel ?? "").toLowerCase();
+    const bs = (b.bereichstitel ?? "").toLowerCase();
+    if (as && bs && as !== bs) return as < bs ? -1 : 1;
+    return 0;
+  });
+  const numbered = positions.map((p, idx) => ({ p, posNo: idx + 1 }));
+
+  for (const { p, posNo } of numbered) {
+    const pos = String(posNo);
     const bauteil = p.bauteil?.template?.name || p.bauteil?.materialisierung?.name || p.bereichstitel || p.bereich?.name || "-";
     const fotos = (p.fotos ?? []).map(f => f.foto?.dateiURL).filter(Boolean);
     const fotosCell = fotos.length ? fotos.map((u, i) => `[F${i+1}](${u})`).join(" ") : "-";
-    const aktion = `${p.rueckmeldungstyp?.name ?? ""}${p.bemerkung ? (p.rueckmeldungstyp?.name ? ": " : "") + p.bemerkung : ""}` || "-";
+    const rmNames = (p.rueckmeldungen ?? []).map((r) => r?.rueckmeldungstyp?.name).filter(Boolean);
+    const rmDisplay = rmNames.length ? rmNames.join(" + ") : (p.rueckmeldungstyp?.name ?? "");
+    const aktion = `${rmDisplay}${p.bemerkung ? (rmDisplay ? ": " : "") + p.bemerkung : ""}` || "-";
     lines.push(`| ${pos} | ${escapePipes(bauteil)} | ${fotosCell} | ${escapePipes(aktion)} |`);
   }
   lines.push("");
@@ -64,8 +80,8 @@ export function renderMarkdown(report) {
   lines.push("");
   lines.push("| Pos | Datum bis (Frist) | Datum erledigt | Bemerkung |");
   lines.push("| ---:| ------------------ | -------------- | --------- |");
-  for (const p of (report.positionen ?? [])) {
-    const pos = p.positionsnummer ?? "-";
+  for (const { p, posNo } of numbered) {
+    const pos = String(posNo);
     const frist = formatDateISO(p.frist);
     const erledigt = formatDateISO(p.erledigtAm);
     const bemerkung = p.rueckmeldungBemerkung || p.bemerkung || "-";

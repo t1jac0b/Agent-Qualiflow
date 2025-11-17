@@ -29,6 +29,7 @@ const QS_REPORT_INCLUDE = {
       bauteil: { include: { template: true } },
       bereichKapitel: true,
       rueckmeldungstyp: true,
+      rueckmeldungen: { include: { rueckmeldungstyp: true } },
       fotos: { include: { foto: true } },
     },
     orderBy: { positionsnummer: "asc" },
@@ -717,18 +718,12 @@ export const DatabaseTool = {
     }
 
     const positions = await prisma.position.findMany({
-      where: {
-        qsreport: { baurundgangId },
-      },
+      where: { qsreport: { baurundgangId } },
       select: {
         id: true,
         erledigt: true,
-        rueckmeldungstyp: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
+        rueckmeldungstyp: { select: { id: true, name: true } },
+        rueckmeldungen: { select: { rueckmeldungstyp: { select: { id: true, name: true } } } },
       },
     });
 
@@ -739,22 +734,32 @@ export const DatabaseTool = {
     const summary = new Map();
 
     for (const position of positions) {
-      const rueckmeldung = position.rueckmeldungstyp?.name ?? "Unbekannt";
-      const bucket = summary.get(rueckmeldung) ?? {
-        rueckmeldung,
-        offen: 0,
-        erledigt: 0,
-        gesamt: 0,
-      };
+      const selected = Array.isArray(position.rueckmeldungen)
+        ? position.rueckmeldungen.map((x) => x.rueckmeldungstyp?.name).filter(Boolean)
+        : [];
 
-      bucket.gesamt += 1;
-      if (position.erledigt) {
-        bucket.erledigt += 1;
-      } else {
-        bucket.offen += 1;
+      const names = selected.length
+        ? selected
+        : [position.rueckmeldungstyp?.name ?? "Unbekannt"]; // Fallback auf Einzelwert oder Unbekannt
+
+      for (const name of names) {
+        const rueckmeldung = name || "Unbekannt";
+        const bucket = summary.get(rueckmeldung) ?? {
+          rueckmeldung,
+          offen: 0,
+          erledigt: 0,
+          gesamt: 0,
+        };
+
+        bucket.gesamt += 1;
+        if (position.erledigt) {
+          bucket.erledigt += 1;
+        } else {
+          bucket.offen += 1;
+        }
+
+        summary.set(rueckmeldung, bucket);
       }
-
-      summary.set(rueckmeldung, bucket);
     }
 
     return Array.from(summary.values()).sort((a, b) => {
@@ -812,10 +817,14 @@ export const DatabaseTool = {
   },
 
   async createPositionWithDefaults({
+    baurundgangId,
     qsreportId,
     bauteilId,
     bereichKapitelId,
+    bauteilTemplateId,
+    kapitelTemplateId,
     rueckmeldungstypId,
+    rueckmeldungstypIds,
     bemerkung,
     frist,
   }) {
@@ -823,19 +832,129 @@ export const DatabaseTool = {
       throw new Error("createPositionWithDefaults: 'qsreportId' ist erforderlich.");
     }
 
-    const positionsnummer =
-      (await prisma.position.count({ where: { qsreportId } })) + 1;
+    // Automatische Frist: 7 Tage ab jetzt, wenn nicht explizit angegeben
+    const resolvedFrist = frist ?? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-    return prisma.position.create({
-      data: {
-        qsreport: { connect: { id: qsreportId } },
-        bauteil: bauteilId ? { connect: { id: bauteilId } } : undefined,
-        bereichKapitel: bereichKapitelId ? { connect: { id: bereichKapitelId } } : undefined,
-        rueckmeldungstyp: rueckmeldungstypId ? { connect: { id: rueckmeldungstypId } } : undefined,
-        bemerkung: bemerkung || undefined,
-        frist: frist || undefined,
-        positionsnummer,
-      },
+    // Resolve bauteil/kapitel from templates if needed
+    let resolvedBauteilId = bauteilId || null;
+    if (!resolvedBauteilId && baurundgangId && bauteilTemplateId) {
+      const existing = await prisma.bauteil.findFirst({ where: { baurundgangId, bauteilTemplateId } });
+      if (existing) {
+        resolvedBauteilId = existing.id;
+      } else {
+        const reihenfolge = (await prisma.bauteil.count({ where: { baurundgangId } })) + 1;
+        const createdBauteil = await prisma.bauteil.create({
+          data: {
+            baurundgang: { connect: { id: baurundgangId } },
+            template: { connect: { id: bauteilTemplateId } },
+            reihenfolge,
+          },
+        });
+        resolvedBauteilId = createdBauteil.id;
+      }
+    }
+
+    let resolvedKapitelId = bereichKapitelId || null;
+    if (!resolvedKapitelId && resolvedBauteilId && kapitelTemplateId) {
+      const tpl = await prisma.bereichKapitelTemplate.findUnique({ where: { id: kapitelTemplateId }, select: { name: true } });
+      const nameGuess = tpl?.name || `Kapitel ${kapitelTemplateId}`;
+      const existingKapitel = await prisma.bereichKapitel.findFirst({ where: { bauteilId: resolvedBauteilId, name: nameGuess } });
+      if (existingKapitel) {
+        resolvedKapitelId = existingKapitel.id;
+      } else {
+        const createdKapitel = await prisma.bereichKapitel.create({
+          data: {
+            bauteil: { connect: { id: resolvedBauteilId } },
+            name: nameGuess,
+          },
+        });
+        resolvedKapitelId = createdKapitel.id;
+      }
+    }
+
+    return prisma.$transaction(async (tx) => {
+      // Try to reuse an existing position with same Bauteil + Bereich within the same QS-Report
+      let existing = null;
+      if (resolvedBauteilId && resolvedKapitelId) {
+        existing = await tx.position.findFirst({
+          where: {
+            qsreportId,
+            bauteilId: resolvedBauteilId,
+            bereichKapitelId: resolvedKapitelId,
+          },
+          select: { id: true, rueckmeldungstypId: true },
+        });
+      }
+
+      const ids = Array.isArray(rueckmeldungstypIds)
+        ? Array.from(new Set(rueckmeldungstypIds)).filter(Boolean)
+        : [];
+
+      if (existing) {
+        // Union new rueckmeldungen into join table
+        if (ids.length) {
+          const existingJoins = await tx.positionRueckmeldungstyp.findMany({
+            where: { positionId: existing.id },
+            select: { rueckmeldungstypId: true },
+          });
+          const present = new Set(existingJoins.map((r) => r.rueckmeldungstypId));
+          const toAdd = ids.filter((id) => !present.has(id));
+          if (toAdd.length) {
+            await Promise.all(
+              toAdd.map((id) =>
+                tx.positionRueckmeldungstyp.create({ data: { positionId: existing.id, rueckmeldungstypId: id } })
+              )
+            );
+          }
+        }
+
+        // Optionally backfill single-field rueckmeldungstyp if not set and single provided
+        if (!existing.rueckmeldungstypId && rueckmeldungstypId) {
+          await tx.position.update({ where: { id: existing.id }, data: { rueckmeldungstypId } });
+        }
+
+        // Return the existing position record (id is sufficient for callers)
+        return tx.position.findUnique({ where: { id: existing.id } });
+      }
+
+      const positionsnummer = (await tx.position.count({ where: { qsreportId } })) + 1;
+
+      const created = await tx.position.create({
+        data: {
+          qsreport: { connect: { id: qsreportId } },
+          bauteil: resolvedBauteilId ? { connect: { id: resolvedBauteilId } } : undefined,
+          bereichKapitel: resolvedKapitelId ? { connect: { id: resolvedKapitelId } } : undefined,
+          rueckmeldungstyp: rueckmeldungstypId ? { connect: { id: rueckmeldungstypId } } : undefined,
+          bemerkung: bemerkung || undefined,
+          frist: resolvedFrist,
+          positionsnummer,
+        },
+      });
+
+      if (ids.length) {
+        await Promise.all(
+          ids.map((id) =>
+            tx.positionRueckmeldungstyp.create({ data: { positionId: created.id, rueckmeldungstypId: id } })
+          )
+        );
+      }
+
+      return created;
+    });
+  },
+
+  async setPositionRueckmeldungen({ positionId, rueckmeldungstypIds = [] }) {
+    if (!positionId) {
+      throw new Error("setPositionRueckmeldungen: 'positionId' ist erforderlich.");
+    }
+    const ids = Array.isArray(rueckmeldungstypIds) ? Array.from(new Set(rueckmeldungstypIds)).filter(Boolean) : [];
+    return prisma.$transaction(async (tx) => {
+      await tx.positionRueckmeldungstyp.deleteMany({ where: { positionId } });
+      if (!ids.length) return [];
+      const rows = await Promise.all(
+        ids.map((id) => tx.positionRueckmeldungstyp.create({ data: { positionId, rueckmeldungstypId: id } }))
+      );
+      return rows;
     });
   },
 

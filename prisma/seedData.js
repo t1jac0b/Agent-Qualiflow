@@ -709,8 +709,7 @@ export const bauteilRisikoData = [
 ];
 
 export const rueckmeldungstypData = [
-  { typCode: "OK", name: "In Ordnung" },
-  { typCode: "MANGEL", name: "Mangel" },
-  { typCode: "HINWEIS", name: "Hinweis" },
-  { typCode: "INFO", name: "Information" },
+  { typCode: "AK_BAU", name: "Ausführungskontrolle Bauleitung" },
+  { typCode: "ABKL_BAU", name: "Abklärung durch Bauleitung" },
+  { typCode: "RM_QC", name: "Rückmeldung an QualiCasa" },
 ];

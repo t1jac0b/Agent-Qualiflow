@@ -246,7 +246,7 @@ function composeSelectionSummary(path) {
   if (path.baurundgang) {
     const datum = path.baurundgang.datumDurchgefuehrt ?? path.baurundgang.datumGeplant;
     const formatted = datum ? new Date(datum).toISOString().slice(0, 10) : null;
-    const label = path.baurundgang.typ?.name ?? (path.baurundgang.id ? `Baurundgang ${path.baurundgang.id}` : "Baurundgang");
+    const label = path.baurundgang.label ?? path.baurundgang.typ?.name ?? (path.baurundgang.id ? `Baurundgang ${path.baurundgang.id}` : "Baurundgang");
     bits.push(`Baurundgang: ${formatted ? `${label} – ${formatted}` : label}`);
   }
   return bits.length ? bits.join(" • ") : null;
@@ -280,6 +280,10 @@ function detectIntent(input) {
   }
   if (/(start|starte|starten|begin|beginne|beginnen|durchführ)/i.test(lower)) {
     return INTENTS.START;
+  }
+  // Treat report-related phrases as queries (e.g., "bericht", "report", "qs report", "pdf", "ansehen")
+  if (/(bericht|report|qs[- ]?report|pdf|ansehen|exportieren|generier|erstell)/i.test(lower)) {
+    return INTENTS.QUERY;
   }
   if (lower.includes("?") || /(welche|welcher|welches|was|zeige|zeigen|anzeigen|liste|wie viele|status)/i.test(lower)) {
     return INTENTS.QUERY;
@@ -712,7 +716,8 @@ export class QualiFlowAgent {
       const baurundgangOptions = baurundgaenge.map((item) => ({
         ...item,
         label: item.typ?.name ?? (item.id ? `Baurundgang ${item.id}` : "Baurundgang"),
-        inputValue: String(item.id),
+        // Send the human-friendly label instead of the numeric ID to avoid confusing user input like "13"
+        inputValue: item.typ?.name ?? (item.id ? `Baurundgang ${item.id}` : "Baurundgang"),
       }));
 
       this.setConversation(chatId, {
@@ -1122,7 +1127,8 @@ export class QualiFlowAgent {
         return {
           ...item,
           label,
-          inputValue: String(item.id),
+          // Send the human-friendly label instead of the numeric ID to avoid confusing user input like "13"
+          inputValue: label,
         };
       });
 
@@ -1159,10 +1165,17 @@ export class QualiFlowAgent {
         };
       }
 
-      const selected = resolveSelection(trimmed, session.options, {
-        labelKey: "id",
-        valueKey: "id",
-      });
+      // Avoid numeric index selection to prevent confusing random picks.
+      // Prefer exact match by id, typ.nummer, label, or name.
+      const opts = session.options ?? [];
+      let selected = null;
+      const num = /^\d+$/.test(trimmed) ? Number.parseInt(trimmed, 10) : null;
+      if (num != null) {
+        selected = opts.find((o) => o?.id === num || o?.typ?.nummer === num) ?? null;
+      }
+      if (!selected) {
+        selected = findOptionByIdOrText(opts, trimmed.toLowerCase(), { labelKey: "label", valueKey: "id" });
+      }
 
       if (!selected) {
         return normalizeOptions({
@@ -1808,7 +1821,8 @@ Zur Sicherheit erfolgt eine Löschung nur nach expliziter Freigabe durch den Adm
           return {
             ...item,
             label,
-            inputValue: String(item.id),
+            // Send label to avoid confusing numeric IDs in user input
+            inputValue: label,
           };
         });
 
@@ -1851,6 +1865,58 @@ Zur Sicherheit erfolgt eine Löschung nur nach expliziter Freigabe durch den Adm
         status: "query_missing_context",
         message: "Bitte wähle zuerst Kunde, Objekt und Baurundgang aus, bevor du Auswertungen abfragst.",
       };
+    }
+
+    // QS-Report anzeigen/erstellen/generieren
+    if (/(bericht|report|qs[- ]?report|pdf|ansehen|exportieren|generier|erstell)/.test(lower)) {
+      try {
+        // Stelle sicher, dass ein QS-Report existiert
+        const qsReport = await database.actions.ensureQsReportForBaurundgang({
+          baurundgangId: path.baurundgang.id,
+          kundeId: path?.kunde?.id,
+          objektId: path?.objekt?.id,
+        });
+
+        // PDF erzeugen und Download-Link liefern
+        const generation = await this.handleTask({
+          type: "report.generate",
+          payload: { qsReportId: qsReport.id },
+        });
+
+        if (generation?.status !== "SUCCESS") {
+          return {
+            status: "report_error",
+            message: generation?.message || "Report konnte nicht generiert werden.",
+            context: { selection: path },
+          };
+        }
+
+        const url = generation.downloadUrl;
+        const options = url
+          ? [{ id: "view-report", label: "Report ansehen", inputValue: url, isLink: true }]
+          : [];
+
+        return {
+          status: "report_generated",
+          message: [
+            "QS-Report erfolgreich generiert.",
+            url ? `Report ansehen: ${url}` : null,
+          ]
+            .filter(Boolean)
+            .join("\n"),
+          context: { selection: path, options },
+        };
+      } catch (error) {
+        this.logger.error("handleQueryIntent: Report-Generierung fehlgeschlagen", {
+          error,
+          baurundgangId: path.baurundgang.id,
+        });
+        return {
+          status: "report_error",
+          message: "Der QS-Report konnte nicht generiert werden. Bitte versuche es erneut.",
+          context: { selection: path },
+        };
+      }
     }
 
     if (lower.includes("prüfpunkt") || lower.includes("pruefpunkt") || lower.includes("checkliste")) {
@@ -2063,11 +2129,15 @@ Zur Sicherheit erfolgt eine Löschung nur nach expliziter Freigabe durch den Adm
         };
       }
 
-      const rueckOptions = rueckmeldungstypen.map((typ) => ({
-        id: typ.id,
-        name: typ.name ?? typ.bezeichnung ?? `Rückmeldung ${typ.id}`,
-        inputValue: typ.name ?? typ.bezeichnung ?? `Rückmeldung ${typ.id}`,
-      }));
+      const selectedIds = Array.isArray(capture?.rueckmeldungenSelected) ? capture.rueckmeldungenSelected : [];
+      const rueckOptions = [
+        ...rueckmeldungstypen.map((typ) => ({
+          id: typ.id,
+          name: `${selectedIds.includes(typ.id) ? "✓ " : ""}${typ.name ?? typ.bezeichnung ?? `Rückmeldung ${typ.id}`}`,
+          inputValue: `rm:toggle:${typ.id}`,
+        })),
+        { name: "Weiter", inputValue: "rm:weiter" },
+      ];
 
       this.setConversation(chatId, {
         ...session,
@@ -2076,27 +2146,80 @@ Zur Sicherheit erfolgt eine Löschung nur nach expliziter Freigabe durch den Adm
         capture: {
           ...capture,
           kapitelTemplate: selected,
+          rueckmeldungenSelected: selectedIds,
         },
       });
 
       return {
         status: "capture_select_rueckmeldung",
-        message: "Benötigt die Position eine Rückmeldung? Bitte wähle die Rückmeldungsart (Button anklicken oder Name eingeben).",
+        message:
+          "Du kannst 0–3 Rückmeldungen auswählen: Ausführungskontrolle Bauleitung, Abklärung durch Bauleitung, Rückmeldung an QualiCasa. Du kannst auch ohne Auswahl fortfahren.",
         context: { phase: "capture:select-rueckmeldung", options: rueckOptions },
       };
     }
 
     if (phase === "capture:select-rueckmeldung") {
-      const selected = resolveSelection(message, options, { labelKey: "name" });
-      if (!selected) {
+      const trimmed = (message || "").trim().toLowerCase();
+      const cap = session.capture ?? {};
+      const current = Array.isArray(cap.rueckmeldungenSelected) ? [...cap.rueckmeldungenSelected] : [];
+
+      if (trimmed === "rm:weiter" || trimmed === "weiter" || trimmed === "skip" || trimmed === "ohne" || trimmed === "ohne auswahl") {
+        return this.finalizeCapture({ chatId, session, selectedRueckmeldungen: current });
+      }
+
+      const toggleMatch = trimmed.match(/^rm:toggle:(\d+)$/);
+      let toggledId = toggleMatch ? Number.parseInt(toggleMatch[1], 10) : null;
+
+      if (!toggledId) {
+        // Allow toggling by clicking the label (resolve by name)
+        const picked = resolveSelection(message, options, { labelKey: "name" });
+        if (picked?.id) {
+          toggledId = picked.id;
+        }
+      }
+
+      if (!toggledId) {
         return {
           status: "capture_retry_rueckmeldung",
-          message: "Rückmeldungsart nicht erkannt. Bitte wähle eine der vorgeschlagenen Optionen oder tippe den exakten Namen.",
-          context: { options, phase },
+          message:
+            "Nicht erkannt. Nutze die Buttons, um Rückmeldungen zu toggeln, oder tippe 'Weiter' um fortzufahren.",
+          context: { options, phase, capture: { ...cap, rueckmeldungenSelected: current } },
         };
       }
 
-      return this.finalizeCapture({ chatId, session, selectedRueckmeldung: selected });
+      const idx = current.indexOf(toggledId);
+      if (idx >= 0) current.splice(idx, 1);
+      else if (current.length < 3) current.push(toggledId);
+
+      const allTypes = await database.actions.listRueckmeldungstypen();
+      const updatedOptions = [
+        ...allTypes.map((typ) => ({
+          id: typ.id,
+          name: `${current.includes(typ.id) ? "✓ " : ""}${typ.name ?? typ.bezeichnung ?? `Rückmeldung ${typ.id}`}`,
+          inputValue: `rm:toggle:${typ.id}`,
+        })),
+        { name: "Weiter", inputValue: "rm:weiter" },
+      ];
+
+      this.setConversation(chatId, {
+        ...session,
+        phase: "capture:select-rueckmeldung",
+        options: updatedOptions,
+        capture: { ...cap, rueckmeldungenSelected: current },
+      });
+
+      const selectedNames = allTypes
+        .filter((t) => current.includes(t.id))
+        .map((t) => t.name)
+        .join(", ");
+
+      return {
+        status: "capture_select_rueckmeldung",
+        message:
+          (selectedNames ? `Ausgewählt: ${selectedNames}. ` : "") +
+          "Du kannst 0–3 Rückmeldungen auswählen: Ausführungskontrolle Bauleitung, Abklärung durch Bauleitung, Rückmeldung an QualiCasa. Tippe 'Weiter' zum Fortfahren.",
+        context: { phase: "capture:select-rueckmeldung", options: updatedOptions },
+      };
     }
 
     if (phase === "capture:confirm") {
@@ -2256,11 +2379,15 @@ Zur Sicherheit erfolgt eine Löschung nur nach expliziter Freigabe durch den Adm
     };
   }
 
-  async finalizeCapture({ chatId, session, selectedRueckmeldung }) {
-    const updatedCapture = {
-      ...(session.capture ?? {}),
-      rueckmeldungstyp: selectedRueckmeldung,
-    };
+  async finalizeCapture({ chatId, session, selectedRueckmeldungen }) {
+    const cap = session.capture ?? {};
+    const chosenIds = Array.isArray(selectedRueckmeldungen)
+      ? selectedRueckmeldungen
+      : Array.isArray(cap.rueckmeldungenSelected)
+      ? cap.rueckmeldungenSelected
+      : [];
+
+    const updatedCapture = { ...cap, rueckmeldungenSelected: chosenIds };
 
     this.setConversation(chatId, {
       ...session,
@@ -2268,11 +2395,21 @@ Zur Sicherheit erfolgt eine Löschung nur nach expliziter Freigabe durch den Adm
       capture: updatedCapture,
     });
 
+    // Resolve names for summary
+    let rmSummaryNames = [];
+    try {
+      const allTypes = await this.tools?.database?.actions?.listRueckmeldungstypen?.();
+      if (Array.isArray(allTypes)) {
+        const byId = new Map(allTypes.map((t) => [t.id, t.name]));
+        rmSummaryNames = chosenIds.map((id) => byId.get(id)).filter(Boolean);
+      }
+    } catch (_) {}
+
     const summary = [
       "Bitte bestätige die Angaben:",
       `Bauteil: ${updatedCapture.bauteilTemplate?.name ?? "?"}`,
       `Bereichskapitel: ${updatedCapture.kapitelTemplate?.name ?? "?"}`,
-      `Rückmeldungsart: ${selectedRueckmeldung.name ?? selectedRueckmeldung.id}`,
+      `Rückmeldung(en): ${rmSummaryNames.length ? rmSummaryNames.join(", ") : "-"}`,
       updatedCapture.initialNote ? `Hinweis: ${updatedCapture.initialNote}` : null,
     ].filter(Boolean);
 
@@ -2298,10 +2435,10 @@ Zur Sicherheit erfolgt eine Löschung nur nach expliziter Freigabe durch den Adm
       };
     }
 
-    if (!capture?.bauteilTemplate?.id || !capture?.kapitelTemplate?.id || !capture?.rueckmeldungstyp?.id) {
+    if (!capture?.bauteilTemplate?.id || !capture?.kapitelTemplate?.id) {
       return {
         status: "capture_missing_selection",
-        message: "Für die Positionserfassung müssen Bauteil, Bereichskapitel und Rückmeldung gesetzt sein. Bitte starte den Capture-Flow erneut.",
+        message: "Für die Positionserfassung müssen Bauteil und Bereichskapitel gesetzt sein. Bitte starte den Capture-Flow erneut.",
       };
     }
 
@@ -2318,13 +2455,15 @@ Zur Sicherheit erfolgt eine Löschung nur nach expliziter Freigabe durch den Adm
       };
     }
 
+    const selectedRmIds = Array.isArray(capture?.rueckmeldungenSelected) ? capture.rueckmeldungenSelected : [];
     const payload = {
       baurundgangId,
       qsreportId: qsReport.id,
       bauteilTemplateId: capture?.bauteilTemplate?.id,
       kapitelTemplateId: capture?.kapitelTemplate?.id,
-      rueckmeldungstypId: capture?.rueckmeldungstyp?.id,
-      notiz: capture?.initialNote || "",
+      rueckmeldungstypId: selectedRmIds.length === 1 ? selectedRmIds[0] : undefined,
+      rueckmeldungstypIds: selectedRmIds.length ? selectedRmIds : undefined,
+      bemerkung: capture?.initialNote || "",
       frist: computeFristDate(14),
     };
 

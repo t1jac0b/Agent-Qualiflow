@@ -261,6 +261,7 @@ model Rueckmeldungstyp {
   name    String
 
   positionen Position[]
+  positionVerknuepfungen PositionRueckmeldungstyp[]
 }
 
 model QSReport {
@@ -327,8 +328,20 @@ model Position {
 
   fotos PositionFoto[]
   reminders PositionReminder[]
+  rueckmeldungen PositionRueckmeldungstyp[]
 
   @@unique([qsreportId, positionsnummer])
+}
+
+model PositionRueckmeldungstyp {
+  id                Int @id @default(autoincrement())
+  positionId        Int
+  rueckmeldungstypId Int
+
+  position         Position         @relation(fields: [positionId], references: [id])
+  rueckmeldungstyp Rueckmeldungstyp @relation(fields: [rueckmeldungstypId], references: [id])
+
+  @@unique([positionId, rueckmeldungstypId])
 }
 
 model PositionFoto {

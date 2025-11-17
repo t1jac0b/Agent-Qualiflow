@@ -149,6 +149,30 @@ async function seedBauteilRisiken() {
 }
 
 async function seedRueckmeldungstypen() {
+  const allowedCodes = rueckmeldungstypData.map((i) => i.typCode);
+
+  const disallowed = await prisma.rueckmeldungstyp.findMany({
+    where: { typCode: { notIn: allowedCodes } },
+    select: { id: true },
+  });
+
+  const disallowedIds = disallowed.map((x) => x.id);
+
+  if (disallowedIds.length) {
+    await prisma.position.updateMany({
+      where: { rueckmeldungstypId: { in: disallowedIds } },
+      data: { rueckmeldungstypId: null },
+    });
+
+    try {
+      await prisma.positionRueckmeldungstyp.deleteMany({ where: { rueckmeldungstypId: { in: disallowedIds } } });
+    } catch (_) {
+      // ignore if join table does not exist yet
+    }
+
+    await prisma.rueckmeldungstyp.deleteMany({ where: { id: { in: disallowedIds } } });
+  }
+
   for (const item of rueckmeldungstypData) {
     const data = ensurePlainObject(item);
     await upsertByDelegate(
