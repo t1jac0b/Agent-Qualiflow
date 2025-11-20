@@ -2106,7 +2106,7 @@ Zur Sicherheit erfolgt eine Löschung nur nach expliziter Freigabe durch den Adm
 
       return {
         status: "capture_select_kapitel",
-        message: "Welches Bereichskapitel soll es sein? Bitte nutze die Buttons oder gib den Namen ein.",
+        message: `Gewählt: ${selected.name}. Welches Bereichskapitel soll es sein? Bitte nutze die Buttons oder gib den Namen ein.`,
         context: { phase: "capture:select-kapitel", options: kapitelOptions },
       };
     }
@@ -2129,7 +2129,28 @@ Zur Sicherheit erfolgt eine Löschung nur nach expliziter Freigabe durch den Adm
         };
       }
 
-      const selectedIds = Array.isArray(capture?.rueckmeldungenSelected) ? capture.rueckmeldungenSelected : [];
+      let selectedIds = Array.isArray(capture?.rueckmeldungenSelected) ? capture.rueckmeldungenSelected : [];
+
+      try {
+        if ((!selectedIds || !selectedIds.length) && path?.baurundgang?.id && capture?.bauteilTemplate?.id && selected?.id) {
+          const report = await database.actions.getQSReportByBaurundgang(path.baurundgang.id);
+          const tmplKapitelName = selected.name?.toLowerCase?.();
+          const match = report?.positionen?.find((p) =>
+            p?.bauteil?.template?.id === capture.bauteilTemplate.id &&
+            (p?.bereichKapitel?.name ?? "").toLowerCase() === (tmplKapitelName ?? "")
+          );
+          if (match) {
+            const fromJoin = Array.isArray(match.rueckmeldungen)
+              ? match.rueckmeldungen.map((r) => r?.rueckmeldungstyp?.id).filter(Boolean)
+              : [];
+            const fromSingle = match.rueckmeldungstyp?.id ? [match.rueckmeldungstyp.id] : [];
+            selectedIds = Array.from(new Set([...(selectedIds ?? []), ...fromJoin, ...fromSingle])).filter(Boolean);
+          }
+        }
+      } catch (e) {
+        this.logger?.warn?.("Auto-Preselect Rueckmeldungen fehlgeschlagen", { error: e?.message });
+      }
+
       const rueckOptions = [
         ...rueckmeldungstypen.map((typ) => ({
           id: typ.id,
@@ -2153,6 +2174,7 @@ Zur Sicherheit erfolgt eine Löschung nur nach expliziter Freigabe durch den Adm
       return {
         status: "capture_select_rueckmeldung",
         message:
+          `Gewählt: ${selected.name}. ` +
           "Du kannst 0–3 Rückmeldungen auswählen: Ausführungskontrolle Bauleitung, Abklärung durch Bauleitung, Rückmeldung an QualiCasa. Du kannst auch ohne Auswahl fortfahren.",
         context: { phase: "capture:select-rueckmeldung", options: rueckOptions },
       };

@@ -24,6 +24,7 @@ export const databaseTool = defineTool({
     listKunden: () => LegacyDatabaseTool.listKunden(),
     listObjekteByKunde: (payload) => LegacyDatabaseTool.listObjekteByKunde(payload?.kundeId ?? payload),
     listBaurundgaengeByObjekt: (payload) => LegacyDatabaseTool.listBaurundgaengeByObjekt(payload?.objektId ?? payload),
+    listQSReportsByObjekt: (payload) => LegacyDatabaseTool.listQSReportsByObjekt(payload?.objektId ?? payload),
     listPruefpunkteByBaurundgang: (payload) =>
       LegacyDatabaseTool.listPruefpunkteByBaurundgang(payload?.baurundgangId ?? payload),
     createPruefpunkt: (payload) => LegacyDatabaseTool.createPruefpunkt(payload),
@@ -35,6 +36,8 @@ export const databaseTool = defineTool({
       LegacyDatabaseTool.listKapitelTemplatesByBauteilTemplate(payload?.bauteilTemplateId ?? payload),
     listRueckmeldungstypen: () => LegacyDatabaseTool.listRueckmeldungstypen(),
     summarizeRueckmeldungen: (payload) => LegacyDatabaseTool.summarizeRueckmeldungen(payload),
+    listRueckmeldungenByObjekt: (payload) =>
+      LegacyDatabaseTool.listRueckmeldungenByObjekt(payload?.objektId ?? payload),
     listPendingRueckmeldungen: (payload) =>
       LegacyDatabaseTool.listPendingRueckmeldungen(payload),
     schedulePositionReminder: (payload) => LegacyDatabaseTool.schedulePositionReminder(payload),

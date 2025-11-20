@@ -1189,6 +1189,8 @@ export class LLMOrchestrator {
         pendingCaptureAttachment: {
           id: attachment.id,
           storedPath: attachment.storedPath ?? attachment.id,
+          storedFilename: attachment.storedFilename,
+          bucket: attachment.bucket,
           name: attachment.name,
           uploadedAt: attachment.uploadedAt,
           uploadedBy: uploadedBy ?? attachment.uploadedBy ?? "chat-ui",
@@ -1235,12 +1237,22 @@ export class LLMOrchestrator {
     if (!baurundgangId || !positionId) return null;
 
     try {
+      let webUrl = null;
+      if (pending.bucket && pending.storedFilename) {
+        webUrl = `/storage/${pending.bucket}/${pending.storedFilename}`;
+      } else if (pending.storedPath) {
+        const idx = String(pending.storedPath).toLowerCase().lastIndexOf("storage");
+        if (idx >= 0) {
+          webUrl = "/" + String(pending.storedPath).slice(idx).replace(/\\+/g, "/");
+        }
+      }
+      if (!webUrl) {
+        webUrl = pending.webUrl || pending.id;
+      }
       const foto = await db.actions.addFoto({
-        data: {
-          baurundgang: { connect: { id: baurundgangId } },
-          dateiURL: pending.storedPath ?? pending.id,
-          hinweisMarkierung: note || undefined,
-        },
+        baurundgang: { connect: { id: baurundgangId } },
+        dateiURL: webUrl,
+        hinweisMarkierung: note || undefined,
       });
       await db.actions.linkPositionFoto(positionId, foto.id);
 

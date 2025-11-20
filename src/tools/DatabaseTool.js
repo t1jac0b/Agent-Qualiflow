@@ -539,6 +539,36 @@ export const DatabaseTool = {
     });
   },
 
+  async listQSReportsByObjekt(objektId) {
+    if (!objektId) {
+      throw new Error("listQSReportsByObjekt: 'objektId' ist erforderlich.");
+    }
+
+    return prisma.qSReport.findMany({
+      where: { objektId },
+      orderBy: { id: "asc" },
+      select: {
+        id: true,
+        baurundgangId: true,
+        erstelltAm: true,
+        zusammenfassung: true,
+        baurundgang: {
+          select: {
+            id: true,
+            datumGeplant: true,
+            datumDurchgefuehrt: true,
+            typ: {
+              select: {
+                nummer: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  },
+
   async getQSReportByBaurundgang(baurundgangId) {
     if (!baurundgangId) {
       throw new Error("getQSReportByBaurundgang: 'baurundgangId' ist erforderlich.");
@@ -768,6 +798,41 @@ export const DatabaseTool = {
       }
       return b.offen - a.offen;
     });
+  },
+
+  async listRueckmeldungenByObjekt(objektId) {
+    if (!objektId) {
+      throw new Error("listRueckmeldungenByObjekt: 'objektId' ist erforderlich.");
+    }
+
+    const baurundgaenge = await prisma.baurundgang.findMany({
+      where: { objektId },
+      orderBy: { id: "asc" },
+      select: {
+        id: true,
+        datumDurchgefuehrt: true,
+        datumGeplant: true,
+        status: true,
+        typ: {
+          select: { id: true, nummer: true, name: true },
+        },
+      },
+    });
+
+    const results = [];
+    for (const br of baurundgaenge) {
+      const overview = await this.summarizeRueckmeldungen({ baurundgangId: br.id });
+      results.push({
+        baurundgangId: br.id,
+        status: br.status,
+        datumDurchgefuehrt: br.datumDurchgefuehrt,
+        datumGeplant: br.datumGeplant,
+        typ: br.typ,
+        rueckmeldungen: overview,
+      });
+    }
+
+    return results;
   },
 
   async ensureBauteilForTemplate({ baurundgangId, bauteilTemplateId }) {

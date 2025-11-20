@@ -3,7 +3,7 @@
 
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { formatDateISO } from "./ReportRenderer.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -28,6 +28,38 @@ function getAssetDataUri(filename) {
     assetCache.set(filename, null);
     return null;
   }
+
+}
+
+function normalizeImageUrl(value) {
+  if (!value) return null;
+  const raw = String(value).trim();
+  if (!raw) return null;
+  if (/^data:/i.test(raw)) return raw;
+  if (/^https?:\/\//i.test(raw)) return raw;
+
+  // If it starts with /storage/, map to local absolute path and then to file:// URL
+  if (/^\/?storage\//i.test(raw)) {
+    const rel = raw.replace(/^\/+/, "");
+    const abs = path.join(process.cwd(), rel);
+    return pathToFileURL(abs).href;
+  }
+
+  // If it contains a 'storage' segment, rebuild from that segment
+  const ix = raw.toLowerCase().lastIndexOf("storage");
+  if (ix >= 0) {
+    const relFromStorage = raw.slice(ix).replace(/\\+/g, "/");
+    const abs = path.join(process.cwd(), relFromStorage);
+    return pathToFileURL(abs).href;
+  }
+
+  // Absolute filesystem path
+  if (path.isAbsolute(raw)) {
+    return pathToFileURL(raw).href;
+  }
+
+  // Fallback: treat as relative to cwd
+  return pathToFileURL(path.join(process.cwd(), raw)).href;
 }
 
 export function renderHtml(report) {
@@ -38,7 +70,7 @@ export function renderHtml(report) {
   const objectName = report.objekt?.bezeichnung ?? "QS-Report";
   const subtitle = reportDateStr !== "-" ? `Baurundgang vom ${reportDateStr}` : "Baurundgang";
 
-  const titleImg = report.titelbildURL || report.baurundgang?.fotos?.[0]?.dateiURL;
+  const titleImg = normalizeImageUrl(report.titelbildURL || report.baurundgang?.fotos?.[0]?.dateiURL);
 
   const primaryLogo = getAssetDataUri("qualicasa-logo.svg");
   const whiteLogo = getAssetDataUri("qualicasa-logo-white.svg");
@@ -74,7 +106,9 @@ export function renderHtml(report) {
         p.bereichstitel ||
         p.bereich?.name ||
         "-";
-      const fotos = (p.fotos ?? []).map((pf) => pf.foto?.dateiURL).filter(Boolean);
+      const fotos = (p.fotos ?? [])
+        .map((pf) => normalizeImageUrl(pf.foto?.dateiURL))
+        .filter(Boolean);
       const rmNames = (p.rueckmeldungen ?? []).map((r) => r?.rueckmeldungstyp?.name).filter(Boolean);
       const rmDisplay = rmNames.length ? rmNames.join(" + ") : (p.rueckmeldungstyp?.name ?? "");
       const aktion = `${rmDisplay}${p.bemerkung ? (rmDisplay ? ": " : "") + p.bemerkung : ""}` || "-";

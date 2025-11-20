@@ -17,6 +17,160 @@ function ensurePlainObject(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+async function ensureDefaultRecipientsForAllKunden() {
+  const defaultKontakt = await prisma.kontakt.findFirst({ where: { email: "support@qualicasa.ch" } });
+  const defaultPL = await prisma.projektleiter.findFirst({ orderBy: { id: "asc" } });
+
+  const kunden = await prisma.kunde.findMany({ select: { id: true, kontaktId: true, projektleiterId: true } });
+  for (const k of kunden) {
+    const data = {};
+    if (!k.kontaktId && defaultKontakt) data.kontakt = { connect: { id: defaultKontakt.id } };
+    if (!k.projektleiterId && defaultPL) data.projektleiter = { connect: { id: defaultPL.id } };
+    if (Object.keys(data).length) {
+      await prisma.kunde.update({ where: { id: k.id }, data });
+    }
+  }
+
+  const objekte = await prisma.objekt.findMany({ select: { id: true, kontaktId: true, projektleiterId: true } });
+  for (const o of objekte) {
+    const data = {};
+    if (!o.kontaktId && defaultKontakt) data.kontakt = { connect: { id: defaultKontakt.id } };
+    if (!o.projektleiterId && defaultPL) data.projektleiter = { connect: { id: defaultPL.id } };
+    if (Object.keys(data).length) {
+      await prisma.objekt.update({ where: { id: o.id }, data });
+    }
+  }
+}
+
+function svgDataUri(label = "Demo", color = "#e94e44") {
+  const svg = `<?xml version="1.0" encoding="UTF-8"?>\n` +
+    `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="260">` +
+    `<rect x="0" y="0" width="400" height="260" fill="${color}"/>` +
+    `<text x="200" y="130" fill="#fff" font-size="28" text-anchor="middle" alignment-baseline="middle" font-family="Arial, Helvetica, sans-serif">${label}</text>` +
+    `</svg>`;
+  const base64 = Buffer.from(svg, "utf8").toString("base64");
+  return `data:image/svg+xml;base64,${base64}`;
+}
+
+async function seedDemoQsData() {
+  const kunde = await prisma.kunde.findFirst({
+    where: { name: "Testkunde Alpha AG" },
+    include: { objekte: true },
+  });
+
+  if (!kunde) {
+    console.warn("⚠️  Demo-Kunde 'Testkunde Alpha AG' nicht gefunden – überspringe QS-Demo-Daten.");
+    return;
+  }
+
+  const objekt =
+    kunde.objekte.find((o) => o.bezeichnung === "Wohnüberbauung Alpha") ??
+    kunde.objekte[0];
+
+  if (!objekt) {
+    console.warn("⚠️  Kein Objekt für Demo-Kunde gefunden – überspringe QS-Demo-Daten.");
+    return;
+  }
+
+  const typNames = [
+    "Fassadenarbeiten",
+    "Flachdach / Fenstereinbauten",
+    "Innenausbau Leichtbauwände, Gipserarbeiten",
+  ];
+
+  const baurundgangTypen = await prisma.baurundgangTyp.findMany({
+    where: { name: { in: typNames } },
+  });
+
+  if (!baurundgangTypen.length) {
+    console.warn("⚠️  Keine passenden Baurundgang-Typen für QS-Demo-Daten gefunden.");
+    return;
+  }
+
+  const rueckmeldungstypen = await prisma.rueckmeldungstyp.findMany();
+  const rmMain = rueckmeldungstypen[0]?.id ?? null;
+  const rmAlt = rueckmeldungstypen[1]?.id ?? rmMain;
+
+  const now = new Date();
+  const addDays = (days) => new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+
+  for (const typ of baurundgangTypen) {
+    let baurundgang = await prisma.baurundgang.findFirst({
+      where: { objektId: objekt.id, baurundgangTypId: typ.id },
+    });
+
+    if (!baurundgang) {
+      baurundgang = await prisma.baurundgang.create({
+        data: {
+          objektId: objekt.id,
+          baurundgangTypId: typ.id,
+          status: "erledigt",
+          datumGeplant: addDays(-30),
+          datumDurchgefuehrt: addDays(-7),
+          notiz: "Demo QS-Rundgang (Seed)",
+        },
+      });
+    }
+
+    let report = await prisma.qSReport.findUnique({ where: { baurundgangId: baurundgang.id } });
+    if (!report) {
+      report = await prisma.qSReport.create({
+        data: {
+          baurundgangId: baurundgang.id,
+          objektId: objekt.id,
+          kundeId: kunde.id,
+          zusammenfassung: `Demo QS-Report für ${typ.name}`,
+        },
+      });
+    }
+
+    const existingPositions = await prisma.position.count({ where: { qsreportId: report.id } });
+    if (existingPositions > 0) {
+      continue;
+    }
+
+    const pos1 = await prisma.position.create({
+      data: {
+        qsreportId: report.id,
+        positionsnummer: 1,
+        bemerkung: `${typ.name}: Abdichtung prüfen`,
+        frist: addDays(14),
+        erledigt: false,
+        rueckmeldungstypId: rmMain ?? undefined,
+      },
+    });
+
+    const foto1 = await prisma.foto.create({
+      data: {
+        baurundgangId: baurundgang.id,
+        dateiURL: svgDataUri(`${typ.name} 1`, "#e94e44"),
+      },
+    });
+    await prisma.positionFoto.create({ data: { positionId: pos1.id, fotoId: foto1.id } });
+
+    const pos2 = await prisma.position.create({
+      data: {
+        qsreportId: report.id,
+        positionsnummer: 2,
+        bemerkung: `${typ.name}: Detailanschluss kontrollieren`,
+        frist: addDays(21),
+        erledigt: true,
+        erledigtAm: addDays(-1),
+        rueckmeldungstypId: rmAlt ?? undefined,
+      },
+    });
+
+    const foto2 = await prisma.foto.create({
+      data: {
+        baurundgangId: baurundgang.id,
+        dateiURL: svgDataUri(`${typ.name} 2`, "#4b5563"),
+      },
+    });
+    await prisma.positionFoto.create({ data: { positionId: pos2.id, fotoId: foto2.id } });
+  }
+
+  console.log("🌱 Demo QS-Reports, Positionen und Fotos für Testkunde Alpha AG erzeugt (falls fehlend).");
+}
 
 async function upsertByDelegate(delegate, uniqueWhere, createData, updateData) {
   const existing = await delegate.findFirst({ where: uniqueWhere });
@@ -267,6 +421,8 @@ async function main() {
   await seedBauteilRisiken();
   await seedRueckmeldungstypen();
   await seedDummyKunden();
+  await ensureDefaultRecipientsForAllKunden();
+  await seedDemoQsData();
   console.log("✅ Seeding completed.");
 }
 

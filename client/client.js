@@ -3,6 +3,7 @@ const chatForm = document.getElementById("chat-form");
 const chatInput = document.getElementById("chat-message");
 const fileInput = document.getElementById("chat-upload");
 const uploadButton = document.getElementById("upload-button");
+const micButton = document.getElementById("mic-button");
 const sendButton = document.getElementById("send-button");
 const resetButton = document.getElementById("reset-chat");
 const sessionIdEl = document.getElementById("session-id");
@@ -220,14 +221,23 @@ function appendMessage({ role, text, status, options, context }) {
 }
 
 function setLoading(isLoading) {
-  if (isLoading) {
-    sendButton.textContent = "Senden…";
-  } else {
-    sendButton.textContent = "Senden";
+  if (sendButton) {
+    if (isLoading) {
+      sendButton.textContent = "Senden…";
+    } else {
+      sendButton.textContent = "Senden";
+    }
+    sendButton.disabled = isLoading;
   }
-  sendButton.disabled = isLoading;
-  chatInput.disabled = isLoading;
-  uploadButton.disabled = isLoading;
+  if (chatInput) {
+    chatInput.disabled = isLoading;
+  }
+  if (uploadButton) {
+    uploadButton.disabled = isLoading;
+  }
+  if (micButton) {
+    micButton.disabled = isLoading;
+  }
   const optionButtons = chatLog?.querySelectorAll(".option-button");
   optionButtons?.forEach((button) => {
     button.disabled = isLoading;
@@ -288,7 +298,9 @@ async function uploadPendingFile() {
   }
 
   state.pendingFile = null;
-  attachmentsContainer.innerHTML = "";
+  if (attachmentsContainer) {
+    attachmentsContainer.innerHTML = "";
+  }
 
   return result;
 }
@@ -349,7 +361,9 @@ async function handleSubmit(message) {
     chatForm.reset();
     chatInput?.focus();
     state.pendingFile = null;
-    attachmentsContainer.innerHTML = "";
+    if (attachmentsContainer) {
+      attachmentsContainer.innerHTML = "";
+    }
   }
 }
 
@@ -357,6 +371,53 @@ chatForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
   const rawMessage = chatInput?.value ?? "";
   await handleSubmit(rawMessage);
+});
+
+micButton?.addEventListener("click", () => {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    console.warn("SpeechRecognition API nicht verfügbar");
+    return;
+  }
+
+  try {
+    const recognition = new SpeechRecognition();
+    recognition.lang = "de-CH";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    if (micButton) {
+      micButton.disabled = true;
+    }
+
+    recognition.addEventListener("result", (event) => {
+      const transcript = Array.from(event.results)
+        .map((result) => result[0]?.transcript ?? "")
+        .join(" ")
+        .trim();
+      if (transcript && chatInput) {
+        chatInput.value = transcript;
+        chatInput.focus();
+      }
+    });
+
+    recognition.addEventListener("error", (event) => {
+      console.error("Speech recognition error", event.error ?? event);
+    });
+
+    recognition.addEventListener("end", () => {
+      if (micButton) {
+        micButton.disabled = false;
+      }
+    });
+
+    recognition.start();
+  } catch (error) {
+    console.error("Speech recognition init failed", error);
+    if (micButton) {
+      micButton.disabled = false;
+    }
+  }
 });
 
 uploadButton?.addEventListener("click", () => {
@@ -373,7 +434,9 @@ fileInput?.addEventListener("change", async (event) => {
   state.pendingFile = { file, description };
   fileInput.value = "";
 
-  attachmentsContainer.innerHTML = "";
+  if (attachmentsContainer) {
+    attachmentsContainer.innerHTML = "";
+  }
   const chip = document.createElement("span");
   chip.className = "attachment-chip";
   chip.textContent = `${description}: ${file.name}`;
@@ -384,11 +447,15 @@ fileInput?.addEventListener("change", async (event) => {
   removeButton.innerHTML = "&times;";
   removeButton.addEventListener("click", () => {
     state.pendingFile = null;
-    attachmentsContainer.innerHTML = "";
+    if (attachmentsContainer) {
+      attachmentsContainer.innerHTML = "";
+    }
   });
 
   chip.appendChild(removeButton);
-  attachmentsContainer.appendChild(chip);
+  if (attachmentsContainer) {
+    attachmentsContainer.appendChild(chip);
+  }
 });
 
 resetButton?.addEventListener("click", () => {

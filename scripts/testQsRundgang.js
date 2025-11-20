@@ -80,10 +80,10 @@ async function startServer() {
   return serverProcess;
 }
 
-async function sendPositionCapture({ note }) {
+async function sendPositionCapture({ baurundgangId, note }) {
   const photoBuffer = await fs.readFile(dummyPhotoPath);
   const formData = new FormData();
-  formData.set("baurundgangId", "1");
+  formData.set("baurundgangId", String(baurundgangId));
   formData.set("note", note);
   formData.set("photo", new Blob([photoBuffer], { type: "image/jpeg" }), "dummy-foto.jpg");
 
@@ -94,6 +94,38 @@ async function sendPositionCapture({ note }) {
 
   const json = await response.json();
   return { statusCode: response.status, json };
+}
+
+async function ensureBaurundgang() {
+  // Create a minimal Kunde/Objekt/Baurundgang for testing
+  const kunde = await prisma.kunde.create({
+    data: {
+      name: `HTTP Testkunde ${new Date().toISOString()}`,
+      ort: "Zürich",
+    },
+  });
+
+  const objekt = await prisma.objekt.create({
+    data: {
+      bezeichnung: `HTTP Testobjekt ${new Date().toISOString()}`,
+      ort: "Zürich",
+      kunde: { connect: { id: kunde.id } },
+    },
+  });
+
+  const typ = await prisma.baurundgangTyp.findFirst({ orderBy: { id: "asc" } });
+  if (!typ) throw new Error("Kein BaurundgangTyp vorhanden (Seed erforderlich)." );
+
+  const br = await prisma.baurundgang.create({
+    data: {
+      objekt: { connect: { id: objekt.id } },
+      typ: { connect: { id: typ.id } },
+      datumGeplant: new Date(),
+      status: "geplant",
+    },
+  });
+
+  return br.id;
 }
 
 async function validatePosition(positionId) {
@@ -144,8 +176,10 @@ async function run() {
   const server = await startServer();
 
   try {
+    const baurundgangId = await ensureBaurundgang();
+    logSection("Baurundgang erstellt", { baurundgangId });
     // Testfall A
-    const resultA = await sendPositionCapture({ note: "Strangabsperrventile ohne Entleerung" });
+    const resultA = await sendPositionCapture({ baurundgangId, note: "Strangabsperrventile ohne Entleerung" });
     logSection("Testfall A Antwort", resultA);
 
     if ((resultA.json?.status ?? "") !== "SUCCESS") {
@@ -161,7 +195,7 @@ async function run() {
     logSection("Testfall A Validierung", { positionId, ...validationA });
 
     // Testfall B
-    const resultB = await sendPositionCapture({ note: "Problem bei Trennwand" });
+    const resultB = await sendPositionCapture({ baurundgangId, note: "Problem bei Trennwand" });
     logSection("Testfall B Antwort", resultB);
 
     if ((resultB.json?.status ?? "") !== "NEEDS_INPUT") {

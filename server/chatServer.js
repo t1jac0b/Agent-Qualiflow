@@ -5,6 +5,7 @@ import process from "node:process";
 import path from "node:path";
 
 import { beginQualiFlowConversation, getAgentOrchestrator, getChatOrchestrator, handleQualiFlowMessage } from "../src/agent/index.js";
+import { DatabaseTool } from "../src/tools/DatabaseTool.js";
 import { createLogger } from "../src/utils/logger.js";
 
 const app = express();
@@ -45,13 +46,13 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
-app.post("/qs-rundgang/position-clarify", async (req, res) => {
-  const parseId = (value) => {
-    if (value === undefined || value === null || value === "") return undefined;
-    const parsed = Number.parseInt(value, 10);
-    return Number.isNaN(parsed) ? undefined : parsed;
-  };
+function parseId(value) {
+  if (value === undefined || value === null || value === "") return undefined;
+  const parsed = Number.parseInt(value, 10);
+  return Number.isNaN(parsed) ? undefined : parsed;
+}
 
+app.post("/qs-rundgang/position-clarify", async (req, res) => {
   const baurundgangId = parseId(req.body?.baurundgangId);
   const note = typeof req.body?.note === "string" ? req.body.note.trim() : "";
   const option = typeof req.body?.option === "string" ? req.body.option.trim() : "";
@@ -87,6 +88,48 @@ app.post("/qs-rundgang/position-clarify", async (req, res) => {
   } catch (error) {
     log.error("QS-Rundgang Position clarify fehlgeschlagen", { error, baurundgangId });
     res.status(500).json({ error: "Fehler beim Erstellen der QS-Position (Clarify)." });
+  }
+});
+
+app.get("/objekte/:id/qs-reports", async (req, res) => {
+  const objektId = parseId(req.params.id);
+  if (!objektId) {
+    res.status(400).json({ status: "ERROR", message: "Ungültige Objekt-ID." });
+    return;
+  }
+
+  try {
+    const reports = await DatabaseTool.listQSReportsByObjekt(objektId);
+
+    const enriched = [];
+    for (const report of reports) {
+      let downloadUrl = null;
+      try {
+        const generation = await orchestrator.handleTask({
+          type: "report.generate",
+          payload: { qsReportId: report.id },
+        });
+        if (generation?.status === "SUCCESS" && generation?.downloadUrl) {
+          downloadUrl = generation.downloadUrl;
+        }
+      } catch (error) {
+        log.warn("Report.generate für QSReport fehlgeschlagen", {
+          objektId,
+          qsReportId: report.id,
+          error: error?.message,
+        });
+      }
+
+      enriched.push({
+        ...report,
+        downloadUrl,
+      });
+    }
+
+    res.json({ objektId, reports: enriched });
+  } catch (error) {
+    log.error("Liste QSReports by Objekt fehlgeschlagen", { error, objektId });
+    res.status(500).json({ status: "ERROR", message: "QSReports für Objekt konnten nicht geladen werden." });
   }
 });
 

@@ -367,41 +367,12 @@
     </style>
   </head>
   <body>
-    <main class="chat-shell">
-      <header>
-        <h1>QualiFlow Agent</h1>
-        <p>Der QualiFlow Agent führt dich automatisch durch Kunde, Objekt und Baurundgang.</p>
-      </header>
-      <div class="session-info" id="session-info">
-        <span>Chat-ID: <strong id="session-id">–</strong></span>
-        <button type="button" id="reset-chat">Neuer Chat</button>
-      </div>
-      <section class="chat-log" id="chat-log" aria-live="polite"></section>
-      <form id="chat-form" class="chat-actions" autocomplete="off">
-        <input type="file" id="chat-upload" accept="application/pdf,image/*" hidden />
-        <button type="button" id="upload-button" class="upload-button" aria-label="Dokument hochladen">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-            <polyline points="17 8 12 3 7 8" />
-            <line x1="12" y1="3" x2="12" y2="15" />
-          </svg>
-          Upload
-        </button>
-        <div class="chat-attachments" id="chat-attachments" aria-live="polite"></div>
-        <div class="chat-input">
-          <input
-            id="chat-message"
-            name="message"
-            placeholder="Nachricht an den Agenten…"
-            aria-label="Nachricht"
-            required
-          />
-          <button type="submit" id="send-button">Senden</button>
-        </div>
-      </form>
-      <footer>© QualiCasa – interner Prototyp</footer>
+    <main>
+      <p>Diese Seite wurde ersetzt. Du wirst automatisch zum aktuellen Chat-UI weitergeleitet…</p>
     </main>
 
-    <script src="client.js" type="module"></script>
+    <script>
+      window.location.replace("/");
+    </script>
   </body>
 </html>

@@ -1,7 +1,7 @@
 import { QualiFlowAgent } from "./AgentOrchestrator.js";
 import { QsRundgangAgent } from "./qsRundgang/QsRundgangAgent.js";
 import { ReportAgent } from "./report/ReportAgent.js";
-import { databaseTool, fileTool, mailTool, reportTool } from "./tools/index.js";
+import { databaseTool, fileTool, mailTool, reportTool, wikiTool } from "./tools/index.js";
 
 let qualiFlowAgentInstance = null;
 
@@ -11,6 +11,7 @@ function createTools() {
     file: fileTool,
     mail: mailTool,
     report: reportTool,
+    wiki: wikiTool,
   };
 }
 

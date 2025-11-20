@@ -20,6 +20,11 @@ async function main() {
   const objekt = await db.createObjektForKunde({ kundeId: kunde.id, bezeichnung: "QSFlow Objekt" });
   console.log("[Test] Kunde/Objekt:", { kunde: kunde.name, objekt: objekt.bezeichnung, objektId: objekt.id });
 
+  // Ensure a Projektleiter is assigned to Kunde and Objekt so reminders have recipients
+  const pl = await db.ensureProjektleiter({ name: "Chris Dosch" });
+  await db.updateKundeFields({ id: kunde.id, data: { projektleiter: { connect: { id: pl.id } } } });
+  await db.updateObjektFields({ id: objekt.id, data: { projektleiter: { connect: { id: pl.id } } } });
+
   // 2) Ensure Baurundgänge exist and pick one (prefer Innenausbau Leichtbauwände, Gipserarbeiten)
   await db.autoCreateBaurundgaengeForObjekt(objekt.id);
   const brs = await db.listBaurundgaengeByObjekt(objekt.id);

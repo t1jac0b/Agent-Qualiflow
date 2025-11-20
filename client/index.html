@@ -150,6 +150,31 @@
         align-items: center;
       }
 
+      .icon-button {
+        width: 40px;
+        height: 40px;
+        border-radius: 999px;
+        border: none;
+        background: color-mix(in srgb, var(--muted) 80%, var(--background));
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        cursor: pointer;
+        transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+      }
+
+      .icon-button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
+      }
+
+      .icon-button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        box-shadow: none;
+      }
+
       .chat-input {
         flex: 1;
         display: flex;
@@ -192,6 +217,58 @@
         cursor: not-allowed;
       }
 
+      .attachments {
+        margin-top: 4px;
+        font-size: 0.8rem;
+        color: var(--muted-foreground);
+      }
+
+      .attachment-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--muted) 80%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+      }
+
+      .option-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 8px;
+      }
+
+      .option-button {
+        appearance: none;
+        border-radius: 999px;
+        border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+        background: #ffffff;
+        color: var(--foreground);
+        padding: 8px 14px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.04);
+        transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+        text-decoration: none;
+      }
+
+      .option-button:hover,
+      .option-button:focus-visible {
+        background: color-mix(in srgb, #ffffff 80%, var(--muted));
+        transform: translateY(-1px);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.06);
+        outline: none;
+      }
+
+      .option-button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        box-shadow: none;
+      }
+
       footer {
         text-align: center;
         font-size: 0.75rem;
@@ -215,6 +292,43 @@
       </div>
       <section class="chat-log" id="chat-log" aria-live="polite"></section>
       <form id="chat-form" class="chat-actions" autocomplete="off">
+        <button type="button" id="mic-button" class="icon-button" aria-label="Spracheingabe">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M12 3a3 3 0 0 0-3 3v5a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z" />
+            <path d="M19 11a7 7 0 0 1-14 0" />
+            <path d="M12 18v3" />
+            <path d="M8 21h8" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          id="upload-button"
+          class="icon-button"
+          aria-label="Foto aufnehmen oder Datei hochladen"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path
+              d="M4 8h3l2-2h6l2 2h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2Z"
+            />
+            <circle cx="12" cy="13" r="3.5" />
+          </svg>
+        </button>
         <div class="chat-input">
           <input
             id="chat-message"
@@ -225,6 +339,14 @@
           />
           <button type="submit" id="send-button">Senden</button>
         </div>
+        <input
+          id="chat-upload"
+          type="file"
+          accept="image/*,application/pdf"
+          capture="environment"
+          hidden
+        />
+        <div id="chat-attachments" class="attachments"></div>
       </form>
       <footer>© QualiCasa – interner Prototyp</footer>
     </main>
