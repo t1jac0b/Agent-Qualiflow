@@ -8,6 +8,7 @@ const sendButton = document.getElementById("send-button");
 const resetButton = document.getElementById("reset-chat");
 const sessionIdEl = document.getElementById("session-id");
 const attachmentsContainer = document.getElementById("chat-attachments");
+const agentStatusEl = document.getElementById("agent-status");
 
 const STORAGE_KEY = "qualicasa-chat-session-id";
 
@@ -103,6 +104,82 @@ function renderSelectionSummary(selection) {
   return paragraph;
 }
 
+function formatStatusDisplay(status, role) {
+  if (!status) return null;
+  const normalized = String(status).toLowerCase();
+
+  if (role === "user") {
+    if (normalized === "gesendet") return "Gesendet";
+    return status;
+  }
+
+  const map = {
+    awaiting_customer: "Kundenauswahl",
+    awaiting_object: "Objektauswahl",
+    awaiting_baurundgang: "Baurundgang wählen",
+    setup_complete: "Setup abgeschlossen",
+    capture_success: "Position erfasst",
+    capture_cancelled: "Erfassung abgebrochen",
+    pruefpunkte_cancelled: "Prüfpunkte-Erfassung beendet",
+    no_customers: "Keine Kunden vorhanden",
+    no_objects: "Keine Objekte gefunden",
+    no_baurundgaenge: "Keine Baurundgänge gefunden",
+    missing_setup: "Kontext unvollständig",
+  };
+
+  const label = map[normalized];
+  if (!label) {
+    return null;
+  }
+  return label;
+}
+
+function renderAgentSteps(steps) {
+  if (!Array.isArray(steps) || !steps.length) return null;
+
+  const details = document.createElement("details");
+  details.className = "agent-steps";
+
+  const summary = document.createElement("summary");
+  summary.textContent = "Schritte des Agents anzeigen";
+  details.appendChild(summary);
+
+  const list = document.createElement("ul");
+
+  steps.forEach((step, index) => {
+    if (!step) return;
+    const li = document.createElement("li");
+    const parts = [];
+
+    if (step.type === "tool" && step.name) {
+      parts.push(`Tool: ${step.name}`);
+      if (Array.isArray(step.argsKeys) && step.argsKeys.length) {
+        parts.push(`Argumente: ${step.argsKeys.join(", ")}`);
+      }
+    } else if (step.type === "reply") {
+      parts.push("Antwort finalisiert");
+      if (step.status) {
+        parts.push(`Status: ${step.status}`);
+      }
+    } else if (step.type === "agent" && step.name) {
+      parts.push(step.name);
+      if (step.summary) {
+        parts.push(step.summary);
+      } else if (step.status) {
+        parts.push(`Status: ${step.status}`);
+      }
+    } else if (step.summary) {
+      parts.push(step.summary);
+    }
+
+    li.textContent = parts.filter(Boolean).join(" – ") || `Schritt ${index + 1}`;
+    list.appendChild(li);
+  });
+
+  details.appendChild(list);
+  return details;
+}
+
 function createOptionButton(option) {
   const rawValue = option?.inputValue ?? optionLabel(option) ?? "";
   const trimmedValue = typeof rawValue === "string" ? rawValue.trim() : String(rawValue);
@@ -145,7 +222,8 @@ function appendMessage({ role, text, status, options, context }) {
   const meta = document.createElement("div");
   meta.className = "meta";
   const bits = [];
-  if (status) bits.push(status.toUpperCase());
+  const friendlyStatus = formatStatusDisplay(status, role);
+  if (friendlyStatus) bits.push(friendlyStatus);
   bits.push(formatTimestamp());
   meta.textContent = bits.join(" • ");
   wrapper.appendChild(meta);
@@ -216,11 +294,19 @@ function appendMessage({ role, text, status, options, context }) {
     wrapper.appendChild(uploadHint);
   }
 
+  const stepsElement = context?.steps ? renderAgentSteps(context.steps) : null;
+  if (stepsElement) {
+    wrapper.appendChild(stepsElement);
+  }
+
   chatLog.appendChild(wrapper);
   scrollLogToBottom();
 }
 
 function setLoading(isLoading) {
+  if (agentStatusEl) {
+    agentStatusEl.textContent = isLoading ? "Arbeitet…" : "Bereit";
+  }
   if (sendButton) {
     if (isLoading) {
       sendButton.textContent = "Senden…";

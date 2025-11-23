@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>QualiCasa Setup-Chat</title>
+    <title>Qualiflow Agent</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -14,6 +14,19 @@
       :root {
         color-scheme: light;
         font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+        --background: #f5f5f5;
+        --foreground: #111827;
+        --primary: #d64933;
+        --primary-foreground: #ffffff;
+        --secondary: #f97316;
+        --secondary-foreground: #111827;
+        --muted: #f3f4f6;
+        --muted-foreground: #6b7280;
+        --card: #ffffff;
+        --border: #e5e7eb;
+        --input-background: #ffffff;
+        --sidebar: #d64933;
+        --accent: #fca5a5;
         background: var(--background);
         color: var(--foreground);
       }
@@ -50,6 +63,7 @@
         grid-template-rows: auto auto 1fr auto;
         gap: 18px;
         overflow: hidden;
+        border-top: 5px solid var(--primary);
       }
 
       @media (max-width: 720px) {
@@ -60,6 +74,14 @@
         .chat-shell {
           padding: 20px;
           border-radius: 16px;
+        }
+
+        .chat-main {
+          display: block;
+        }
+
+        .agent-video-shell {
+          display: none;
         }
       }
 
@@ -82,6 +104,31 @@
         font-size: 0.95rem;
       }
 
+      .agent-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .agent-avatar {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        object-fit: cover;
+        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.16);
+        animation: agent-bob 3.2s ease-in-out infinite;
+      }
+
+      @keyframes agent-bob {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-4px);
+        }
+      }
+
       .session-info {
         display: flex;
         justify-content: space-between;
@@ -93,6 +140,22 @@
         color: var(--muted-foreground);
       }
 
+      .session-info button {
+        border-radius: 999px;
+        padding: 6px 14px;
+        border: 1px solid var(--border);
+        background: #ffffff;
+        color: var(--foreground);
+        font-size: 0.8rem;
+        font-weight: 500;
+        cursor: pointer;
+      }
+
+      .session-info button:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+      }
+
       .chat-log {
         background: color-mix(in srgb, var(--muted) 92%, transparent);
         border-radius: 14px;
@@ -102,6 +165,32 @@
         flex-direction: column;
         gap: 14px;
         border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+      }
+
+      .chat-main {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 16px;
+        align-items: stretch;
+      }
+
+      .agent-video-shell {
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        width: 220px;
+        height: 220px;
+        max-width: 35vw;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.16);
+      }
+
+      .agent-video-shell video.agent-video {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
       }
 
       .chat-message {
@@ -178,7 +267,7 @@
       .chat-input {
         flex: 1;
         display: flex;
-        border-radius: 12px;
+        border-radius: 999px;
         background: var(--input-background);
         border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
         box-shadow: 0 16px 30px rgba(0, 0, 0, 0.08);
@@ -201,7 +290,8 @@
         padding: 0 22px;
         font-weight: 600;
         cursor: pointer;
-        border-radius: 0 12px 12px 0;
+        border-radius: 999px;
+        margin: 4px;
         transition: transform 0.15s ease, box-shadow 0.2s ease;
       }
 
@@ -231,6 +321,22 @@
         border-radius: 999px;
         background: color-mix(in srgb, var(--muted) 80%, transparent);
         border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+      }
+
+      .agent-steps {
+        margin-top: 6px;
+        font-size: 0.8rem;
+        color: var(--muted-foreground);
+      }
+
+      .agent-steps summary {
+        cursor: pointer;
+        font-weight: 500;
+      }
+
+      .agent-steps ul {
+        margin: 4px 0 0;
+        padding-left: 1.2rem;
       }
 
       .option-list {
@@ -283,14 +389,36 @@
   <body>
     <main class="chat-shell">
       <header>
-        <h1>QualiCasa Setup-Chat</h1>
-        <p>Der QualiFlow Agent führt dich automatisch durch Kunde, Objekt und Baurundgang.</p>
+        <div class="agent-header">
+          <img
+            src="assets/Qualiflow-Agent%20Icon%20ganz.png"
+            alt="Qualiflow Agent"
+            class="agent-avatar"
+          />
+          <div>
+            <h1>Qualiflow Agent</h1>
+            <p>Der QualiFlow Agent führt dich automatisch durch Kunde, Objekt und Baurundgang.</p>
+          </div>
+        </div>
       </header>
       <div class="session-info" id="session-info">
+        <span>Agent-Status: <strong id="agent-status">Bereit</strong></span>
         <span>Chat-ID: <strong id="session-id">–</strong></span>
         <button type="button" id="reset-chat">Neuer Chat</button>
       </div>
-      <section class="chat-log" id="chat-log" aria-live="polite"></section>
+      <div class="chat-main">
+        <section class="chat-log" id="chat-log" aria-live="polite"></section>
+        <aside class="agent-video-shell" aria-hidden="true">
+          <video
+            src="assets/agent-loop.mp4"
+            class="agent-video"
+            autoplay
+            muted
+            loop
+            playsinline
+          ></video>
+        </aside>
+      </div>
       <form id="chat-form" class="chat-actions" autocomplete="off">
         <button type="button" id="mic-button" class="icon-button" aria-label="Spracheingabe">
           <svg

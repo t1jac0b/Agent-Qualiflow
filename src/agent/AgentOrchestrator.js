@@ -1,4 +1,5 @@
 import { createLogger } from "../utils/logger.js";
+import { __test__ as QsRundgangTest } from "./qsRundgang/QsRundgangAgent.js";
 
 const DEFAULT_SESSION_TTL_MINUTES = 120;
 
@@ -334,6 +335,42 @@ function computeFristDate(days = 14) {
   return frist;
 }
 
+function mapTemplateRecordForCapture(record) {
+  const kapitelTemplate = record?.kapitelTemplate;
+  const bauteilTemplate = kapitelTemplate?.bauteilTemplate;
+
+  const bauteilName = bauteilTemplate?.name ?? null;
+  const kapitelName = kapitelTemplate?.name ?? null;
+  const text = record.text ?? "";
+
+  return {
+    id: record.id,
+    text,
+    textLower: text.toLowerCase(),
+    bauteilTemplateId: bauteilTemplate?.id ?? null,
+    bauteilName,
+    bauteilNameLower: bauteilName?.toLowerCase() ?? "",
+    kapitelName,
+    kapitelNameLower: kapitelName?.toLowerCase() ?? "",
+  };
+}
+
+async function fetchTemplateIndexForCapture(prisma) {
+  if (!prisma) return [];
+
+  const records = await prisma.bereichKapitelTextTemplate.findMany({
+    include: {
+      kapitelTemplate: {
+        include: {
+          bauteilTemplate: true,
+        },
+      },
+    },
+  });
+
+  return records.map(mapTemplateRecordForCapture).filter((entry) => entry.bauteilTemplateId && entry.text);
+}
+
 const EDIT_FIELD_LABELS = {
   kunde: {
     name: "Name",
@@ -661,11 +698,19 @@ export class QualiFlowAgent {
         };
       }
 
-      const objektOptions = objekte.map((objekt) => ({
-        id: objekt.id,
-        bezeichnung: objekt.bezeichnung,
-        inputValue: objekt.bezeichnung,
-      }));
+      const objektOptions = [
+        ...objekte.map((objekt) => ({
+          id: objekt.id,
+          bezeichnung: objekt.bezeichnung,
+          inputValue: objekt.bezeichnung,
+        })),
+        {
+          id: "__create_object__",
+          bezeichnung: "Neues Objekt anlegen",
+          inputValue: "Neues Objekt anlegen",
+          isCreateNew: true,
+        },
+      ];
 
       this.setConversation(chatId, {
         ...session,
@@ -1054,11 +1099,19 @@ export class QualiFlowAgent {
         };
       }
 
-      const objektOptions = objekte.map((objekt) => ({
-        id: objekt.id,
-        bezeichnung: objekt.bezeichnung,
-        inputValue: objekt.bezeichnung,
-      }));
+      const objektOptions = [
+        ...objekte.map((objekt) => ({
+          id: objekt.id,
+          bezeichnung: objekt.bezeichnung,
+          inputValue: objekt.bezeichnung,
+        })),
+        {
+          id: "__create_object__",
+          bezeichnung: "Neues Objekt anlegen",
+          inputValue: "Neues Objekt anlegen",
+          isCreateNew: true,
+        },
+      ];
 
       this.setConversation(chatId, {
         phase: "select-object",
@@ -1089,6 +1142,13 @@ export class QualiFlowAgent {
       }
 
       const selected = resolveSelection(trimmed, session.options, { labelKey: "bezeichnung" });
+      if (selected?.isCreateNew || /^neues objekt/i.test(trimmed)) {
+        return {
+          status: "create_object_not_supported",
+          message:
+            "Das Anlegen neuer Objekte ist aktuell noch nicht direkt im QualiFlow Agent integriert. Bitte lege das Objekt zuerst im QS-Portal an und wähle es danach hier aus.",
+        };
+      }
       if (!selected) {
         return normalizeOptions({
           status: "retry_object",
@@ -1222,10 +1282,8 @@ export class QualiFlowAgent {
 
       const lines = [
         `Der Baurundgang ${selected.label ?? describeBaurundgang(selected)} ist aktuell ${statusLabel}.`,
-        hasQsReport
-          ? "Für diesen Baurundgang existiert bereits ein QS-Report."
-          : "Es liegt noch kein QS-Report vor.",
-      ];
+        hasQsReport ? null : "Es liegt noch kein QS-Report vor.",
+      ].filter(Boolean);
 
       if (positionsSummary.total) {
         lines.push(
@@ -1282,14 +1340,15 @@ export class QualiFlowAgent {
         };
       } else if (hasQsReport) {
         followUpMessage = [
-          "Es existiert bereits ein QS-Report für diesen offenen Baurundgang.",
-          downloadUrl ? `Report ansehen: ${downloadUrl}` : null,
-          "Möchtest du Positionen erfassen (Foto/Notiz)?",
+          downloadUrl ? `Report ansehen: ${downloadUrl}` : "Es existiert bereits ein QS-Report für diesen offenen Baurundgang.",
+          "Sag mir einfach Bescheid, wenn du weitere Anpassungen brauchst.",
         ]
           .filter(Boolean)
           .join("\n");
+        status = "qsreport_available";
         followUpContext = {
           ...followUpContext,
+          phase: "completed",
           qsReport: resolvedReport,
           options: prependDownloadOption(followUpContext.options ?? []),
         };
@@ -1993,12 +2052,30 @@ Zur Sicherheit erfolgt eine Löschung nur nach expliziter Freigabe durch den Adm
         );
         const header = composeSelectionSummary(path);
 
+        const options = [
+          {
+            id: "view-report",
+            label: "Report ansehen",
+            inputValue: "Report anzeigen",
+          },
+          {
+            id: "show-pruefpunkte",
+            label: "Prüfpunkte anzeigen",
+            inputValue: "Prüfpunkte anzeigen",
+          },
+          {
+            id: "start-capture",
+            label: "Neue Position erfassen",
+            inputValue: "Position erfassen",
+          },
+        ];
+
         return {
           status: "query_rueckmeldungen",
           message: [header ? `Kontext: ${header}` : null, "Rückmeldungsübersicht:", ...items]
             .filter(Boolean)
             .join("\n"),
-          context: { selection: path },
+          context: { selection: path, options },
         };
       } catch (error) {
         this.logger.error("handleQueryIntent: Rueckmeldungs-Abfrage fehlgeschlagen", {
@@ -2032,13 +2109,82 @@ Zur Sicherheit erfolgt eine Löschung nur nach expliziter Freigabe durch den Adm
         message: "Bitte schließe zuerst den Setup-Flow mit Kunde, Objekt und Baurundgang ab.",
       };
     }
-
     const templates = await database.actions.listBauteilTemplates();
     if (!templates?.length) {
       return {
         status: "no_bauteile",
         message: "Es wurden keine Bauteil-Templates gefunden. Bitte prüfe die Stammdaten.",
       };
+    }
+
+    const trimmedNote = typeof initialNote === "string" ? initialNote.trim() : "";
+
+    if (trimmedNote) {
+      try {
+        const prisma = database.actions.rawClient?.();
+        const determineMatchOutcome = QsRundgangTest?.determineMatchOutcome;
+
+        if (prisma && typeof determineMatchOutcome === "function") {
+          const index = await fetchTemplateIndexForCapture(prisma);
+
+          if (index?.length) {
+            const decision = determineMatchOutcome(trimmedNote, index);
+
+            if (decision?.outcome === "clear" && Array.isArray(decision.bestMatches) && decision.bestMatches.length) {
+              const match = decision.bestMatches[0];
+              const targetBauteilId = match.bauteilTemplateId ?? null;
+              const targetBauteilNameLower =
+                (match.bauteilNameLower ?? match.bauteilName?.toLowerCase?.() ?? "").trim();
+
+              let bauteilTemplate = null;
+              if (targetBauteilId != null) {
+                bauteilTemplate = templates.find((tpl) => tpl.id === targetBauteilId) ?? null;
+              }
+
+              if (!bauteilTemplate && targetBauteilNameLower) {
+                bauteilTemplate =
+                  templates.find((tpl) => (tpl.name ?? "").toLowerCase() === targetBauteilNameLower) ?? null;
+              }
+
+              if (bauteilTemplate) {
+                const kapitelTemplates = await database.actions.listKapitelTemplatesByBauteilTemplate(bauteilTemplate.id);
+                let kapitelTemplate = null;
+
+                if (Array.isArray(kapitelTemplates) && kapitelTemplates.length) {
+                  const targetKapitelNameLower =
+                    (match.kapitelNameLower ?? match.kapitelName?.toLowerCase?.() ?? "").trim();
+
+                  if (targetKapitelNameLower) {
+                    kapitelTemplate =
+                      kapitelTemplates.find((tpl) => (tpl.name ?? "").toLowerCase() === targetKapitelNameLower) ??
+                      null;
+                  }
+
+                  if (!kapitelTemplate) {
+                    kapitelTemplate = kapitelTemplates[0];
+                  }
+                }
+
+                if (kapitelTemplate) {
+                  const autoSession = {
+                    ...session,
+                    capture: {
+                      ...(session.capture ?? {}),
+                      initialNote: trimmedNote,
+                      bauteilTemplate,
+                      kapitelTemplate,
+                    },
+                  };
+
+                  return this.finalizeCapture({ chatId, session: autoSession, selectedRueckmeldungen: [] });
+                }
+              }
+            }
+          }
+        }
+      } catch (error) {
+        this.logger?.warn?.("Auto-Suggest Capture fehlgeschlagen", { error: error?.message });
+      }
     }
 
     const options = templates.map((template) => ({

@@ -122,15 +122,17 @@ describe("LLMOrchestrator – neuer Kunde Flow", () => {
 
     assert.equal(recordedRequests.length, 2, "expected two LLM calls for confirmation");
     assert.equal(completionsQueue.length, 0);
-    assert.deepEqual(confirmationReply, {
-      status: "confirm_new_customer",
-      message: "Soll ich den aktuellen Kundenkontext verlassen und einen neuen Kunden anlegen?",
-      options: [
-        { id: 1, label: "Ja, neuen Kunden anlegen", inputValue: "ja" },
-        { id: 2, label: "Nein, zurück", inputValue: "nein" },
-      ],
-      context: { phase: "confirm-new-customer" },
-    });
+
+    assert.equal(confirmationReply.status, "confirm_new_customer");
+    assert.equal(
+      confirmationReply.message,
+      "Soll ich den aktuellen Kundenkontext verlassen und einen neuen Kunden anlegen?",
+    );
+    assert.deepEqual(confirmationReply.options, [
+      { id: 1, label: "Ja, neuen Kunden anlegen", inputValue: "ja" },
+      { id: 2, label: "Nein, zurück", inputValue: "nein" },
+    ]);
+    assert.equal(confirmationReply.context?.phase, "confirm-new-customer");
 
     const stateAfterConfirm = orchestrator.getState(chatId);
     assert.equal(stateAfterConfirm.contextStack.length, 1, "context snapshot should be stacked");
@@ -152,11 +154,10 @@ describe("LLMOrchestrator – neuer Kunde Flow", () => {
 
     assert.equal(recordedRequests.length, 4, "expected two additional LLM calls for cancellation");
     assert.equal(completionsQueue.length, 0);
-    assert.deepEqual(cancelReply, {
-      status: "new_customer_cancelled",
-      message: "Alles klar, wir bleiben beim aktuellen Kunden.",
-      context: { phase: "select-customer" },
-    });
+
+    assert.equal(cancelReply.status, "new_customer_cancelled");
+    assert.equal(cancelReply.message, "Alles klar, wir bleiben beim aktuellen Kunden.");
+    assert.equal(cancelReply.context?.phase, "select-customer");
 
     const finalState = orchestrator.getState(chatId);
     assert.equal(finalState.contextStack.length, 0, "context stack should be empty after pop restore");

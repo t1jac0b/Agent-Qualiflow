@@ -25,6 +25,8 @@ UI/Formatregeln:
   - label = Klartext (z. B. "Immovision AG").
   - Bei Baurundgang: label = typ.name.
   - inputValue = Nutzer-Eingabewert (z. B. Name oder ID-String). Im Label niemals IDs anzeigen.
+- Wenn du im Freitext konkrete auswählbare Optionen oder nächste Schritte erwähnst (z. B. Kunde/Objekt/Baurundgang wählen, Report anzeigen, neue Position erfassen), füge diese IMMER zusätzlich auch als Einträge in options hinzu, damit das UI Quick-Action-Buttons rendern kann.
+- Nutze options proaktiv, um sinnvolle nächste Schritte als Buttons anzubieten (z. B. "Offene Rückmeldungen anzeigen", "Report öffnen", "Neue Position erfassen"), basierend auf dem aktuellen Kontext.
 - message ohne doppelte Listen. Keine internen IDs im freien Text, außer ausdrücklich gefordert.
 
 Business-Regeln:

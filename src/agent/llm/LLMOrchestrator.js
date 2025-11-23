@@ -216,6 +216,13 @@ export class LLMOrchestrator {
           context: {
             selection: { kunde },
             options,
+            steps: [
+              {
+                type: "agent",
+                name: "DeterministicFallback",
+                summary: "Kunde per exaktem Namen gefunden und Objekte geladen.",
+              },
+            ],
           },
         };
       }
@@ -299,29 +306,76 @@ export class LLMOrchestrator {
 
     const state = this.getState(chatId);
     const qualAgent = this.getQualiAgent();
-    
+    const lower = trimmed.toLowerCase();
+
+    // Wenn der letzte Schritt bereits ein expliziter LLM-Flow zur Kundenanlage ist,
+    // nicht erneut den deterministischen Agenten aufrufen, sondern beim LLM bleiben.
+    const lastStatus = state.lastReply?.status;
+    const lastPhase = state.lastReply?.context?.phase;
+    const inNewCustomerFlow =
+      lastStatus === "confirm_new_customer" || lastPhase === "confirm-new-customer";
+
+    if (inNewCustomerFlow) {
+      this.logger.info("Skipping deterministic handling during LLM new-customer flow", {
+        chatId,
+        lastStatus,
+        lastPhase,
+      });
+      return null;
+    }
+
+    // Guardrail: Neuanlage von Kunden/Objekten direkt dem LLM überlassen
+    const isNewCustomerRequest =
+      lower.includes("neuen kunden anlegen") ||
+      lower.includes("neuen kunden erfassen") ||
+      lower.startsWith("neuer kunde") ||
+      /\b(neuer|neuen|neue)\s+kunde(n)?\s+(anlegen|erstellen|erfassen)\b/i.test(trimmed);
+    const isNewObjectRequest =
+      lower.includes("neues objekt anlegen") ||
+      lower.includes("objekt anlegen") ||
+      /\b(neues|neuen)\s+objekt(e)?\s+(anlegen|erstellen|erfassen)\b/i.test(trimmed);
+
+    if (isNewCustomerRequest || isNewObjectRequest) {
+      this.logger.info("Routing entity creation request to LLM", {
+        chatId,
+        message: trimmed.slice(0, 80),
+      });
+      return null;
+    }
+
     // Check if message looks like a question or conversation
-    const looksLikeQuestion = /(\?|^(was|wie|welche|wo|wann|warum|können|kann|sollte|würde|möchte)[\s\w])/i.test(trimmed);
-    
+    const looksLikeQuestion =
+      /(\?|^(was|wie|welche|wo|wann|warum|können|kann|sollte|würde|möchte)[\s\w])/i.test(trimmed);
+
     // Get current session to check phase
     const session = qualAgent.getConversation(chatId);
     const phase = session?.phase;
-    
+
     // Let LLM handle questions and conversational input in capture/pruefpunkte phases
     const isInFlexiblePhase = phase?.startsWith("pruefpunkte:") || phase?.startsWith("capture:");
     if (looksLikeQuestion && isInFlexiblePhase) {
       this.logger.info("Routing question to LLM", { chatId, phase, message: trimmed.slice(0, 50) });
       return null; // Let LLM handle it
     }
-    
+
     // Try deterministic handling for clear inputs
     try {
       const result = await qualAgent.handleMessage({ chatId, message: trimmed });
 
       if (result && result.status !== "unknown" && result.status !== "unknown_state") {
         state.lastReply = result;
-        if (result.context?.selection) {
-          this.setContext(chatId, result.context.selection);
+
+        // Nach erfolgreichem deterministischem Schritt Auswahlpfad in den LLM-Kontext spiegeln
+        const sessionAfter = qualAgent.getConversation(chatId);
+        const selectionFromResult = result.context?.selection;
+        const selectionFromSession = sessionAfter?.path;
+        if (selectionFromResult || selectionFromSession) {
+          const selection = selectionFromResult ?? selectionFromSession;
+          this.setContext(chatId, selection);
+          const existingContext = result.context ?? {};
+          if (!existingContext.selection) {
+            result.context = { ...existingContext, selection };
+          }
         }
 
         // Wenn eine Position erfolgreich angelegt wurde und ein Pending-Attachment existiert, Foto verknüpfen
@@ -336,6 +390,15 @@ export class LLMOrchestrator {
             this.logger.warn("Verknüpfung des Attachments fehlgeschlagen", { chatId, error: e?.message });
           }
         }
+
+        const existingContext = result.context ?? {};
+        const existingSteps = Array.isArray(existingContext.steps) ? existingContext.steps : [];
+        const traceStep = {
+          type: "agent",
+          name: "QualiFlowAgent",
+          status: result.status ?? null,
+        };
+        result.context = { ...existingContext, steps: [...existingSteps, traceStep] };
 
         state.history.push({ role: "user", content: trimmed });
         state.history.push({ role: "assistant", content: result.message ?? "" });
@@ -1150,6 +1213,14 @@ export class LLMOrchestrator {
       const result = await qualAgent.promptCustomerSelection({ chatId, database, prefix: reminderPrefix });
       const state = this.getState(chatId);
       state.lastReply = result;
+      const existingContext = result.context ?? {};
+      const existingSteps = Array.isArray(existingContext.steps) ? existingContext.steps : [];
+      const traceStep = {
+        type: "agent",
+        name: "QualiFlowAgent",
+        action: "promptCustomerSelection",
+      };
+      result.context = { ...existingContext, steps: [...existingSteps, traceStep] };
       
       if (result.context?.selection) {
         this.setContext(chatId, result.context.selection);
@@ -1163,13 +1234,24 @@ export class LLMOrchestrator {
   }
 
   async handleMessage({ chatId, message, attachmentId, uploadedBy }) {
-    // If a file attachment is referenced, handle it first to drive the capture flow deterministically
+    // Wenn ein Anhang referenziert wird, unterscheiden wir PDF (Bau-Beschrieb) von Fotos:
+    // - PDFs: dem LLM überlassen (Bau-Beschrieb-Tools), nicht durch den Capture-Flow leiten.
+    // - Andere (Fotos): deterministischen Capture-Flow (handleIncomingAttachment) nutzen.
     if (attachmentId) {
-      const handled = await this.handleIncomingAttachment({ chatId, message, attachmentId, uploadedBy });
-      if (handled) {
-        return handled;
+      const state = this.getState(chatId);
+      const attachment = state.attachments?.get(attachmentId);
+      const name = attachment?.name ?? attachment?.originalFilename ?? "";
+      const mime = (attachment?.mimeType ?? "").toLowerCase();
+      const isPdf = mime === "application/pdf" || name.toLowerCase().endsWith(".pdf");
+
+      if (!isPdf) {
+        const handled = await this.handleIncomingAttachment({ chatId, message, attachmentId, uploadedBy });
+        if (handled) {
+          return handled;
+        }
       }
     }
+
     return this.runLLM(chatId, message ?? "");
   }
 
@@ -1293,10 +1375,11 @@ export class LLMOrchestrator {
     const executors = this.getExecutors(chatId);
 
     let final = null;
-    let steps = 0;
+    let loopCount = 0;
+    const trace = [];
 
-    while (steps < 8) {
-      steps += 1;
+    while (loopCount < 8) {
+      loopCount += 1;
       const completion = await client.chat.completions.create({
         model,
         messages,
@@ -1315,6 +1398,14 @@ export class LLMOrchestrator {
           const name = call.function?.name;
           const args = safeParse(call.function?.arguments);
           const exec = executors[name];
+          if (name) {
+            const argsKeys = args && typeof args === "object" && !Array.isArray(args) ? Object.keys(args) : [];
+            trace.push({
+              type: "tool",
+              name,
+              argsKeys,
+            });
+          }
           if (!exec) {
             const content = JSON.stringify({ error: `Unknown tool ${name}` });
             messages.push({ role: "tool", tool_call_id: call.id, content });
@@ -1331,6 +1422,10 @@ export class LLMOrchestrator {
             if (name === "reply") {
               replyResult = result ?? {};
               state.lastReply = replyResult;
+              trace.push({
+                type: "reply",
+                status: replyResult.status ?? null,
+              });
             }
           } catch (error) {
             const content = JSON.stringify({ error: String(error?.message || error) });
@@ -1369,6 +1464,12 @@ export class LLMOrchestrator {
         final = { status: "unknown", message: "Ich konnte keine Antwort erzeugen." };
         state.lastReply = final;
       }
+    }
+
+    if (final && trace.length) {
+      const existingContext = final.context ?? {};
+      const existingSteps = Array.isArray(existingContext.steps) ? existingContext.steps : [];
+      final.context = { ...existingContext, steps: [...existingSteps, ...trace] };
     }
 
     state.lastReply = final;

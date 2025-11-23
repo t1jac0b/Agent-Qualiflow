@@ -49,6 +49,10 @@ export const databaseTool = defineTool({
     listErledigteBaurundgaenge: (payload) => LegacyDatabaseTool.listErledigteBaurundgaenge(payload),
     instantiateBauteilFromTemplate: ({ bauteilId, force = false }) =>
       instantiateBauteilFromTemplate(LegacyDatabaseTool.client, bauteilId, { force }),
+    listBauteileByBaurundgang: (payload) =>
+      LegacyDatabaseTool.listBauteileByBaurundgang(payload?.baurundgangId ?? payload),
+    addFoto: (payload) => LegacyDatabaseTool.addFoto(payload),
+    linkPositionFoto: (positionId, fotoId) => LegacyDatabaseTool.linkPositionFoto(positionId, fotoId),
     rawClient: () => LegacyDatabaseTool.client,
   },
 });
