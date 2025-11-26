@@ -330,10 +330,23 @@ app.post("/chat/upload", chatUpload, async (req, res) => {
       uploadedBy: req.body?.uploadedBy ?? "chat-ui",
     });
 
+    const isPdf = file.mimetype === "application/pdf" || file.originalname.toLowerCase().endsWith(".pdf");
+    const lowerName = file.originalname.toLowerCase();
+    const looksLikeBauBeschrieb = isPdf && (lowerName.includes("baubeschrieb") || lowerName.includes("bau-beschrieb"));
+
+    let message;
+    if (looksLikeBauBeschrieb) {
+      message = `Die Datei "${file.originalname}" wurde als Bau-Beschrieb erkannt. Sende mir jetzt kurz, was ich tun soll (z.B. \"Bau-Beschrieb auswerten\" oder fehlende Angaben wie Projektleiter). Dann starte ich automatisch den Prozess für Kunde, Objekt und Baurundgänge.`;
+    } else if (isPdf) {
+      message = `Die Datei "${file.originalname}" ist als Dokument bereit. Beschreibe kurz, was ich damit tun soll (z.B. \"Bau-Beschrieb auswerten\").`;
+    } else {
+      message = `Die Datei "${file.originalname}" ist bereit. Optional: Du kannst ohne Text fortfahren – ich frage nach Bauteil und Bereich.`;
+    }
+
     res.status(200).json({
       chatId,
       status: "attachment_stored",
-      message: `Die Datei "${file.originalname}" ist bereit. Optional: Du kannst ohne Text fortfahren – ich frage nach Bauteil und Bereich.`,
+      message,
       context: { attachment: registered },
     });
   } catch (error) {
