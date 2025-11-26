@@ -36,7 +36,19 @@ function normalizeImageUrl(value) {
   const raw = String(value).trim();
   if (!raw) return null;
   if (/^data:/i.test(raw)) return raw;
-  if (/^https?:\/\//i.test(raw)) return raw;
+  if (/^https?:\/\//i.test(raw)) {
+    try {
+      const parsed = new URL(raw);
+      if (/^\/storage\//i.test(parsed.pathname)) {
+        const rel = parsed.pathname.replace(/^\/+/, "");
+        const abs = path.join(process.cwd(), rel);
+        return pathToFileURL(abs).href;
+      }
+    } catch (error) {
+      console.warn("[ReportHtmlRenderer] Konnte URL nicht normalisieren", error?.message ?? error);
+    }
+    return raw;
+  }
 
   // If it starts with /storage/, map to local absolute path and then to file:// URL
   if (/^\/?storage\//i.test(raw)) {
