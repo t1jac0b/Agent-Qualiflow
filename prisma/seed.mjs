@@ -83,16 +83,11 @@ async function main() {
     data: { bauteil: { connect: { id: bauteil.id } }, name: "Nordseite" },
   });
 
-  const rueckmeldungstyp = await prisma.rueckmeldungstyp.create({
-    data: { typCode: "R", name: "Mangel" },
-  });
-
   const position = await prisma.position.create({
     data: {
       qsreport: { connect: { id: qsReport.id } },
       bauteil: { connect: { id: bauteil.id } },
       bereich: { connect: { id: bereich.id } },
-      rueckmeldungstyp: { connect: { id: rueckmeldungstyp.id } },
       positionsnummer: 1,
       bemerkung: "Abplatzungen vorhanden",
     },

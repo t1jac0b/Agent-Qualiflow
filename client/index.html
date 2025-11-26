@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>QualiCasa Setup-Chat</title>
+    <title>Qualiflow Agent</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -14,6 +14,19 @@
       :root {
         color-scheme: light;
         font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+        --background: #f5f5f5;
+        --foreground: #111827;
+        --primary: #d64933;
+        --primary-foreground: #ffffff;
+        --secondary: #f97316;
+        --secondary-foreground: #111827;
+        --muted: #f3f4f6;
+        --muted-foreground: #6b7280;
+        --card: #ffffff;
+        --border: #e5e7eb;
+        --input-background: #ffffff;
+        --sidebar: #d64933;
+        --accent: #fca5a5;
         background: var(--background);
         color: var(--foreground);
       }
@@ -50,6 +63,7 @@
         grid-template-rows: auto auto 1fr auto;
         gap: 18px;
         overflow: hidden;
+        border-top: 5px solid var(--primary);
       }
 
       @media (max-width: 720px) {
@@ -60,6 +74,14 @@
         .chat-shell {
           padding: 20px;
           border-radius: 16px;
+        }
+
+        .chat-main {
+          display: block;
+        }
+
+        .agent-video-shell {
+          display: none;
         }
       }
 
@@ -82,6 +104,31 @@
         font-size: 0.95rem;
       }
 
+      .agent-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .agent-avatar {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        object-fit: cover;
+        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.16);
+        animation: agent-bob 3.2s ease-in-out infinite;
+      }
+
+      @keyframes agent-bob {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-4px);
+        }
+      }
+
       .session-info {
         display: flex;
         justify-content: space-between;
@@ -93,6 +140,22 @@
         color: var(--muted-foreground);
       }
 
+      .session-info button {
+        border-radius: 999px;
+        padding: 6px 14px;
+        border: 1px solid var(--border);
+        background: #ffffff;
+        color: var(--foreground);
+        font-size: 0.8rem;
+        font-weight: 500;
+        cursor: pointer;
+      }
+
+      .session-info button:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+      }
+
       .chat-log {
         background: color-mix(in srgb, var(--muted) 92%, transparent);
         border-radius: 14px;
@@ -102,6 +165,37 @@
         flex-direction: column;
         gap: 14px;
         border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+        /* WICHTIG: erlaubt, dass der Bereich innerhalb des Grid-Rows schrumpfen kann, damit overflow-y wirkt */
+        min-height: 0;
+        max-height: 100%;
+      }
+
+      .chat-main {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 16px;
+        align-items: stretch;
+        /* WICHTIG: verhindert, dass die Zeile größer als der verfügbare Platz wird und Scrollen blockiert */
+        min-height: 0;
+      }
+
+      .agent-video-shell {
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        width: 220px;
+        height: 220px;
+        max-width: 35vw;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.16);
+      }
+
+      .agent-video-shell video.agent-video {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
       }
 
       .chat-message {
@@ -150,10 +244,35 @@
         align-items: center;
       }
 
+      .icon-button {
+        width: 40px;
+        height: 40px;
+        border-radius: 999px;
+        border: none;
+        background: color-mix(in srgb, var(--muted) 80%, var(--background));
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        cursor: pointer;
+        transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+      }
+
+      .icon-button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
+      }
+
+      .icon-button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        box-shadow: none;
+      }
+
       .chat-input {
         flex: 1;
         display: flex;
-        border-radius: 12px;
+        border-radius: 999px;
         background: var(--input-background);
         border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
         box-shadow: 0 16px 30px rgba(0, 0, 0, 0.08);
@@ -176,7 +295,8 @@
         padding: 0 22px;
         font-weight: 600;
         cursor: pointer;
-        border-radius: 0 12px 12px 0;
+        border-radius: 999px;
+        margin: 4px;
         transition: transform 0.15s ease, box-shadow 0.2s ease;
       }
 
@@ -190,6 +310,74 @@
         color: color-mix(in srgb, var(--secondary-foreground) 60%, var(--primary-foreground));
         box-shadow: none;
         cursor: not-allowed;
+      }
+
+      .attachments {
+        margin-top: 4px;
+        font-size: 0.8rem;
+        color: var(--muted-foreground);
+      }
+
+      .attachment-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--muted) 80%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+      }
+
+      .agent-steps {
+        margin-top: 6px;
+        font-size: 0.8rem;
+        color: var(--muted-foreground);
+      }
+
+      .agent-steps summary {
+        cursor: pointer;
+        font-weight: 500;
+      }
+
+      .agent-steps ul {
+        margin: 4px 0 0;
+        padding-left: 1.2rem;
+      }
+
+      .option-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 8px;
+      }
+
+      .option-button {
+        appearance: none;
+        border-radius: 999px;
+        border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+        background: #ffffff;
+        color: var(--foreground);
+        padding: 8px 14px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.04);
+        transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+        text-decoration: none;
+      }
+
+      .option-button:hover,
+      .option-button:focus-visible {
+        background: color-mix(in srgb, #ffffff 80%, var(--muted));
+        transform: translateY(-1px);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.06);
+        outline: none;
+      }
+
+      .option-button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        box-shadow: none;
       }
 
       footer {
@@ -206,25 +394,91 @@
   <body>
     <main class="chat-shell">
       <header>
-        <h1>QualiCasa Setup-Chat</h1>
-        <p>Starte mit "start", um Kunde, Objekt und Baurundgang auszuwählen.</p>
+        <div class="agent-header">
+          <img
+            src="assets/Qualiflow-Agent%20Icon%20ganz.png"
+            alt="Qualiflow Agent"
+            class="agent-avatar"
+          />
+          <div>
+            <h1>Qualiflow Agent</h1>
+            <p>Der QualiFlow Agent führt dich automatisch durch Kunde, Objekt und Baurundgang.</p>
+          </div>
+        </div>
       </header>
       <div class="session-info" id="session-info">
+        <span>Agent-Status: <strong id="agent-status">Bereit</strong></span>
         <span>Chat-ID: <strong id="session-id">–</strong></span>
         <button type="button" id="reset-chat">Neuer Chat</button>
       </div>
-      <section class="chat-log" id="chat-log" aria-live="polite"></section>
+      <div class="chat-main">
+        <section class="chat-log" id="chat-log" aria-live="polite"></section>
+        <aside class="agent-video-shell" aria-hidden="true">
+          <video
+            src="assets/agent-loop.mp4"
+            class="agent-video"
+            autoplay
+            muted
+            loop
+            playsinline
+          ></video>
+        </aside>
+      </div>
       <form id="chat-form" class="chat-actions" autocomplete="off">
+        <button type="button" id="mic-button" class="icon-button" aria-label="Spracheingabe">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M12 3a3 3 0 0 0-3 3v5a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z" />
+            <path d="M19 11a7 7 0 0 1-14 0" />
+            <path d="M12 18v3" />
+            <path d="M8 21h8" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          id="upload-button"
+          class="icon-button"
+          aria-label="Foto aufnehmen oder Datei hochladen"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path
+              d="M4 8h3l2-2h6l2 2h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2Z"
+            />
+            <circle cx="12" cy="13" r="3.5" />
+          </svg>
+        </button>
         <div class="chat-input">
           <input
             id="chat-message"
             name="message"
             placeholder="Nachricht an den Agenten…"
             aria-label="Nachricht"
-            required
           />
           <button type="submit" id="send-button">Senden</button>
         </div>
+        <input
+          id="chat-upload"
+          type="file"
+          accept="image/*,application/pdf"
+          capture="environment"
+          hidden
+        />
+        <div id="chat-attachments" class="attachments"></div>
       </form>
       <footer>© QualiCasa – interner Prototyp</footer>
     </main>

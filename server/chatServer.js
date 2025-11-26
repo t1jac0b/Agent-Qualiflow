@@ -1,10 +1,11 @@
+import "dotenv/config";
 import express from "express";
 import multer from "multer";
 import process from "node:process";
 import path from "node:path";
 
-import { handleChatMessage } from "../src/agent/chat/handleChatMessage.js";
-import { getAgentOrchestrator } from "../src/agent/index.js";
+import { beginQualiFlowConversation, getAgentOrchestrator, getChatOrchestrator, handleQualiFlowMessage } from "../src/agent/index.js";
+import { DatabaseTool } from "../src/tools/DatabaseTool.js";
 import { createLogger } from "../src/utils/logger.js";
 
 const app = express();
@@ -16,10 +17,12 @@ const qsUpload = upload.fields([
   { name: "photos", maxCount: 20 },
 ]);
 const qsPositionUpload = upload.single("photo");
+const chatUpload = upload.single("file");
 
 app.use(express.json({ limit: "5mb" }));
-// Serve static UI from /client
+// Static assets
 app.use(express.static("client"));
+app.use("/storage", express.static(path.join(process.cwd(), "storage")));
 
 function normalizeChatId(requestedId) {
   if (requestedId && typeof requestedId === "string" && requestedId.trim()) {
@@ -39,89 +42,17 @@ function serializeResult(result) {
   };
 }
 
-function buildFollowUpMessage(body) {
-  if (!body) return null;
-
-  const lines = [];
-
-  if (typeof body.message === "string" && body.message.trim()) {
-    lines.push(body.message.trim());
-  }
-
-  if (typeof body.projektleiter === "string" && body.projektleiter.trim()) {
-    lines.push(`Projektleiter: ${body.projektleiter.trim()}`);
-  }
-
-  const emailInput = body.projektleiter_email ?? body.projektleiterEmail;
-  if (typeof emailInput === "string" && emailInput.trim()) {
-    lines.push(`Projektleiter Email: ${emailInput.trim()}`);
-  }
-
-  const telefonInput = body.projektleiter_telefon ?? body.projektleiterTelefon;
-  if (typeof telefonInput === "string" && telefonInput.trim()) {
-    lines.push(`Projektleiter Tel: ${telefonInput.trim()}`);
-  }
-
-  return lines.length ? lines.join("\n") : null;
-}
-
 app.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
-app.post("/chat/upload", upload.single("file"), async (req, res) => {
-  if (!req.file) {
-    log.warn("Upload ohne Datei", { route: "/chat/upload" });
-    res.status(400).json({ error: "PDF-Datei unter Feldnamen 'file' erforderlich." });
-    return;
-  }
-
-  const chatId = normalizeChatId(req.body?.chatId);
-  try {
-    log.info("Verarbeite Upload", {
-      chatId,
-      originalFilename: req.file.originalname,
-      hasMessage: Boolean(req.body?.message),
-      hasProjektleiter: Boolean(req.body?.projektleiter ?? req.body?.projektleiter_email ?? req.body?.projektleiterEmail),
-    });
-
-    let result = await handleChatMessage({
-      chatId,
-      attachments: [
-        {
-          buffer: req.file.buffer,
-          originalFilename: req.file.originalname,
-          mimetype: req.file.mimetype,
-        },
-      ],
-      uploadedBy: req.body?.uploadedBy ?? "http-chat",
-    });
-
-    const followUpMessage = buildFollowUpMessage(req.body);
-    if (result.status === "needs_input" && followUpMessage) {
-      log.info("Sende automatisches Follow-up", { chatId });
-      result = await handleChatMessage({
-        chatId,
-        message: followUpMessage,
-        uploadedBy: req.body?.uploadedBy ?? "http-chat",
-      });
-    }
-
-    log.info("Upload verarbeitet", { chatId, status: result.status });
-    res.json({ chatId, ...serializeResult(result) });
-  } catch (error) {
-    log.error("Fehler beim Upload", { chatId, error });
-    res.status(500).json({ error: "Fehler beim Verarbeiten des Bau-Beschriebs." });
-  }
-});
+function parseId(value) {
+  if (value === undefined || value === null || value === "") return undefined;
+  const parsed = Number.parseInt(value, 10);
+  return Number.isNaN(parsed) ? undefined : parsed;
+}
 
 app.post("/qs-rundgang/position-clarify", async (req, res) => {
-  const parseId = (value) => {
-    if (value === undefined || value === null || value === "") return undefined;
-    const parsed = Number.parseInt(value, 10);
-    return Number.isNaN(parsed) ? undefined : parsed;
-  };
-
   const baurundgangId = parseId(req.body?.baurundgangId);
   const note = typeof req.body?.note === "string" ? req.body.note.trim() : "";
   const option = typeof req.body?.option === "string" ? req.body.option.trim() : "";
@@ -160,6 +91,48 @@ app.post("/qs-rundgang/position-clarify", async (req, res) => {
   }
 });
 
+app.get("/objekte/:id/qs-reports", async (req, res) => {
+  const objektId = parseId(req.params.id);
+  if (!objektId) {
+    res.status(400).json({ status: "ERROR", message: "Ungültige Objekt-ID." });
+    return;
+  }
+
+  try {
+    const reports = await DatabaseTool.listQSReportsByObjekt(objektId);
+
+    const enriched = [];
+    for (const report of reports) {
+      let downloadUrl = null;
+      try {
+        const generation = await orchestrator.handleTask({
+          type: "report.generate",
+          payload: { qsReportId: report.id },
+        });
+        if (generation?.status === "SUCCESS" && generation?.downloadUrl) {
+          downloadUrl = generation.downloadUrl;
+        }
+      } catch (error) {
+        log.warn("Report.generate für QSReport fehlgeschlagen", {
+          objektId,
+          qsReportId: report.id,
+          error: error?.message,
+        });
+      }
+
+      enriched.push({
+        ...report,
+        downloadUrl,
+      });
+    }
+
+    res.json({ objektId, reports: enriched });
+  } catch (error) {
+    log.error("Liste QSReports by Objekt fehlgeschlagen", { error, objektId });
+    res.status(500).json({ status: "ERROR", message: "QSReports für Objekt konnten nicht geladen werden." });
+  }
+});
+
 app.get("/qs-rundgang/:id/report", async (req, res) => {
   const parseId = (value) => {
     if (value === undefined || value === null || value === "") return undefined;
@@ -193,7 +166,16 @@ app.get("/qs-rundgang/:id/report", async (req, res) => {
       return;
     }
 
-    res.json({ status: "SUCCESS", pdfPath: result.pdfPath, reportId: result.reportId });
+    const relativePath = path.relative(process.cwd(), result.pdfPath);
+    const relativeUrl = `/${relativePath.replace(/\\+/g, "/")}`;
+    const base = (process.env.PUBLIC_BASE_URL ?? `http://localhost:${process.env.CHAT_SERVER_PORT ?? 3001}`).replace(/\/+$/, "");
+    const downloadUrl = `${base}${relativeUrl}`;
+    res.json({
+      status: "SUCCESS",
+      pdfPath: result.pdfPath,
+      reportId: result.reportId,
+      downloadUrl,
+    });
   } catch (error) {
     log.error("QS-Report Generierung fehlgeschlagen", { error, baurundgangId });
     console.error("[HTTP] /qs-rundgang/:id/report failed", error);
@@ -314,23 +296,90 @@ app.post("/qs-rundgang/upload", qsUpload, async (req, res) => {
   }
 });
 
-app.post("/chat/message", async (req, res) => {
-  const { chatId: requestedChatId, message, uploadedBy } = req.body ?? {};
-  const chatId = normalizeChatId(requestedChatId);
-
-  if (!message || typeof message !== "string") {
-    log.warn("message fehlt", { route: "/chat/message", chatId });
-    res.status(400).json({ error: "message ist erforderlich." });
+app.post("/chat/upload", chatUpload, async (req, res) => {
+  const file = req.file;
+  if (!file) {
+    res.status(400).json({ status: "ERROR", message: "Keine Datei hochgeladen." });
     return;
   }
 
+  const chatId = normalizeChatId(req.body?.chatId);
+
   try {
-    log.info("Verarbeite Nachricht", { chatId });
-    const result = await orchestrator.handleMessage({
-      chatId,
-      message,
-      uploadedBy: uploadedBy ?? "http-chat",
+    const chatOrchestrator = getChatOrchestrator();
+    const fileTool = chatOrchestrator?.tools?.file;
+    if (!fileTool?.actions?.storeUpload) {
+      throw new Error("fileTool.storeUpload ist nicht verfügbar");
+    }
+
+    const bucket = `chat-uploads/${chatId}`;
+    const stored = await fileTool.actions.storeUpload({
+      buffer: file.buffer,
+      originalFilename: file.originalname,
+      bucket,
     });
+
+    const registered = chatOrchestrator.registerAttachment(chatId, {
+      id: stored.storedPath,
+      name: file.originalname,
+      mimeType: file.mimetype,
+      size: file.size,
+      storedFilename: stored.storedFilename,
+      bucket,
+      uploadedAt: new Date().toISOString(),
+      uploadedBy: req.body?.uploadedBy ?? "chat-ui",
+    });
+
+    const isPdf = file.mimetype === "application/pdf" || file.originalname.toLowerCase().endsWith(".pdf");
+    const lowerName = file.originalname.toLowerCase();
+    const looksLikeBauBeschrieb = isPdf && (lowerName.includes("baubeschrieb") || lowerName.includes("bau-beschrieb"));
+
+    let message;
+    if (looksLikeBauBeschrieb) {
+      message = `Die Datei "${file.originalname}" wurde als Bau-Beschrieb erkannt. Sende mir jetzt kurz, was ich tun soll (z.B. \"Bau-Beschrieb auswerten\" oder fehlende Angaben wie Projektleiter). Dann starte ich automatisch den Prozess für Kunde, Objekt und Baurundgänge.`;
+    } else if (isPdf) {
+      message = `Die Datei "${file.originalname}" ist als Dokument bereit. Beschreibe kurz, was ich damit tun soll (z.B. \"Bau-Beschrieb auswerten\").`;
+    } else {
+      message = `Die Datei "${file.originalname}" ist bereit. Optional: Du kannst ohne Text fortfahren – ich frage nach Bauteil und Bereich.`;
+    }
+
+    res.status(200).json({
+      chatId,
+      status: "attachment_stored",
+      message,
+      context: { attachment: registered },
+    });
+  } catch (error) {
+    log.error("Chat Upload fehlgeschlagen", { error, filename: file.originalname });
+    res.status(500).json({ status: "ERROR", message: "Upload konnte nicht verarbeitet werden." });
+  }
+});
+
+app.post("/chat/message", async (req, res) => {
+  const { chatId: requestedChatId, message, uploadedBy, attachmentId } = req.body ?? {};
+  const chatId = normalizeChatId(requestedChatId);
+  try {
+    const trimmed = typeof message === "string" ? message.trim() : "";
+
+    // Allow photo-only: if no text but an attachmentId is provided, forward to orchestrator
+    if (!trimmed && attachmentId) {
+      log.info("Verarbeite Foto ohne Text", { chatId, attachmentId });
+      const result = await handleQualiFlowMessage({ chatId, message: "", attachmentId, uploadedBy });
+      log.info("Nachricht verarbeitet (Foto-only)", { chatId, status: result.status });
+      res.json({ chatId, ...serializeResult(result) });
+      return;
+    }
+
+    if (!trimmed) {
+      log.info("Proaktiven Gesprächsstart ausführen", { chatId });
+      const result = await beginQualiFlowConversation(chatId);
+      log.info("Proaktive Begrüßung gesendet", { chatId, status: result.status });
+      res.json({ chatId, ...serializeResult(result) });
+      return;
+    }
+
+    log.info("Verarbeite Nachricht (LLM)", { chatId });
+    const result = await handleQualiFlowMessage({ chatId, message: trimmed, attachmentId, uploadedBy });
     log.info("Nachricht verarbeitet", { chatId, status: result.status });
     res.json({ chatId, ...serializeResult(result) });
   } catch (error) {

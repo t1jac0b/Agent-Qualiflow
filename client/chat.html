@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>QualiCasa Setup-Chat</title>
+    <title>QualiFlow Agent</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -143,6 +143,58 @@
         align-self: flex-start;
       }
 
+      .option-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 6px;
+      }
+
+      .option-button {
+        appearance: none;
+        border: 1px solid color-mix(in srgb, var(--primary) 45%, var(--border));
+        background: linear-gradient(
+          135deg,
+          color-mix(in srgb, var(--primary) 75%, transparent) 0%,
+          color-mix(in srgb, var(--accent) 55%, transparent) 100%
+        );
+        color: color-mix(in srgb, var(--foreground) 90%, #0f172a);
+        padding: 10px 18px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        border-radius: 999px;
+        cursor: pointer;
+        letter-spacing: 0.01em;
+        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
+        transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
+        min-width: 0;
+      }
+
+      .option-button:hover,
+      .option-button:focus-visible {
+        transform: translateY(-1px);
+        box-shadow: 0 18px 36px color-mix(in srgb, var(--primary) 32%, transparent);
+        filter: brightness(1.05);
+        outline: none;
+      }
+
+      .option-button:active {
+        transform: translateY(0);
+        box-shadow: 0 6px 18px color-mix(in srgb, var(--primary) 28%, transparent);
+      }
+
+      .option-button:focus-visible {
+        outline: 2px solid color-mix(in srgb, var(--primary) 55%, transparent);
+        outline-offset: 3px;
+      }
+
+      .option-button:disabled {
+        cursor: not-allowed;
+        filter: grayscale(0.35);
+        opacity: 0.65;
+        box-shadow: none;
+      }
+
       .chat-message h3 {
         margin: 0;
         font-size: 0.85rem;
@@ -169,6 +221,96 @@
         display: flex;
         gap: 12px;
         align-items: center;
+      }
+
+      .chat-attachments {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+        min-height: 0;
+      }
+
+      .attachment-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--muted) 80%, var(--background));
+        border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: var(--foreground);
+        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.06);
+      }
+
+      .attachment-chip button {
+        appearance: none;
+        border: none;
+        background: transparent;
+        color: color-mix(in srgb, var(--foreground) 65%, #0f172a);
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 50%;
+        transition: background 0.2s ease;
+      }
+
+      .attachment-chip button:hover,
+      .attachment-chip button:focus-visible {
+        background: color-mix(in srgb, var(--primary) 18%, transparent);
+        outline: none;
+      }
+
+      .upload-button {
+        appearance: none;
+        border: 1px solid color-mix(in srgb, var(--primary) 45%, var(--border));
+        background: linear-gradient(
+          135deg,
+          color-mix(in srgb, var(--primary) 70%, transparent) 0%,
+          color-mix(in srgb, var(--accent) 45%, transparent) 100%
+        );
+        color: color-mix(in srgb, var(--foreground) 90%, #0f172a);
+        border-radius: 12px;
+        padding: 12px 16px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 14px 28px rgba(0, 0, 0, 0.12);
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
+      }
+
+      .upload-button svg {
+        width: 18px;
+        height: 18px;
+      }
+
+      .upload-button:hover,
+      .upload-button:focus-visible {
+        transform: translateY(-1px);
+        box-shadow: 0 18px 36px color-mix(in srgb, var(--primary) 32%, transparent);
+        filter: brightness(1.05);
+        outline: none;
+      }
+
+      .upload-button:active {
+        transform: translateY(0);
+        box-shadow: 0 8px 20px color-mix(in srgb, var(--primary) 28%, transparent);
+      }
+
+      .upload-button:focus-visible {
+        outline: 2px solid color-mix(in srgb, var(--primary) 55%, transparent);
+        outline-offset: 3px;
+      }
+
+      .upload-button:disabled {
+        cursor: not-allowed;
+        filter: grayscale(0.35);
+        opacity: 0.65;
+        box-shadow: none;
       }
 
       .chat-input {
@@ -225,31 +367,12 @@
     </style>
   </head>
   <body>
-    <main class="chat-shell">
-      <header>
-        <h1>QualiCasa Setup-Chat</h1>
-        <p>Starte mit "start", um Kunde, Objekt und Baurundgang auszuwählen.</p>
-      </header>
-      <div class="session-info" id="session-info">
-        <span>Chat-ID: <strong id="session-id">–</strong></span>
-        <button type="button" id="reset-chat">Neuer Chat</button>
-      </div>
-      <section class="chat-log" id="chat-log" aria-live="polite"></section>
-      <form id="chat-form" class="chat-actions" autocomplete="off">
-        <div class="chat-input">
-          <input
-            id="chat-message"
-            name="message"
-            placeholder="Nachricht an den Agenten…"
-            aria-label="Nachricht"
-            required
-          />
-          <button type="submit" id="send-button">Senden</button>
-        </div>
-      </form>
-      <footer>© QualiCasa – interner Prototyp</footer>
+    <main>
+      <p>Diese Seite wurde ersetzt. Du wirst automatisch zum aktuellen Chat-UI weitergeleitet…</p>
     </main>
 
-    <script src="client.js" type="module"></script>
+    <script>
+      window.location.replace("/");
+    </script>
   </body>
 </html>

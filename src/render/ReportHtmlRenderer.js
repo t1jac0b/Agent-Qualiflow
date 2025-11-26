@@ -3,7 +3,7 @@
 
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { formatDateISO } from "./ReportRenderer.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -28,6 +28,50 @@ function getAssetDataUri(filename) {
     assetCache.set(filename, null);
     return null;
   }
+
+}
+
+function normalizeImageUrl(value) {
+  if (!value) return null;
+  const raw = String(value).trim();
+  if (!raw) return null;
+  if (/^data:/i.test(raw)) return raw;
+  if (/^https?:\/\//i.test(raw)) {
+    try {
+      const parsed = new URL(raw);
+      if (/^\/storage\//i.test(parsed.pathname)) {
+        const rel = parsed.pathname.replace(/^\/+/, "");
+        const abs = path.join(process.cwd(), rel);
+        return pathToFileURL(abs).href;
+      }
+    } catch (error) {
+      console.warn("[ReportHtmlRenderer] Konnte URL nicht normalisieren", error?.message ?? error);
+    }
+    return raw;
+  }
+
+  // If it starts with /storage/, map to local absolute path and then to file:// URL
+  if (/^\/?storage\//i.test(raw)) {
+    const rel = raw.replace(/^\/+/, "");
+    const abs = path.join(process.cwd(), rel);
+    return pathToFileURL(abs).href;
+  }
+
+  // If it contains a 'storage' segment, rebuild from that segment
+  const ix = raw.toLowerCase().lastIndexOf("storage");
+  if (ix >= 0) {
+    const relFromStorage = raw.slice(ix).replace(/\\+/g, "/");
+    const abs = path.join(process.cwd(), relFromStorage);
+    return pathToFileURL(abs).href;
+  }
+
+  // Absolute filesystem path
+  if (path.isAbsolute(raw)) {
+    return pathToFileURL(raw).href;
+  }
+
+  // Fallback: treat as relative to cwd
+  return pathToFileURL(path.join(process.cwd(), raw)).href;
 }
 
 export function renderHtml(report) {
@@ -38,32 +82,48 @@ export function renderHtml(report) {
   const objectName = report.objekt?.bezeichnung ?? "QS-Report";
   const subtitle = reportDateStr !== "-" ? `Baurundgang vom ${reportDateStr}` : "Baurundgang";
 
-  const titleImg = report.titelbildURL || report.baurundgang?.fotos?.[0]?.dateiURL;
+  const titleImg = normalizeImageUrl(report.titelbildURL || report.baurundgang?.fotos?.[0]?.dateiURL);
 
   const primaryLogo = getAssetDataUri("qualicasa-logo.svg");
   const whiteLogo = getAssetDataUri("qualicasa-logo-white.svg");
   const supersignLogo = getAssetDataUri("qualicasa-supersign.svg");
 
   const positions = [...(report.positionen ?? [])].sort((a, b) => {
+    const ar = a.bauteil?.template?.reihenfolge ?? Number.MAX_SAFE_INTEGER;
+    const br = b.bauteil?.template?.reihenfolge ?? Number.MAX_SAFE_INTEGER;
+    if (ar !== br) return ar - br;
+
+    const ak = a.bereichKapitel?.reihenfolge ?? null;
+    const bk = b.bereichKapitel?.reihenfolge ?? null;
+    if (ak != null && bk != null && ak !== bk) return ak - bk;
+
+    const as = (a.bereichstitel ?? "").toLowerCase();
+    const bs = (b.bereichstitel ?? "").toLowerCase();
+    if (as && bs && as !== bs) return as < bs ? -1 : 1;
+
     const aPos = a.positionsnummer ?? Number.MAX_SAFE_INTEGER;
     const bPos = b.positionsnummer ?? Number.MAX_SAFE_INTEGER;
     return aPos - bPos;
   });
 
-  const positionsRows = positions
-    .map((p) => {
-      const pos = p.positionsnummer ?? "-";
+  // Assign sequential position numbers based on the sorted order
+  const numbered = positions.map((p, idx) => ({ p, posNo: idx + 1 }));
+
+  const positionsRows = numbered
+    .map(({ p, posNo }) => {
+      const pos = String(posNo);
       const bauteil =
         p.bauteil?.template?.name ||
         p.bauteil?.materialisierung?.name ||
         p.bereichstitel ||
         p.bereich?.name ||
         "-";
-      const fotos = (p.fotos ?? []).map((pf) => pf.foto?.dateiURL).filter(Boolean);
-      const aktion =
-        `${p.rueckmeldungstyp?.name ?? ""}${
-          p.bemerkung ? (p.rueckmeldungstyp?.name ? ": " : "") + p.bemerkung : ""
-        }` || "-";
+      const fotos = (p.fotos ?? [])
+        .map((pf) => normalizeImageUrl(pf.foto?.dateiURL))
+        .filter(Boolean);
+      const rmNames = (p.rueckmeldungen ?? []).map((r) => r?.rueckmeldungstyp?.name).filter(Boolean);
+      const rmDisplay = rmNames.length ? rmNames.join(" + ") : (p.rueckmeldungstyp?.name ?? "");
+      const aktion = `${rmDisplay}${p.bemerkung ? (rmDisplay ? ": " : "") + p.bemerkung : ""}` || "-";
 
       const fotosHtml = fotos.length
         ? `<div class="foto-grid">${fotos
@@ -92,13 +152,13 @@ export function renderHtml(report) {
     })
     .join("");
 
-  const relevantPositions = positions.filter(
-    (p) => p.rueckmeldungstyp?.name || p.frist || p.erledigt === false || p.rueckmeldungBemerkung
+  const relevantPositions = numbered.filter(({ p }) =>
+    (p.rueckmeldungen?.length || p.rueckmeldungstyp?.name) || p.frist || p.erledigt === false || p.rueckmeldungBemerkung
   );
 
   const pruefRows = relevantPositions
-    .map((p) => {
-      const pos = p.positionsnummer ?? "-";
+    .map(({ p, posNo }) => {
+      const pos = String(posNo);
       const frist = formatDateISO(p.frist);
       const erledigt = formatDateISO(p.erledigtAm);
       const bemerkung = p.rueckmeldungBemerkung || p.bemerkung || "-";
@@ -631,7 +691,6 @@ export function renderHtml(report) {
           <div class="cover-meta-value">${escapeHtml(generatedAtStr)}</div>
         </div>
       </div>
-      ${titleImg ? `<div class="cover-image"><img src="${escapeHtml(titleImg)}" alt="Titelbild" /></div>` : ""}
       ${supersignLogo ? `<img class="cover-supersign" src="${supersignLogo}" alt="Qualicasa Supersign" />` : ""}
     </div>
     ${renderPageFooter(whiteLogo || primaryLogo, reportId, generatedAtStr, { hidePageNumber: true })}
@@ -648,6 +707,7 @@ export function renderHtml(report) {
         <h2>Impressum</h2>
         ${impressumHtml}
       </section>
+      ${titleImg ? `<div class="content-card" style="margin-top: 24px;"><img src="${escapeHtml(titleImg)}" alt="Titelbild" style="width: 100%; height: auto; display: block; border-radius: 12px;" /></div>` : ""}
     </div>
     ${renderPageFooter(primaryLogo || whiteLogo, reportId, generatedAtStr)}
   </div>

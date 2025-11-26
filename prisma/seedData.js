@@ -299,9 +299,18 @@ export const objekttypData = [
 ].map((bezeichnung) => ({ bezeichnung, aktiv: true }));
 
 export const baurundgangTypData = [
-  { nummer: 1, name: "Phase 1 – Vorbereitungsrundgang", reihenfolge: 1, aktiv: true },
-  { nummer: 2, name: "Phase 2 – Rohbau", reihenfolge: 2, aktiv: true },
-  { nummer: 3, name: "Phase 3 – Ausbau", reihenfolge: 3, aktiv: true },
+  { nummer: 1, name: "Bodenplatte, Dichtigkeitsklasse", reihenfolge: 1, aktiv: true },
+  { nummer: 2, name: "Einlagen in Decke über Wohngeschoss", reihenfolge: 2, aktiv: true },
+  { nummer: 3, name: "Rohbauarbeiten, Wand- und Deckenlager", reihenfolge: 3, aktiv: true },
+  { nummer: 4, name: "Flachdach / Fenstereinbauten", reihenfolge: 4, aktiv: true },
+  { nummer: 5, name: "Vorwandinstallationen, GBT", reihenfolge: 5, aktiv: true },
+  { nummer: 6, name: "Innenausbau Leichtbauwände, Gipserarbeiten", reihenfolge: 6, aktiv: true },
+  { nummer: 7, name: "Fussbodenheizung", reihenfolge: 7, aktiv: true },
+  { nummer: 8, name: "Fassadenarbeiten", reihenfolge: 8, aktiv: true },
+  { nummer: 9, name: "Abdichtungs- und Plattenarbeiten Nasszellen", reihenfolge: 9, aktiv: true },
+  { nummer: 10, name: "Duschen und Badewannensetzen", reihenfolge: 10, aktiv: true },
+  { nummer: 11, name: "Küchenmontage", reihenfolge: 11, aktiv: true },
+  { nummer: 12, name: "Gebäudetechnik", reihenfolge: 12, aktiv: true },
 ];
 
 export const bauteilTemplateData = [
@@ -700,8 +709,7 @@ export const bauteilRisikoData = [
 ];
 
 export const rueckmeldungstypData = [
-  { typCode: "OK", name: "In Ordnung" },
-  { typCode: "MANGEL", name: "Mangel" },
-  { typCode: "HINWEIS", name: "Hinweis" },
-  { typCode: "INFO", name: "Information" },
+  { typCode: "AK_BAU", name: "Ausführungskontrolle Bauleitung" },
+  { typCode: "ABKL_BAU", name: "Abklärung durch Bauleitung" },
+  { typCode: "RM_QC", name: "Rückmeldung an QualiCasa" },
 ];

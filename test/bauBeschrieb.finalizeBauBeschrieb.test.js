@@ -80,3 +80,30 @@ test("finalizeBauBeschrieb persists projektleiter and links objekt", async () =>
     DatabaseTool.createObjektForKunde = originalCreateObjektForKunde;
   }
 });
+
+test("finalizeBauBeschrieb returns needs_input for invalid projektleiter contact", async () => {
+  const extracted = createExtracted({
+    projektleiter: "Kontakt Prüfen",
+    projektleiterEmail: "invalid-email",
+    projektleiterTelefon: "123",
+  });
+
+  const result = await finalizeBauBeschrieb({
+    ingestion: { storedPath: "storage/uploads/mock.pdf" },
+    extracted,
+    overrides: {},
+  });
+
+  assert.equal(result.status, "needs_input");
+  assert.deepEqual(result.missingMandatory, []);
+  assert.ok(
+    result.pendingFields.some((item) => item.field === "projektleiterEmail"),
+    "Email validation error missing"
+  );
+  assert.ok(
+    result.pendingFields.some((item) => item.field === "projektleiterTelefon"),
+    "Phone validation error missing"
+  );
+  assert.equal(result.projektleiter.email, null);
+  assert.equal(result.projektleiter.telefon, null);
+});

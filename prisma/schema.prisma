@@ -261,6 +261,7 @@ model Rueckmeldungstyp {
   name    String
 
   positionen Position[]
+  positionVerknuepfungen PositionRueckmeldungstyp[]
 }
 
 model QSReport {
@@ -315,6 +316,10 @@ model Position {
   erledigtAm            DateTime?
   erledigt              Boolean?  @default(false)
   rueckmeldungBemerkung String?
+  reminderAt            DateTime?
+  reminderSentAt        DateTime?
+  reminderChannel       String?   @default("email")
+  reminderCount         Int       @default(0)
 
   qsreport         QSReport          @relation(fields: [qsreportId], references: [id])
   bauteil          Bauteil?          @relation(fields: [bauteilId], references: [id])
@@ -322,8 +327,21 @@ model Position {
   rueckmeldungstyp Rueckmeldungstyp? @relation(fields: [rueckmeldungstypId], references: [id])
 
   fotos PositionFoto[]
+  reminders PositionReminder[]
+  rueckmeldungen PositionRueckmeldungstyp[]
 
   @@unique([qsreportId, positionsnummer])
+}
+
+model PositionRueckmeldungstyp {
+  id                Int @id @default(autoincrement())
+  positionId        Int
+  rueckmeldungstypId Int
+
+  position         Position         @relation(fields: [positionId], references: [id])
+  rueckmeldungstyp Rueckmeldungstyp @relation(fields: [rueckmeldungstypId], references: [id])
+
+  @@unique([positionId, rueckmeldungstypId])
 }
 
 model PositionFoto {
@@ -335,4 +353,21 @@ model PositionFoto {
   foto     Foto     @relation(fields: [fotoId], references: [id])
 
   @@unique([positionId, fotoId])
+}
+
+model PositionReminder {
+  id           Int      @id @default(autoincrement())
+  positionId   Int
+  channel      String   @default("email")
+  status       String   @default("pending")
+  scheduledFor DateTime
+  sentAt       DateTime?
+  payload      Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  position Position @relation(fields: [positionId], references: [id])
+
+  @@index([scheduledFor, status])
+  @@index([positionId, status])
 }

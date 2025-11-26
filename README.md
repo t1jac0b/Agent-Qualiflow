@@ -5,7 +5,7 @@
 Agent-Qualiflow stellt eine modulare Agenten-Architektur für Bau- und Qualitätsberichte bereit. Der Fokus liegt aktuell auf dem Backend-Stack, der später über einen Chatbot angesteuert wird. Wichtige Bausteine:
 
 - **Agent-Orchestrierung**: `AgentOrchestrator` in `src/agent/AgentOrchestrator.js` registriert Sub-Agenten und injiziert die Tool-Schicht.
-- **Sub-Agenten**: Der `ReportAgent` (``src/agent/report/ReportAgent.js``) kapselt Bau-Beschrieb-spezifische Fähigkeiten (`bauBeschrieb.upload`, `bauBeschrieb.finalize`). Weitere Sub-Agenten können analog hinterlegt werden.
+- **Sub-Agenten**: Der `ReportAgent` (``src/agent/report/ReportAgent.js``) kapselt Bau-Beschrieb-spezifische Fähigkeiten (`bauBeschrieb.upload`, `bauBeschrieb.finalize`). Weitere Sub-Agenten können analog hinterlegt werden, z. B. der `QsRundgangAgent` (``src/agent/qsRundgang/QsRundgangAgent.js``) für QS-Rundgänge (Upload, Positionen, QS-Report-Stub) sowie der zentrale QualiFlow-Chat-Agent im `AgentOrchestrator` für Planung/AVOR- und QS-Dialoge.
 - **Tool Layer**: Einheitliche Schnittstelle für Datenbank (`DatabaseTool`), Dateiverwaltung (`FileTool`), Mail (`MailTool`) und Report-Erzeugung (`ReportTool`) unter `src/agent/tools/`.
 - **Session Handling**: `src/agent/chat/sessionStore.js` hält Konversationskontext bis zur Finalisierung.
 
@@ -30,7 +30,7 @@ Agent-Qualiflow stellt eine modulare Agenten-Architektur für Bau- und Qualität
    ```
    Der Server lauscht standardmäßig auf Port `3001` (überschreibbar via `CHAT_SERVER_PORT`).
 
-4. **QS-Report generieren (Beispiel)**
+4. **QS-Rundgang & QS-Report generieren (Beispiel)**
    ```powershell
    Invoke-WebRequest -Uri http://localhost:3001/qs-rundgang/1/report
    ```
@@ -48,6 +48,52 @@ Agent-Qualiflow stellt eine modulare Agenten-Architektur für Bau- und Qualität
    - Manuelle Overrides (z. B. Projektleiter) werden gemerged.
    - Falls weiterhin Pflichtfelder fehlen, bleibt der Status `needs_input`.
    - Bei vollständigen Informationen: Persistierung in Prisma (Kunde, Objekt, Objekttyp) und HTML-Report unter `storage/reports/bau-beschrieb/…`.
+
+### Chat Attachment Workflow
+
+- Der Endpoint `POST /chat/upload` speichert Dateien im Bucket `storage/chat-uploads/<chatId>/` und registriert den Anhang beim `LLMOrchestrator`.
+- Über die neuen LLM-Tools kann der Agent Anhänge inspizieren (`list_pending_attachments`), Bau-Beschriebe verarbeiten (`process_baubeschrieb_attachment`) und finalisieren (`finalize_baubeschrieb_attachment`).
+- Nach der Verarbeitung werden Kontextfelder (`kunde`, `objekt`, `projektleiter`, `pendingRequirements`) automatisch aktualisiert. Fehlende Pflichtfelder erscheinen im UI als Liste.
+- Bei erfolgreicher Finalisierung wird der Anhang aus dem Pending-Stack entfernt und der Kontext bereinigt.
+
+### UI-Hinweise für Pflichtfelder
+
+- Das Chat-Frontend zeigt unter jeder Agent-Antwort offene Pflichtfelder an (z. B. `projektleiter`).
+- Projektleiterdaten lassen sich komfortabel über natürliche Texteingaben wie `Projektleiter: Max Beispiel` oder `Projektleiter E-Mail: max@example.com` ergänzen.
+- Gespeicherte Uploads werden unterhalb der Nachricht mit Dateiname markiert, sodass der Nutzer weiß, dass die Datei registriert ist.
+
+### Automatisches Nachfassen (Reminder)
+
+- Offene Rückmeldungen können automatisiert per E-Mail erinnert werden.
+- Befehl: `npm run reminders:send` (verwendet `scripts/sendReminders.js`).
+- Der Job nutzt die neuen Felder an `Position` (`reminderAt`, `reminderSentAt`, `reminderCount`) sowie die Tabelle `PositionReminder`.
+- E-Mails werden als JSON-Dateien im Verzeichnis `storage/mail/reminders/` abgelegt (`MAIL_OUTBOX_DIR` konfigurierbar) und können von externen Prozessen gesendet werden.
+- Konfiguration über Umgebungsvariablen:
+  - `REMINDER_INTERVAL_DAYS` (Standard 7 Tage) – legt fest, wann der nächste Reminder geplant wird.
+  - `REMINDER_MAX_COUNT` (Standard 5) – begrenzt die Anzahl Erinnerungen pro Position.
+  - `REMINDER_INCLUDE_COMPLETED` (optional) – prüft auch erledigte Positionen, falls `true`.
+  - `REMINDER_DUE_BEFORE` – ISO-Datum/Zeit für benutzerdefinierten Stichtag.
+- Ein Cronjob oder Task Scheduler kann den Befehl periodisch ausführen (z. B. täglich um 06:00 Uhr).
+
+## QS-Rundgang Flow
+
+1. **Upload** (`qsRundgang.upload`)
+   - ZIP-Archiv wird gespeichert (`storage/uploads-qs-rundgang/…`).
+   - Metadaten werden analysiert und Pflichtfelder (`Kunde`, `Objekt`, `Baurundgang`) werden geprüft.
+   - Fehlende Angaben werden als `pendingFields` zurückgegeben.
+
+2. **Positionen erfassen** (`qsRundgang.position-erfassen`)
+   - Einzelne QS-Positionen werden mit Foto und Notiz erfasst.
+   - Positionsdaten werden in Prisma gespeichert.
+
+3. **QS-Report generieren** (`qsRundgang.report`)
+   - QS-Report wird basierend auf den erfassten Positionen generiert.
+   - PDF wird unter `storage/reports/qs/` abgelegt und der Pfad in der Response zurückgegeben.
+
+### QualiFlow Planung/AVOR Chat Flow
+
+- Der QualiFlow-Chat-Agent im `AgentOrchestrator` ermöglicht die Planung und Durchführung von QS-Rundgängen.
+- Der Agent unterstützt die Kommunikation zwischen den Beteiligten und hilft bei der Erfassung von QS-Positionen.
 
 ## CLI: Chat Flow testen
 
@@ -90,12 +136,17 @@ Zum Testen aus Frontend- oder API-Clients steht ein leichter HTTP-Server bereit:
 npm run chat:server
 ```
 
-Endpoints (Standard-Port `3001`, konfigurierbar via `CHAT_SERVER_PORT`):
+ Endpoints (Standard-Port `3001`, konfigurierbar via `CHAT_SERVER_PORT`):
 
 - `POST /chat/upload` – Multipart-Upload (`file` Feld) für Bau-Beschrieb-PDFs. Optional `chatId` übergeben.
   - Unterstützt optionale Felder `message`, `projektleiter`, `projektleiter_email`, `projektleiter_telefon`; wenn ausgefüllt, wird automatisch eine Folge-Nachricht gesendet.
 - `POST /chat/message` – JSON-Body `{ chatId, message }` für Folge-Nachrichten.
 - `GET /health` – einfacher Health-Check.
+- `POST /qs-rundgang/upload` – Multipart-Upload (`archive` + optionale `photos[]`) für QS-Rundgänge. Erwartet optionale Metadaten wie `kundeId`, `objektId`, `baurundgangId` und Notizen.
+- `POST /qs-rundgang/position-erfassen` – Einzelne QS-Position mit Foto (`photo`) und Notiz (`note`) zu einem bestehenden Baurundgang erfassen.
+- `POST /qs-rundgang/position-clarify` – Antwort auf Rückfragen des Agents zu einer zuvor erfassten Position (Klärungstext + Auswahloption).
+- `GET /qs-rundgang/:id/report` – Generiert den QS-Report für einen Baurundgang und liefert Pfad sowie Download-URL.
+- `GET /objekte/:id/qs-reports` – Listet alle QS-Reports zu einem Objekt inklusive ggf. vorab generierter Download-Links.
 
 Antworten enthalten `status`, `message` und `context`, identisch zum CLI-Verhalten.
 
@@ -135,9 +186,18 @@ Antworten enthalten `status`, `message` und `context`, identisch zum CLI-Verhalt
 
 ## Tests & Entwicklung
 
-- **Unit Tests**: `npm test`
-- **Prisma Seed**: `npm run prisma:seed`
-- Prisma-Middleware-Hook (`instantiateFromTemplate`) wird im Test-Kontext deaktiviert, wenn `$use` nicht verfügbar ist.
+ - **Unit Tests**: `npm test`
+ - Enthält u. a. `test/llmOrchestrator.attachments.test.js` für Upload- und Finalisierungsszenarien.
+ - Enthält `test/bauBeschrieb.extractMetadata.test.js` zur Validierung der Metadaten-Extraktion (Adresse, PLZ/Ort, Objekttyp) aus Bau-Beschrieb-PDFs.
+ - Enthält `test/mailTool.queueReminder.test.js` zur Verifizierung der Reminder-Queue.
+ - **Prisma Seed**: `npm run prisma:seed`
+ - Prisma-Middleware-Hook (`instantiateFromTemplate`) wird im Test-Kontext deaktiviert, wenn `$use` nicht verfügbar ist.
+
+## Offene Follow-ups
+
+- Automatische E-Mail-Benachrichtigung bei fehlenden Pflichtfeldern (derzeit nur UI-Hinweis).
+- Erweiterte Validierung der Projektleiterdaten (Validierung auf korrekte Telefonnummer/E-Mail steht noch aus).
+- End-to-End-Tests für das Browser-Frontend (aktueller Fokus auf Unit Tests).
 
 ## Git-Workflow
 

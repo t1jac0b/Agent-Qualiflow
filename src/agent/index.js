@@ -1,36 +1,37 @@
-import { AgentOrchestrator } from "./AgentOrchestrator.js";
-import { QsRundgangAgent } from "./qsRundgang/QsRundgangAgent.js";
-import { ReportAgent } from "./report/ReportAgent.js";
-import { databaseTool, fileTool, mailTool, reportTool } from "./tools/index.js";
+import { getQualiFlowAgent, getSharedTools, resetQualiFlowAgent } from "./orchestratorFactory.js";
+import { LLMOrchestrator } from "./llm/LLMOrchestrator.js";
+import { MockChatOrchestrator } from "./llm/mockChatOrchestrator.js";
 
-let orchestratorInstance = null;
-
-function createTools() {
-  return {
-    database: databaseTool,
-    file: fileTool,
-    mail: mailTool,
-    report: reportTool,
-  };
-}
-
-function createOrchestrator() {
-  const tools = createTools();
-  const orchestrator = new AgentOrchestrator({ tools });
-  const reportAgent = new ReportAgent();
-  const qsRundgangAgent = new QsRundgangAgent();
-  orchestrator.registerSubAgent("report", reportAgent);
-  orchestrator.registerSubAgent("qsRundgang", qsRundgangAgent);
-  return orchestrator;
-}
+let chatOrchestratorInstance = null; // LLM chat orchestrator
 
 export function getAgentOrchestrator() {
-  if (!orchestratorInstance) {
-    orchestratorInstance = createOrchestrator();
+  return getQualiFlowAgent();
+}
+
+function createChatOrchestrator() {
+  if (process.env.MOCK_CHAT === "true") {
+    return new MockChatOrchestrator();
   }
-  return orchestratorInstance;
+  const tools = getSharedTools();
+  return new LLMOrchestrator({ tools });
+}
+
+export function getChatOrchestrator() {
+  if (!chatOrchestratorInstance) {
+    chatOrchestratorInstance = createChatOrchestrator();
+  }
+  return chatOrchestratorInstance;
+}
+
+export function beginQualiFlowConversation(chatId) {
+  return getChatOrchestrator().beginConversation(chatId);
+}
+
+export function handleQualiFlowMessage({ chatId, message, attachmentId, uploadedBy }) {
+  return getChatOrchestrator().handleMessage({ chatId, message, attachmentId, uploadedBy });
 }
 
 export function resetAgentOrchestrator() {
-  orchestratorInstance = null;
+  chatOrchestratorInstance = null;
+  resetQualiFlowAgent();
 }

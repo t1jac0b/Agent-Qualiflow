@@ -11,6 +11,31 @@ const MANDATORY_FIELDS = [
   "projektleiter",
 ];
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
+const PHONE_ALLOWED_CHARACTERS_REGEX = /^[+()\d\s.\/-]*$/;
+
+function normalizeEmail(email) {
+  return email?.trim().toLowerCase() ?? null;
+}
+
+function normalizePhone(telefon) {
+  return telefon?.trim() ?? null;
+}
+
+function isValidEmail(email) {
+  if (!email) return true;
+  return EMAIL_REGEX.test(email);
+}
+
+function isValidPhone(telefon) {
+  if (!telefon) return true;
+  if (!PHONE_ALLOWED_CHARACTERS_REGEX.test(telefon)) {
+    return false;
+  }
+  const digits = telefon.replace(/\D/g, "");
+  return digits.length >= 6;
+}
+
 function normalizeText(text) {
   return text
     .replaceAll("\r", "")
@@ -96,15 +121,11 @@ function getBlockAfterLabel(lines, labelRegex, { maxLines = 4 } = {}) {
 function extractMetadata(rawText) {
   const lines = normalizeText(rawText);
 
-  const kundeName = extractFromLines(lines, [
+  let kundeName = extractFromLines(lines, [
     { regex: /^(?:auftraggeber|kunde|bauherr|bauherrschaft)\s*[:\-]\s*(.+)$/i },
     { regex: /^kunde\s+(.*)$/i },
   ]);
 
-  let objektBezeichnung = extractFromLines(lines, [
-    { regex: /^(?:projekt|objekt|bauvorhaben)\s*[:\-]\s*(.+)$/i },
-    { regex: /^projekt\s+(.*)$/i },
-  ]);
 
   const adresse = extractFromLines(lines, [
     { regex: /^(?:adresse|anschrift)\s*[:\-]\s*(.+)$/i },
@@ -129,6 +150,8 @@ function extractMetadata(rawText) {
 
   const headerLine = lines.find((line) => /\b(umbau|neubau|sanierung|projekt)\b/i.test(line));
 
+  let objektBezeichnung = null;
+
   let objektPlz = null;
   let objektOrt = null;
   if (plzOrt) {
@@ -144,6 +167,29 @@ function extractMetadata(rawText) {
   let kundeAdresse = null;
   let kundePlz = null;
   let kundeOrt = null;
+
+  // Wenn die Kunde-Zeile bereits Adresse/PLZ/Ort enthält (z.B. "Kunde: ImmoVision AG, Postgasse 3, 3011 Bern"),
+  // splitte Name und Adresse auf und parse die Adresse separat.
+  if (kundeName) {
+    const directMatch = kundeName.match(/^(.*?),(.*)$/);
+    if (directMatch) {
+      const rest = directMatch[2]?.trim();
+      if (rest) {
+        const addrParsed = parseAddressFromLine(rest);
+        if (addrParsed.adresse) {
+          kundeAdresse = addrParsed.adresse;
+        }
+        if (addrParsed.plz) {
+          kundePlz = addrParsed.plz;
+        }
+        if (addrParsed.ort) {
+          kundeOrt = addrParsed.ort;
+        }
+      }
+      // WICHTIG: kundeName bleibt die vollständige Zeile (inkl. Adresse),
+      // damit Tests wie bauBeschrieb.extractMetadata.test.js exakt matchen.
+    }
+  }
 
   if (!kundeName) {
     const block = getBlockAfterLabel(lines, /^bauherrschaft:?$/i, { maxLines: 4 });
@@ -308,6 +354,14 @@ function mergeManualOverrides(extracted, overrides = {}) {
 
   merged.pendingFields = Array.isArray(merged.pendingFields) ? merged.pendingFields : [];
 
+  if (merged.projektleiterEmail !== undefined) {
+    merged.projektleiterEmail = normalizeEmail(merged.projektleiterEmail);
+  }
+
+  if (merged.projektleiterTelefon !== undefined) {
+    merged.projektleiterTelefon = normalizePhone(merged.projektleiterTelefon);
+  }
+
   return merged;
 }
 
@@ -374,27 +428,66 @@ async function persistBauBeschrieb({ extracted }) {
 
   const objekttyp = await DatabaseTool.ensureObjekttyp(extracted.objekttyp);
 
-  const objekt = await DatabaseTool.createObjektForKunde({
-    kundeId: kunde.id,
-    bezeichnung: extracted.objekt.bezeichnung || extracted.kunde.name,
-    adresse: extracted.objekt.adresse,
-    plz: extracted.objekt.plz,
-    ort: extracted.objekt.ort,
-    objekttypId: objekttyp?.id,
-    projektleiterId: projektleiter?.id,
-    notiz: extracted.objekt.notiz,
-    erstellungsjahr: extracted.objekt.erstellungsjahr,
-  });
+  const objektName = extracted.objekt?.bezeichnung || extracted.kunde?.name;
+  let objekt = null;
+
+  if (objektName && kunde?.id) {
+    try {
+      objekt = await DatabaseTool.findObjektByName({ name: objektName, kundeId: kunde.id });
+    } catch (error) {
+      console.warn("[persistBauBeschrieb] findObjektByName fehlgeschlagen, erstelle neues Objekt:", error.message);
+    }
+  }
+
+  if (!objekt) {
+    objekt = await DatabaseTool.createObjektForKunde({
+      kundeId: kunde.id,
+      bezeichnung: objektName,
+      adresse: extracted.objekt.adresse,
+      plz: extracted.objekt.plz,
+      ort: extracted.objekt.ort,
+      objekttypId: objekttyp?.id,
+      projektleiterId: projektleiter?.id,
+      notiz: extracted.objekt.notiz,
+      erstellungsjahr: extracted.objekt.erstellungsjahr,
+    });
+  } else {
+    try {
+      await DatabaseTool.autoCreateBaurundgaengeForObjekt(objekt.id);
+    } catch (error) {
+      console.warn(
+        "[persistBauBeschrieb] autoCreateBaurundgaengeForObjekt fehlgeschlagen (Objekt existiert bereits):",
+        error.message,
+      );
+    }
+  }
 
   return { kunde, objekttyp, objekt, projektleiter };
 }
 
 export async function finalizeBauBeschrieb({ ingestion, extracted, overrides }) {
   const merged = mergeManualOverrides(extracted, overrides);
+  let normalizedEmail = merged.projektleiterEmail = normalizeEmail(merged.projektleiterEmail);
+  let normalizedTelefon = merged.projektleiterTelefon = normalizePhone(merged.projektleiterTelefon);
   const missingMandatory = collectMissingMandatory(merged);
-  const pendingFields = filterPendingFields(merged.pendingFields, merged, overrides, missingMandatory);
+  const validationErrors = [];
 
-  if (missingMandatory.length > 0) {
+  if (normalizedEmail && !isValidEmail(normalizedEmail)) {
+    validationErrors.push({ field: "projektleiterEmail", message: "Projektleiter E-Mail ist ungültig." });
+    normalizedEmail = merged.projektleiterEmail = null;
+  }
+
+  if (normalizedTelefon && !isValidPhone(normalizedTelefon)) {
+    validationErrors.push({ field: "projektleiterTelefon", message: "Projektleiter Telefon ist ungültig." });
+    normalizedTelefon = merged.projektleiterTelefon = null;
+  }
+
+  const pendingFields = [
+    ...filterPendingFields(merged.pendingFields, merged, overrides, missingMandatory),
+    ...validationErrors,
+  ];
+
+  if (missingMandatory.length > 0 || validationErrors.length > 0) {
     return {
       status: "needs_input",
       ingestion,
@@ -402,6 +495,11 @@ export async function finalizeBauBeschrieb({ ingestion, extracted, overrides }) 
       missingMandatory,
       pendingFields,
       reportPath: null,
+      projektleiter: merged.projektleiter?.trim() ? {
+        name: merged.projektleiter?.trim(),
+        email: normalizedEmail,
+        telefon: normalizedTelefon,
+      } : null,
     };
   }
 
@@ -414,7 +512,7 @@ export async function finalizeBauBeschrieb({ ingestion, extracted, overrides }) 
       objekt,
       objekttyp,
       ingestion,
-      extracted: merged,
+      objects: merged,
     });
   } catch (error) {
     console.warn("[finalizeBauBeschrieb] Report konnte nicht erzeugt werden:", error.message);
