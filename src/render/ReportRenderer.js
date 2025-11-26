@@ -80,8 +80,14 @@ export function renderMarkdown(report) {
   lines.push("");
   lines.push("| Pos | Datum bis (Frist) | Datum erledigt | Bemerkung |");
   lines.push("| ---:| ------------------ | -------------- | --------- |");
-  for (const { p, posNo } of numbered) {
-    const pos = String(posNo);
+  const pendenzen = (report.positionen ?? []).filter((p) => {
+    const hasAction = !!p.rueckmeldungstyp;
+    const hasFrist = !!p.frist;
+    const open = p.erledigt === false;
+    return hasAction || hasFrist || open;
+  });
+  for (const p of pendenzen) {
+    const pos = p.positionsnummer ?? "-";
     const frist = formatDateISO(p.frist);
     const erledigt = formatDateISO(p.erledigtAm);
     const bemerkung = p.rueckmeldungBemerkung || p.bemerkung || "-";
