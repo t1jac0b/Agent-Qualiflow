@@ -484,6 +484,28 @@ export class LLMOrchestrator {
     this.setContext(chatId, { pendingAttachments: state.pendingAttachmentIds.size });
   }
 
+  getPendingBauBeschriebAttachmentId(chatId) {
+    const state = this.getState(chatId);
+    if (!state?.pendingAttachmentIds?.size) return null;
+
+    const ids = Array.from(state.pendingAttachmentIds);
+    for (let i = ids.length - 1; i >= 0; i -= 1) {
+      const id = ids[i];
+      const attachment = state.attachments?.get(id);
+      if (!attachment) continue;
+      const name = (attachment.name ?? attachment.originalFilename ?? "").toLowerCase();
+      const mime = (attachment.mimeType ?? "").toLowerCase();
+      const isPdf = mime === "application/pdf" || name.endsWith(".pdf");
+      const looksLikeBauBeschrieb =
+        isPdf && (name.includes("baubeschrieb") || name.includes("bau-beschrieb"));
+      if (looksLikeBauBeschrieb) {
+        return id;
+      }
+    }
+
+    return null;
+  }
+
   applyBauBeschriebResultToContext(chatId, result = {}) {
     const patch = {};
     const sourceKunde = result.kunde ?? result.extracted?.kunde;
@@ -1234,17 +1256,97 @@ export class LLMOrchestrator {
   }
 
   async handleMessage({ chatId, message, attachmentId, uploadedBy }) {
-    // Wenn ein Anhang referenziert wird, unterscheiden wir PDF (Bau-Beschrieb) von Fotos:
-    // - PDFs: dem LLM überlassen (Bau-Beschrieb-Tools), nicht durch den Capture-Flow leiten.
-    // - Andere (Fotos): deterministischen Capture-Flow (handleIncomingAttachment) nutzen.
-    if (attachmentId) {
-      const state = this.getState(chatId);
-      const attachment = state.attachments?.get(attachmentId);
+    const state = this.getState(chatId);
+
+    // Wenn ein Anhang referenziert wird, unterscheiden wir drei Fälle:
+    // - Bau-Beschrieb-PDF (Dateiname enthält "baubeschrieb"/"bau-beschrieb"):
+    //   -> automatisch mit process_baubeschrieb_attachment verarbeiten (Kunde/Objekt/Baurundgänge anlegen/übernehmen).
+    // - Andere PDFs:
+    //   -> im LLM belassen (z.B. manuell per list_pending_attachments / process_baubeschrieb_attachment nutzbar).
+    // - Fotos/Bilder:
+    //   -> deterministischen Capture-Flow (handleIncomingAttachment) nutzen.
+    let resolvedAttachmentId = attachmentId ?? null;
+    if (!resolvedAttachmentId) {
+      // Fallback: nutze das zuletzt hochgeladene Bau-Beschrieb-PDF, falls noch pending.
+      resolvedAttachmentId = this.getPendingBauBeschriebAttachmentId(chatId);
+    }
+
+    if (resolvedAttachmentId) {
+      const attachment = state.attachments?.get(resolvedAttachmentId);
       const name = attachment?.name ?? attachment?.originalFilename ?? "";
       const mime = (attachment?.mimeType ?? "").toLowerCase();
-      const isPdf = mime === "application/pdf" || name.toLowerCase().endsWith(".pdf");
+      const lowerName = name.toLowerCase();
+      const isPdf = mime === "application/pdf" || lowerName.endsWith(".pdf");
+      const looksLikeBauBeschrieb =
+        isPdf && (lowerName.includes("baubeschrieb") || lowerName.includes("bau-beschrieb"));
 
-      if (!isPdf) {
+      if (looksLikeBauBeschrieb) {
+        // Automatischer Bau-Beschrieb-Flow, ohne den Foto-Capture zu triggern.
+        try {
+          const executors = this.getExecutors(chatId);
+          const toolResult = await executors.process_baubeschrieb_attachment({ attachmentId: resolvedAttachmentId });
+          const stateAfter = this.getState(chatId);
+
+          const pendingMsg = this.buildPendingRequirementsMessage(toolResult.context ?? {});
+
+          const lines = [];
+          if (toolResult.status === "created") {
+            const kundeName = stateAfter.context?.kunde?.name ?? "Kunde";
+            const objektName = stateAfter.context?.objekt?.bezeichnung ?? "Objekt";
+            lines.push(
+              `Der Bau-Beschrieb wurde verarbeitet. Kunde "${kundeName}" und Objekt "${objektName}" sind im System hinterlegt. Die Baurundgänge wurden automatisch angelegt.`,
+            );
+          } else {
+            lines.push("Der Bau-Beschrieb wurde analysiert.");
+            if (pendingMsg) {
+              lines.push(pendingMsg);
+            }
+          }
+
+          const finalMessage =
+            lines.filter(Boolean).join("\n\n") ||
+            toolResult.message ||
+            "Bau-Beschrieb wurde verarbeitet.";
+
+          const existingContext = stateAfter.context ?? {};
+          const existingSteps = Array.isArray(existingContext.steps) ? existingContext.steps : [];
+          const steps = [
+            ...existingSteps,
+            { type: "tool", name: "process_baubeschrieb_attachment", argsKeys: ["attachmentId"] },
+          ];
+
+          const context = {
+            ...existingContext,
+            steps,
+            bauBeschrieb: {
+              ingestion: toolResult.context?.ingestion,
+              extracted: toolResult.context?.extracted,
+              pendingFields: toolResult.context?.pendingFields,
+              missingMandatory: toolResult.context?.missingMandatory,
+              attachment: toolResult.context?.attachment,
+            },
+          };
+
+          const final = {
+            status: toolResult.status ?? "unknown",
+            message: finalMessage,
+            context,
+          };
+
+          stateAfter.lastReply = final;
+          return final;
+        } catch (error) {
+          this.logger.error("Automatischer Bau-Beschrieb-Flow fehlgeschlagen", {
+            chatId,
+            error: error?.message,
+          });
+          // Fallback: LLM normal weiterlaufen lassen
+        }
+      }
+
+      // Nur das explizit mitgesendete Attachment als Foto im Capture-Flow behandeln,
+      // nicht das implizit ermittelte Bau-Beschrieb-PDF.
+      if (!isPdf && attachmentId) {
         const handled = await this.handleIncomingAttachment({ chatId, message, attachmentId, uploadedBy });
         if (handled) {
           return handled;
@@ -1357,9 +1459,29 @@ export class LLMOrchestrator {
       state.history = sanitizeMessagesForToolResponses(state.history);
     }
 
-    const deterministic = await this.tryHandleDeterministic(chatId, userMessage);
-    if (deterministic) {
-      return deterministic;
+    const hasPendingRequirements = Boolean(
+      state?.context?.pendingRequirements &&
+        (((state.context.pendingRequirements.missingMandatory ?? []).length > 0) ||
+          ((state.context.pendingRequirements.pendingFields ?? []).length > 0)),
+    );
+
+    let hasActiveBauBeschrieb = false;
+    if (state?.bauBeschriebResults && state.bauBeschriebResults.size > 0) {
+      for (const result of state.bauBeschriebResults.values()) {
+        if (result && result.status && result.status !== "created") {
+          hasActiveBauBeschrieb = true;
+          break;
+        }
+      }
+    }
+
+    const shouldSkipDeterministic = hasPendingRequirements || hasActiveBauBeschrieb;
+
+    if (!shouldSkipDeterministic) {
+      const deterministic = await this.tryHandleDeterministic(chatId, userMessage);
+      if (deterministic) {
+        return deterministic;
+      }
     }
 
     const client = this.openAIProvider.getClient();
