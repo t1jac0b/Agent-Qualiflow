@@ -212,6 +212,51 @@ export const DatabaseTool = {
     });
   },
 
+  async getBaurundgangCompletion({ baurundgangId }) {
+    if (!baurundgangId) {
+      throw new Error("getBaurundgangCompletion: 'baurundgangId' ist erforderlich.");
+    }
+
+    const positions = await prisma.position.findMany({
+      where: { qsReport: { baurundgangId } },
+      select: {
+        id: true,
+        erledigt: true,
+      },
+    });
+
+    if (!positions.length) {
+      return {
+        baurundgangId,
+        total: 0,
+        offen: 0,
+        erledigt: 0,
+        percentDone: 100,
+      };
+    }
+
+    let offen = 0;
+    let erledigt = 0;
+    for (const position of positions) {
+      if (position.erledigt) {
+        erledigt += 1;
+      } else {
+        offen += 1;
+      }
+    }
+
+    const total = offen + erledigt;
+    const percentDone = total > 0 ? Math.round((erledigt / total) * 100) : 100;
+
+    return {
+      baurundgangId,
+      total,
+      offen,
+      erledigt,
+      percentDone,
+    };
+  },
+
   async listPendingRueckmeldungen({ dueBefore, maxReminderCount = 5, includeCompleted = false } = {}) {
     const now = normalizeDate(dueBefore, new Date());
 
@@ -518,6 +563,17 @@ export const DatabaseTool = {
 
   async createQSReport(data) {
     return prisma.qSReport.create({ data });
+  },
+
+  async updateQSReport({ id, data }) {
+    if (!id) {
+      throw new Error("updateQSReport: 'id' ist erforderlich.");
+    }
+
+    return prisma.qSReport.update({
+      where: { id },
+      data,
+    });
   },
 
   async addPosition(data) {

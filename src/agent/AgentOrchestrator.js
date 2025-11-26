@@ -266,6 +266,98 @@ const INTENTS = {
   QUERY: "query",
   DELETE: "delete",
   START: "start",
+  PLAN: "plan",
+};
+
+// Zentrale Übersicht aller verwendeten Status-Codes für konsistente Rückgaben
+const STATUS_CODES = {
+  // Setup & Customer Selection
+  AWAITING_CUSTOMER: "awaiting_customer",
+  RETRY_CUSTOMER: "retry_customer",
+  NO_CUSTOMERS: "no_customers",
+  
+  // Object Selection
+  AWAITING_OBJEKT: "awaiting_objekt",
+  RETRY_OBJEKT: "retry_objekt",
+  NO_OBJEKTE: "no_objekte",
+  
+  // Baurundgang Selection
+  AWAITING_BAURUNDGANG: "awaiting_baurundgang",
+  RETRY_BAURUNDGANG: "retry_baurundgang",
+  NO_BAURUNDGAENGE: "no_baurundgaenge",
+  
+  // Planning (PLAN Intent)
+  PLAN_SELECT_BAURUNDGANG: "plan_select_baurundgang",
+  PLAN_RETRY_BAURUNDGANG: "plan_retry_baurundgang",
+  PLAN_AWAIT_DATE: "plan_await_date",
+  PLAN_RETRY_DATE: "plan_retry_date",
+  PLAN_SUCCESS: "plan_success",
+  PLAN_CANCELLED: "plan_cancelled",
+  PLAN_MISSING_BAURUNDGANG: "plan_missing_baurundgang",
+  PLAN_UPDATE_ERROR: "plan_update_error",
+  PLAN_UNKNOWN_STATE: "plan_unknown_state",
+  
+  // Capture Flow
+  CAPTURE_SELECT_BAUTEIL: "capture_select_bauteil",
+  CAPTURE_RETRY_BAUTEIL: "capture_retry_bauteil",
+  CAPTURE_SELECT_KAPITEL: "capture_select_kapitel",
+  CAPTURE_RETRY_KAPITEL: "capture_retry_kapitel",
+  CAPTURE_SELECT_RUECKMELDUNG: "capture_select_rueckmeldung",
+  CAPTURE_RETRY_RUECKMELDUNG: "capture_retry_rueckmeldung",
+  CAPTURE_CONFIRM: "capture_confirm",
+  CAPTURE_RETRY_CONFIRM: "capture_retry_confirm",
+  CAPTURE_SUCCESS: "capture_success",
+  CAPTURE_CANCELLED: "capture_cancelled",
+  CAPTURE_ERROR: "capture_error",
+  CAPTURE_MISSING_SELECTION: "capture_missing_selection",
+  CAPTURE_NO_REPORT: "capture_no_report",
+  CAPTURE_UNKNOWN_STATE: "capture_unknown_state",
+  
+  // Edit Flow
+  EDIT_SELECT_FIELD: "edit_select_field",
+  EDIT_RETRY_FIELD: "edit_retry_field",
+  EDIT_ENTER_VALUE: "edit_enter_value",
+  EDIT_RETRY_VALUE: "edit_retry_value",
+  EDIT_SUCCESS: "edit_success",
+  EDIT_ERROR: "edit_error",
+  EDIT_UNKNOWN_ENTITY: "edit_unknown_entity",
+  EDIT_MISSING_CONTEXT: "edit_missing_context",
+  EDIT_UNKNOWN_STATE: "edit_unknown_state",
+  
+  // Delete Flow
+  DELETE_CONFIRM: "delete_confirm",
+  DELETE_RETRY: "delete_retry",
+  DELETE_CANCELLED: "delete_cancelled",
+  DELETE_GUARDRAIL: "delete_guardrail",
+  DELETE_UNKNOWN_ENTITY: "delete_unknown_entity",
+  DELETE_MISSING_CONTEXT: "delete_missing_context",
+  
+  // Query Flow
+  QUERY_BAURUNDGAENGE_LIST: "query_baurundgaenge_list",
+  QUERY_BAURUNDGAENGE_EMPTY: "query_baurundgaenge_empty",
+  QUERY_MISSING_CONTEXT: "query_missing_context",
+  QSREPORT_AVAILABLE: "qsreport_available",
+  QSREPORT_GENERATING: "qsreport_generating",
+  QSREPORT_ERROR: "qsreport_error",
+  PRUEFPUNKTE_LIST: "pruefpunkte_list",
+  PRUEFPUNKTE_EMPTY: "pruefpunkte_empty",
+  PRUEFPUNKTE_ENTER_TITLE: "pruefpunkte_enter_title",
+  PRUEFPUNKTE_RETRY_TITLE: "pruefpunkte_retry_title",
+  PRUEFPUNKTE_ENTER_NOTE: "pruefpunkte_enter_note",
+  PRUEFPUNKTE_SAVED: "pruefpunkte_saved",
+  PRUEFPUNKTE_LIST_HINT: "pruefpunkte_list_hint",
+  PRUEFPUNKTE_TOGGLE_ERROR: "pruefpunkte_toggle_error",
+  PRUEFPUNKTE_UNKNOWN_STATE: "pruefpunkte_unknown_state",
+  
+  // Start Flow
+  START_SUCCESS: "start_success",
+  START_ERROR: "start_error",
+  
+  // General
+  MISSING_SETUP: "missing_setup",
+  UNKNOWN_INTENT: "unknown_intent",
+  RESUME: "resume",
+  COMPLETED: "completed",
 };
 
 function detectIntent(input) {
@@ -278,6 +370,9 @@ function detectIntent(input) {
   }
   if (/(bearbeiten|ändern|aktualisieren|editieren)/i.test(lower)) {
     return INTENTS.EDIT;
+  }
+   if (/(avor|planung|plane|planen)/i.test(lower)) {
+    return INTENTS.PLAN;
   }
   if (/(start|starte|starten|begin|beginne|beginnen|durchführ)/i.test(lower)) {
     return INTENTS.START;
@@ -1003,6 +1098,21 @@ export class QualiFlowAgent {
       return this.continuePruefpunkteFlow({ chatId, session, message: trimmed });
     }
 
+    if (session.phase?.startsWith("plan:")) {
+      if (intent && intent !== INTENTS.PLAN) {
+        return this.routeIntent({ chatId, intent, message: trimmed, session, database });
+      }
+      if (isCancelCommand(lower)) {
+        this.setConversation(chatId, { ...session, phase: "completed", options: null, plan: null });
+        return {
+          status: "plan_cancelled",
+          message: "Planung abgebrochen. Du kannst jederzeit wieder mit \"Planung\" oder \"AVOR\" fortfahren.",
+          context: { selection: session.path },
+        };
+      }
+      return this.continuePlanFlow({ chatId, session, message: trimmed, database });
+    }
+
     if (session.phase?.startsWith("capture:")) {
       if (intent && intent !== INTENTS.CAPTURE) {
         return this.routeIntent({ chatId, intent, message: trimmed, session, database });
@@ -1050,7 +1160,7 @@ export class QualiFlowAgent {
           });
         }
 
-        if (intent === INTENTS.EDIT || intent === INTENTS.DELETE || intent === INTENTS.QUERY) {
+        if (intent === INTENTS.EDIT || intent === INTENTS.DELETE || intent === INTENTS.QUERY || intent === INTENTS.PLAN) {
           const ensured = await this.ensureSetupContext(chatId, { database });
           if (ensured) {
             return ensured;
@@ -1449,7 +1559,13 @@ export class QualiFlowAgent {
           });
         }
 
-        if (intent === INTENTS.START || intent === INTENTS.EDIT || intent === INTENTS.DELETE || intent === INTENTS.QUERY) {
+        if (
+          intent === INTENTS.START ||
+          intent === INTENTS.EDIT ||
+          intent === INTENTS.DELETE ||
+          intent === INTENTS.QUERY ||
+          intent === INTENTS.PLAN
+        ) {
           return this.routeIntent({ chatId, intent, message: trimmed, session, database });
         }
       }
@@ -1479,11 +1595,122 @@ export class QualiFlowAgent {
         return this.handleStartIntent({ chatId, session, database });
       case INTENTS.QUERY:
         return this.handleQueryIntent({ chatId, message, session, database, skipEnsure });
+      case INTENTS.PLAN:
+        return this.handlePlanIntent({ chatId, message, session, database, skipEnsure });
       default:
         return {
           status: "unhandled_intent",
           message: "Ich konnte deine Eingabe nicht zuordnen.",
         };
+    }
+  }
+
+  async handlePlanIntent({ chatId, message, session, database, skipEnsure = false }) {
+    if (!database) {
+      throw new Error("handlePlanIntent: database tool nicht verfügbar.");
+    }
+
+    if (!skipEnsure) {
+      const ensured = await this.ensureSetupContext(chatId, {
+        database,
+        requireBaurundgang: false,
+        intent: INTENTS.PLAN,
+        originalMessage: message,
+      });
+      if (ensured) {
+        return ensured;
+      }
+    }
+
+    const lower = message.toLowerCase();
+    const path = session.path ?? this.getConversation(chatId)?.path;
+
+    if (!path?.objekt?.id) {
+      return {
+        status: "plan_missing_context",
+        message: "Bitte wähle zuerst Kunde und Objekt aus, bevor wir die QS-Planung (AVOR) durchführen.",
+      };
+    }
+
+    try {
+      const objektId = path.objekt.id;
+
+      let baurundgaenge = await database.actions.listBaurundgaengeByObjekt(objektId);
+      let createdAuto = 0;
+      if (!baurundgaenge?.length) {
+        const autoCreate = await database.actions.autoCreateBaurundgaengeForObjekt(objektId);
+        createdAuto = autoCreate?.created ?? 0;
+        if (createdAuto > 0) {
+          baurundgaenge = await database.actions.listBaurundgaengeByObjekt(objektId);
+        }
+      }
+
+      if (!baurundgaenge?.length) {
+        return {
+          status: "plan_no_baurundgaenge",
+          message:
+            "Für dieses Objekt konnten keine Baurundgänge angelegt werden. Bitte prüfe die Stammdaten zu den Baurundgang-Typen.",
+          context: { selection: path },
+        };
+      }
+
+      const options = baurundgaenge.map((item) => {
+        const nummer = item.typ?.nummer;
+        const baseName = item.typ?.name ?? (item.id ? `Baurundgang ${item.id}` : "Baurundgang");
+        const label = nummer ? `BR ${nummer} ${baseName}` : baseName;
+        return {
+          ...item,
+          label,
+          inputValue: label,
+        };
+      });
+
+      const lines = options.map((option, index) => {
+        const statusLabel = formatStatusLabel(option.status);
+        const planned = option.datumGeplant ?? option.datumDurchgefuehrt ?? null;
+        const dateLabel = planned ? new Date(planned).toISOString().slice(0, 10) : "kein Datum geplant";
+        return `${index + 1}. ${option.label} – ${statusLabel}, geplant: ${dateLabel}`;
+      });
+
+      const header = composeSelectionSummary(path);
+      const intro =
+        /avor/.test(lower) || /planung/.test(lower)
+          ? "Lass uns die QS-Planung (AVOR) für dieses Objekt durchgehen."
+          : "Hier ist die aktuelle QS-Planung für dieses Objekt.";
+
+      this.setConversation(chatId, {
+        ...session,
+        phase: "plan:select-baurundgang",
+        path: { ...path },
+        options,
+        plan: { mode: "select-baurundgang" },
+      });
+
+      return {
+        status: "plan_select_baurundgang",
+        message: [
+          header ? `Kontext: ${header}` : null,
+          intro,
+          createdAuto > 0
+            ? `Ich habe automatisch ${createdAuto} Standard-Baurundgänge für dieses Objekt angelegt.`
+            : null,
+          "Folgende Baurundgänge sind vorgesehen:",
+          ...lines,
+          "\nWähle einen Baurundgang, dessen Datum du planen oder anpassen möchtest (Button oder Nummer).",
+        ]
+          .filter(Boolean)
+          .join("\n"),
+        context: { selection: path, options, phase: "plan:select-baurundgang" },
+      };
+    } catch (error) {
+      this.logger.error("handlePlanIntent: Planung konnte nicht geladen werden", {
+        error,
+        objektId: path.objekt.id,
+      });
+      return {
+        status: "plan_error",
+        message: "Die QS-Planung konnte nicht geladen werden. Bitte versuche es erneut.",
+      };
     }
   }
 
@@ -1766,6 +1993,173 @@ export class QualiFlowAgent {
     return {
       status: "edit_unknown_state",
       message: "Ich konnte die Bearbeitung nicht fortsetzen. Bitte starte den Setup-Flow erneut oder wähle eine andere Aktion.",
+    };
+  }
+
+  async continuePlanFlow({ chatId, session, message, database }) {
+    if (!database) {
+      throw new Error("continuePlanFlow: database tool nicht verfügbar.");
+    }
+
+    const trimmed = normalizeInput(message);
+    const path = session.path ?? {};
+
+    // Abbruch-Logik: User kann mit "abbrechen" den PLAN-Flow verlassen
+    if (isCancelCommand(message)) {
+      this.setConversation(chatId, {
+        ...session,
+        phase: "completed",
+        plan: null,
+        options: null,
+      });
+      return {
+        status: STATUS_CODES.PLAN_CANCELLED,
+        message: "Planung abgebrochen. Wie kann ich dir weiterhelfen?",
+        context: { selection: session.path },
+      };
+    }
+
+    if (session.phase === "plan:select-baurundgang") {
+      const opts = session.options ?? [];
+      let selected = null;
+
+      if (/^\d+$/.test(trimmed)) {
+        const index = Number.parseInt(trimmed, 10) - 1;
+        if (index >= 0 && index < opts.length) {
+          selected = opts[index];
+        }
+      }
+
+      if (!selected) {
+        selected = findOptionByIdOrText(opts, trimmed.toLowerCase(), { labelKey: "label", valueKey: "id" });
+      }
+
+      if (!selected) {
+        return {
+          status: "plan_retry_baurundgang",
+          message:
+            "Ich konnte den Baurundgang für die Planung nicht zuordnen. Bitte wähle einen der Buttons oder gib die Nummer ein.",
+          context: { options: session.options, phase: session.phase },
+        };
+      }
+
+      const newPath = { ...path, baurundgang: selected };
+      this.setConversation(chatId, {
+        ...session,
+        phase: "plan:await-date",
+        path: newPath,
+        options: null,
+        plan: { baurundgangId: selected.id },
+      });
+
+      const header = composeSelectionSummary(newPath);
+      const planned = selected.datumGeplant ?? selected.datumDurchgefuehrt ?? null;
+      const plannedLabel = planned ? new Date(planned).toISOString().slice(0, 10) : "kein Datum geplant";
+
+      return {
+        status: "plan_await_date",
+        message: [
+          header ? `Kontext: ${header}` : null,
+          `Für ${describeBaurundgang(selected)} ist aktuell ${plannedLabel}.`,
+          "Bitte gib das geplante Datum im Format JJJJ-MM-TT an oder schreibe \"heute\"/\"morgen\".",
+        ]
+          .filter(Boolean)
+          .join("\n"),
+        context: { selection: newPath, phase: "plan:await-date" },
+      };
+    }
+
+    if (session.phase === "plan:await-date") {
+      const value = normalizeInput(trimmed);
+      if (!value) {
+        return {
+          status: "plan_retry_date",
+          message: "Das Datum darf nicht leer sein. Bitte gib ein Datum im Format JJJJ-MM-TT an.",
+        };
+      }
+
+      let targetDate;
+      if (/^heute$/i.test(value)) {
+        targetDate = new Date();
+      } else if (/^morgen$/i.test(value)) {
+        targetDate = new Date();
+        targetDate.setDate(targetDate.getDate() + 1);
+      } else {
+        const parsed = new Date(value);
+        if (Number.isNaN(parsed.getTime())) {
+          return {
+            status: "plan_retry_date",
+            message:
+              "Ich konnte das Datum nicht verstehen. Bitte gib es im Format JJJJ-MM-TT ein, z.B. 2024-05-10 oder schreibe \"heute\"/\"morgen\".",
+          };
+        }
+        targetDate = parsed;
+      }
+
+      const planState = session.plan ?? {};
+      const baurundgangId = planState.baurundgangId ?? session.path?.baurundgang?.id;
+      if (!baurundgangId) {
+        return {
+          status: "plan_missing_baurundgang",
+          message: "Es ist kein Baurundgang für die Planung ausgewählt. Bitte starte die Planung erneut.",
+        };
+      }
+
+      try {
+        await database.actions.updateBaurundgang({
+          id: baurundgangId,
+          status: "geplant",
+          datumGeplant: targetDate,
+        });
+
+        const updatedPath = {
+          ...path,
+          baurundgang: {
+            ...(path.baurundgang ?? {}),
+            id: baurundgangId,
+            status: "geplant",
+            datumGeplant: targetDate,
+          },
+        };
+
+        this.setConversation(chatId, {
+          ...session,
+          phase: "completed",
+          path: updatedPath,
+          plan: null,
+          options: null,
+        });
+
+        const summary = composeSelectionSummary(updatedPath);
+        const dateStr = targetDate.toISOString().slice(0, 10);
+
+        return {
+          status: "plan_success",
+          message: [
+            `Der Baurundgang ${describeBaurundgang(updatedPath.baurundgang)} wurde auf den ${dateStr} geplant.`,
+            summary ? `Kontext: ${summary}` : null,
+            "Wenn du weitere Baurundgänge planen möchtest, schreibe einfach \"Planung\" oder \"AVOR\".",
+          ]
+            .filter(Boolean)
+            .join("\n"),
+          context: { selection: updatedPath },
+        };
+      } catch (error) {
+        this.logger.error("continuePlanFlow: Update des Baurundgangs fehlgeschlagen", {
+          error,
+          baurundgangId,
+        });
+        return {
+          status: "plan_update_error",
+          message: "Das geplante Datum konnte nicht gespeichert werden. Bitte versuche es erneut.",
+        };
+      }
+    }
+
+    return {
+      status: "plan_unknown_state",
+      message:
+        "Ich konnte die Planung nicht fortsetzen. Bitte schreibe erneut \"Planung\" oder \"AVOR\", um den Planungs-Flow zu starten.",
     };
   }
 
@@ -2396,6 +2790,7 @@ Zur Sicherheit erfolgt eine Löschung nur nach expliziter Freigabe durch den Adm
         return {
           status: "capture_retry_confirm",
           message: 'Bitte antworte mit ja oder nein, z.B. "ja".',
+          context: { phase, options: session.options ?? [] },
         };
       }
 
@@ -2556,11 +2951,16 @@ Zur Sicherheit erfolgt eine Löschung nur nach expliziter Freigabe durch den Adm
       : [];
 
     const updatedCapture = { ...cap, rueckmeldungenSelected: chosenIds };
+    const confirmOptions = [
+      { id: "capture-confirm-yes", label: "Ja, Position anlegen", inputValue: "ja" },
+      { id: "capture-confirm-no", label: "Nein, abbrechen", inputValue: "nein" },
+    ];
 
     this.setConversation(chatId, {
       ...session,
       phase: "capture:confirm",
       capture: updatedCapture,
+      options: confirmOptions,
     });
 
     // Resolve names for summary
@@ -2584,7 +2984,7 @@ Zur Sicherheit erfolgt eine Löschung nur nach expliziter Freigabe durch den Adm
     return {
       status: "capture_confirm",
       message: [...summary, "Soll die Position angelegt werden? (ja/nein)"].join("\n"),
-      context: { phase: "capture:confirm", capture: updatedCapture },
+      context: { phase: "capture:confirm", capture: updatedCapture, options: confirmOptions },
     };
   }
 
