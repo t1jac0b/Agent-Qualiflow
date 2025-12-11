@@ -576,6 +576,17 @@ export const DatabaseTool = {
     });
   },
 
+  async updatePositionFields({ id, data }) {
+    if (!id) {
+      throw new Error("updatePositionFields: 'id' ist erforderlich.");
+    }
+
+    return prisma.position.update({
+      where: { id },
+      data,
+    });
+  },
+
   async addPosition(data) {
     return prisma.position.create({ data });
   },

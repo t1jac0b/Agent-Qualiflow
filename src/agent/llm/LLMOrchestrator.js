@@ -4,6 +4,7 @@ import { ReportAgent } from "../report/ReportAgent.js";
 import { getQualiFlowAgent } from "../orchestratorFactory.js";
 import { getOpenAI, getOpenAIModel } from "./openaiClient.js";
 import { buildSystemPrompt } from "./qualiflowPrompt.js";
+import { loadMasterChecklisteForBaurundgang } from "../../pruefpunkte/masterChecklisteLoader.js";
 
 const KUNDE_FIELD_ALIASES = {
   name: ["name", "titel"],
@@ -153,6 +154,39 @@ function sanitizeMessagesForToolResponses(messages = []) {
     sanitized.push(entry);
   }
   return sanitized;
+}
+
+function extractQuickActionOptionsFromMessage(message) {
+  if (!message) return [];
+  const text = String(message);
+  const normalized = text.toLowerCase();
+
+  if (!normalized.includes("weiterhelfen") && !normalized.includes("option")) {
+    return [];
+  }
+
+  const lines = text.split(/\r?\n/);
+  const labels = [];
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    if (/^[-•]\s+/.test(trimmed)) {
+      const label = trimmed.replace(/^[-•]\s+/, "").trim();
+      if (label) {
+        labels.push(label);
+      }
+    }
+  }
+
+  return labels.map((label, index) => {
+    const base = label.replace(/^[0-9]+[.).]\s*/, "").trim();
+    const clean = base;
+    return {
+      id: `quick-action-${index + 1}`,
+      label: clean,
+      inputValue: clean,
+    };
+  });
 }
 
 export class LLMOrchestrator {
@@ -414,6 +448,80 @@ export class LLMOrchestrator {
     }
 
     return null;
+  }
+
+  shouldAllowLLM(userMessage) {
+    const trimmed = typeof userMessage === "string" ? userMessage.trim() : "";
+    if (!trimmed) return false;
+
+    const lower = trimmed.toLowerCase();
+
+    // Neuanlage von Kunden/Objekten: hier weiterhin das LLM nutzen
+    const isNewCustomerRequest =
+      lower.includes("neuen kunden anlegen") ||
+      lower.includes("neuen kunden erfassen") ||
+      lower.startsWith("neuer kunde") ||
+      /\b(neuer|neuen|neue)\s+kunde(n)?\s+(anlegen|erstellen|erfassen)\b/i.test(trimmed);
+    const isNewObjectRequest =
+      lower.includes("neues objekt anlegen") ||
+      lower.includes("objekt anlegen") ||
+      /\b(neues|neuen)\s+objekt(e)?\s+(anlegen|erstellen|erfassen)\b/i.test(trimmed);
+
+    if (isNewCustomerRequest || isNewObjectRequest) {
+      return true;
+    }
+
+    // Off-Process- oder Erklärfragen erkennen
+    const looksLikeQuestion =
+      /(\?|^(was|wie|welche|wo|wann|warum|können|kann|sollte|würde|möchte)[\s\w])/i.test(trimmed);
+    const looksLikeExplain = /(erklär|erkläre|erklärung|was ist|wieso|weshalb)/i.test(lower);
+    const looksLikeHelp = /(hilfe|support|problem|fehler|stimmt etwas nicht)/i.test(lower);
+
+    return looksLikeQuestion || looksLikeExplain || looksLikeHelp;
+  }
+
+  buildProcessFallbackMessage(chatId) {
+    const qualAgent = this.getQualiAgent();
+    const session = qualAgent.getConversation(chatId) ?? { phase: "idle", path: {} };
+    const phase = session.phase || "idle";
+
+    const lines = [];
+    lines.push(
+      "Ich konnte deine Eingabe in diesem Schritt des QS-Prozesses nicht eindeutig zuordnen.",
+    );
+
+    if (phase.startsWith("select-customer")) {
+      lines.push(
+        "Bitte wähle einen Kunden per Klick auf einen Button oder gib den Kundennamen (z.B. \"AMAG AG\") ein.",
+      );
+    } else if (phase.startsWith("select-object")) {
+      lines.push(
+        "Bitte wähle ein Objekt per Klick oder Nummer (z.B. \"1\") oder gib die Objektbezeichnung ein.",
+      );
+    } else if (phase.startsWith("select-baurundgang")) {
+      lines.push(
+        "Bitte wähle einen Baurundgang per Klick oder Nummer (z.B. \"1\" oder \"7\") oder den Namen des Baurundgangs.",
+      );
+    } else if (phase.startsWith("capture:")) {
+      lines.push(
+        "Du kannst jetzt Prüfpunkte/Positionen erfassen. Beschreibe kurz den Mangel oder lade ein Foto hoch.",
+      );
+    } else if (phase.startsWith("pruefpunkte:")) {
+      lines.push(
+        "Du kannst Prüfpunkte auswählen oder neue hinzufügen. Nutze dazu die angezeigten Optionen oder Nummern.",
+      );
+    } else {
+      lines.push(
+        "Nutze die angezeigten Buttons oder gib die Nummer bzw. den Namen eines Kunden, Objekts oder Baurundgangs ein.",
+      );
+    }
+
+    lines.push(
+      "",
+      "Falls du eine allgemeine Frage oder eine Erklärung möchtest (z.B. \"Was ist ein QS-Report?\"), kannst du das direkt fragen – dann nutze ich die KI zur Beantwortung.",
+    );
+
+    return lines.join("\n");
   }
 
   registerAttachment(chatId, attachment = {}) {
@@ -796,7 +904,7 @@ export class LLMOrchestrator {
               plz: { type: "string" },
               ort: { type: "string" },
             },
-            required: ["name"],
+            required: ["name", "adresse", "plz", "ort"],
             additionalProperties: false,
           },
         },
@@ -821,7 +929,7 @@ export class LLMOrchestrator {
               notiz: { type: "string" },
               erstellungsjahr: { type: "number" },
             },
-            required: ["kundeId"],
+            required: ["kundeId", "bezeichnung", "adresse", "plz", "ort"],
             additionalProperties: true,
           },
         },
@@ -935,6 +1043,54 @@ export class LLMOrchestrator {
             type: "object",
             properties: { id: { type: "number" }, data: { type: "object" } },
             required: ["id", "data"],
+            additionalProperties: false,
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "list_qs_reports_for_objekt",
+          description:
+            "Liefert alle QS-Reports für ein Objekt. Wenn kein objektId übergeben wird, wird das aktuelle Objekt aus dem Kontext verwendet.",
+          parameters: {
+            type: "object",
+            properties: {
+              objektId: { type: "number" },
+            },
+            required: [],
+            additionalProperties: false,
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "list_master_pruefpunkte_for_baurundgang",
+          description:
+            "Liefert Prüfpunkte aus der Excel-MasterCheckliste für einen Baurundgang-Typ (Nummer). Wenn keine Typnummer übergeben wird, wird versucht, sie aus dem aktuellen Kontext (baurundgang.typ.nummer) zu lesen.",
+          parameters: {
+            type: "object",
+            properties: {
+              baurundgangTypNummer: { type: "number" },
+            },
+            required: [],
+            additionalProperties: false,
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "invoke_quali_agent",
+          description:
+            "Ruft den bestehenden QualiFlowAgent mit einer Benutzer-Nachricht auf (z. B. für strukturierte Planungs-/Erfassungs-/Edit-/Lösch- oder Query-Flows). Nutze dieses Tool nur, wenn du bewusst den geführten Agent-Flow verwenden möchtest.",
+          parameters: {
+            type: "object",
+            properties: {
+              message: { type: "string" },
+            },
+            required: ["message"],
             additionalProperties: false,
           },
         },
@@ -1133,6 +1289,9 @@ export class LLMOrchestrator {
       },
       create_kunde: async ({ name, adresse, plz, ort }) => {
         const state = this.getState(chatId);
+        if (!name || !String(name).trim() || !adresse || !String(adresse).trim() || !plz || !String(plz).trim() || !ort || !String(ort).trim()) {
+          throw new Error("create_kunde: name, adresse, plz und ort sind erforderlich.");
+        }
         const result = await db.actions.ensureKunde({ name, adresse, plz, ort });
         const kundeContext = mergeContext(state.context?.kunde ?? {}, result);
         this.setContext(chatId, mergeContext(state.context ?? {}, { kunde: kundeContext }));
@@ -1144,7 +1303,17 @@ export class LLMOrchestrator {
         if (!withKunde.kundeId) {
           throw new Error("create_objekt: 'kundeId' fehlt und ist nicht im Kontext vorhanden.");
         }
-        const result = await db.actions.createObjektForKunde(withKunde);
+        if (!withKunde.bezeichnung || !String(withKunde.bezeichnung).trim()) {
+          throw new Error("create_objekt: 'bezeichnung' ist erforderlich.");
+        }
+        const trimmedName = String(withKunde.bezeichnung).trim();
+
+        // Idempotent: wenn es für diesen Kunden bereits ein Objekt mit gleicher Bezeichnung gibt,
+        // verwende dieses statt ein weiteres "Unbenanntes Objekt #2 #2" zu erzeugen.
+        const existing = await db.actions.findObjektByName({ name: trimmedName, kundeId: withKunde.kundeId });
+        const result =
+          existing || (await db.actions.createObjektForKunde({ ...withKunde, bezeichnung: trimmedName }));
+
         const objektContext = mergeContext(state.context?.objekt ?? {}, result);
         const patch = { objekt: objektContext };
         if (!state.context?.kunde && result?.kundeId) {
@@ -1167,7 +1336,16 @@ export class LLMOrchestrator {
       list_rueckmeldungstypen: async () => db.actions.listRueckmeldungstypen(),
       summarize_rueckmeldungen: async ({ baurundgangId }) => db.actions.summarizeRueckmeldungen({ baurundgangId }),
       ensure_qs_report_for_baurundgang: async (payload) => db.actions.ensureQsReportForBaurundgang(payload),
-      create_position_with_defaults: async (payload) => db.actions.createPositionWithDefaults(payload),
+      create_position_with_defaults: async (payload) => {
+        // Delegiere zum QsRundgangAgent für den Capture Flow
+        const qualAgent = new QualiFlowAgent({ tools: this.tools });
+        const result = await qualAgent.beginCaptureFlow({ 
+          chatId, 
+          session: this.getState(chatId), 
+          initialNote: payload?.bemerkung || "" 
+        });
+        return result;
+      },
       generate_report_pdf: async ({ qsReportId, baurundgangId } = {}) => {
         const agent = new ReportAgent({ tools: this.tools });
         const result = await agent.handleReportGenerate({ qsReportId, baurundgangId });
@@ -1190,10 +1368,20 @@ export class LLMOrchestrator {
           throw new Error("update_kunde_fields: Keine gültigen Felder übergeben.");
         }
 
-        const result = await db.actions.updateKundeFields({ id: targetId, data: sanitized });
-        const mergedKunde = mergeContext(state.context?.kunde ?? {}, result);
-        this.setContext(chatId, { ...state.context, kunde: mergedKunde });
-        return result;
+        try {
+          const result = await db.actions.updateKundeFields({ id: targetId, data: sanitized });
+          const mergedKunde = mergeContext(state.context?.kunde ?? {}, result);
+          this.setContext(chatId, { ...state.context, kunde: mergedKunde });
+          return result;
+        } catch (error) {
+          this.logger.error("update_kunde_fields failed", {
+            chatId,
+            kundeId: targetId,
+            data: sanitized,
+            error: error?.message,
+          });
+          throw error;
+        }
       },
       update_objekt_fields: async ({ id, data }) => {
         const state = this.getState(chatId);
@@ -1207,9 +1395,89 @@ export class LLMOrchestrator {
           throw new Error("update_objekt_fields: Keine gültigen Felder übergeben.");
         }
 
-        const result = await db.actions.updateObjektFields({ id: targetId, data: sanitized });
-        const mergedObjekt = mergeContext(state.context?.objekt ?? {}, result);
-        this.setContext(chatId, { ...state.context, objekt: mergedObjekt });
+        try {
+          const result = await db.actions.updateObjektFields({ id: targetId, data: sanitized });
+          const mergedObjekt = mergeContext(state.context?.objekt ?? {}, result);
+          this.setContext(chatId, { ...state.context, objekt: mergedObjekt });
+          return result;
+        } catch (error) {
+          this.logger.error("update_objekt_fields failed", {
+            chatId,
+            objektId: targetId,
+            data: sanitized,
+            error: error?.message,
+          });
+          throw error;
+        }
+      },
+      list_master_pruefpunkte_for_baurundgang: async ({ baurundgangTypNummer } = {}) => {
+        const state = this.getState(chatId);
+        const num =
+          baurundgangTypNummer ??
+          state.context?.baurundgang?.typ?.nummer ??
+          state.context?.baurundgang?.typNummer ??
+          null;
+
+        if (num == null) {
+          throw new Error(
+            "list_master_pruefpunkte_for_baurundgang: 'baurundgangTypNummer' fehlt und im Kontext ist keine Typnummer hinterlegt.",
+          );
+        }
+
+        const data = await loadMasterChecklisteForBaurundgang(num);
+        if (!data) {
+          return {
+            sheetName: null,
+            typNummer: Number(num),
+            items: [],
+          };
+        }
+
+        return data;
+      },
+      list_qs_reports_for_objekt: async ({ objektId } = {}) => {
+        const state = this.getState(chatId);
+        const targetId = objektId ?? state.context?.objekt?.id;
+        if (!targetId) {
+          throw new Error(
+            "list_qs_reports_for_objekt: 'objektId' fehlt und es ist kein Objekt im Kontext gesetzt.",
+          );
+        }
+
+        return db.actions.listQSReportsByObjekt(targetId);
+      },
+      invoke_quali_agent: async ({ message }) => {
+        const qualAgent = this.getQualiAgent();
+        const text = typeof message === "string" ? message.trim() : "";
+        const effectiveMessage = text || " ";
+
+        const result = await qualAgent.handleMessage({ chatId, message: effectiveMessage });
+
+        // Auswahlpfad aus dem Agenten in den LLM-Kontext spiegeln
+        const sessionAfter = qualAgent.getConversation(chatId);
+        const selectionFromResult = result?.context?.selection;
+        const selectionFromSession = sessionAfter?.path;
+        if (selectionFromResult || selectionFromSession) {
+          const selection = selectionFromResult ?? selectionFromSession;
+          this.setContext(chatId, selection);
+          const existingContext = result.context ?? {};
+          if (!existingContext.selection) {
+            result.context = { ...existingContext, selection };
+          }
+        }
+
+        const existingContext = result.context ?? {};
+        const existingSteps = Array.isArray(existingContext.steps) ? existingContext.steps : [];
+        const traceStep = {
+          type: "agent",
+          name: "QualiFlowAgent",
+          status: result.status ?? null,
+        };
+        result.context = { ...existingContext, steps: [...existingSteps, traceStep] };
+
+        const state = this.getState(chatId);
+        state.lastReply = result;
+
         return result;
       },
       reply: async (payload) => payload,
@@ -1354,6 +1622,25 @@ export class LLMOrchestrator {
       }
     }
 
+    // Zuerst versuchen wir, die Eingabe deterministisch über den QualiFlowAgent zu verarbeiten
+    const deterministic = await this.tryHandleDeterministic(chatId, message ?? "");
+    if (deterministic) {
+      return deterministic;
+    }
+
+    // LLM nur in Ausnahmen zulassen (Neuanlage-Commands, Erklär-/Off-Process-Fragen)
+    if (!this.shouldAllowLLM(message ?? "")) {
+      const guidanceMessage = this.buildProcessFallbackMessage(chatId);
+      const final = {
+        status: "process_guidance",
+        message: guidanceMessage,
+        context: this.getState(chatId).context ?? {},
+      };
+      state.lastReply = final;
+      return final;
+    }
+
+    // Ausnahmefall: LLM mit Tool-Calls
     return this.runLLM(chatId, message ?? "");
   }
 
@@ -1459,36 +1746,20 @@ export class LLMOrchestrator {
       state.history = sanitizeMessagesForToolResponses(state.history);
     }
 
-    const hasPendingRequirements = Boolean(
-      state?.context?.pendingRequirements &&
-        (((state.context.pendingRequirements.missingMandatory ?? []).length > 0) ||
-          ((state.context.pendingRequirements.pendingFields ?? []).length > 0)),
-    );
-
-    let hasActiveBauBeschrieb = false;
-    if (state?.bauBeschriebResults && state.bauBeschriebResults.size > 0) {
-      for (const result of state.bauBeschriebResults.values()) {
-        if (result && result.status && result.status !== "created") {
-          hasActiveBauBeschrieb = true;
-          break;
-        }
-      }
-    }
-
-    const shouldSkipDeterministic = hasPendingRequirements || hasActiveBauBeschrieb;
-
-    if (!shouldSkipDeterministic) {
-      const deterministic = await this.tryHandleDeterministic(chatId, userMessage);
-      if (deterministic) {
-        return deterministic;
-      }
-    }
-
     const client = this.openAIProvider.getClient();
     const model = this.openAIProvider.getModel();
 
+    // Baue System Prompt mit vorherigen Optionen
+    let systemPrompt = buildSystemPrompt();
+    if (state.lastReply?.options && Array.isArray(state.lastReply.options)) {
+      const optionsText = state.lastReply.options.map(opt => 
+        `- ${opt.label} (ID: ${opt.id}, Wert: ${opt.inputValue})`
+      ).join('\n');
+      systemPrompt += `\n\nZuletzt angezeigte Optionen:\n${optionsText}\nWenn der Nutzer eine dieser Optionen wählt, erkenne die Auswahl und fahre mit dem entsprechenden Schritt fort.`;
+    }
+
     const messages = [
-      { role: "system", content: buildSystemPrompt() },
+      { role: "system", content: systemPrompt },
       ...state.history,
       { role: "user", content: userMessage || "Konversation gestartet" },
     ];
@@ -1499,76 +1770,126 @@ export class LLMOrchestrator {
     let final = null;
     let loopCount = 0;
     const trace = [];
+    let llmError = null;
 
-    while (loopCount < 8) {
-      loopCount += 1;
-      const completion = await client.chat.completions.create({
-        model,
-        messages,
-        tools,
-        tool_choice: "auto",
-        temperature: 0.2,
-      });
+    try {
+      while (loopCount < 8) {
+        loopCount += 1;
+        const completion = await client.chat.completions.create({
+          model,
+          messages,
+          tools,
+          tool_choice: "auto",
+          temperature: 0.2,
+        });
 
-      const msg = completion.choices?.[0]?.message;
-      if (!msg) break;
+        const msg = completion.choices?.[0]?.message;
+        if (!msg) break;
 
-      if (msg.tool_calls?.length) {
-        messages.push({ role: "assistant", tool_calls: msg.tool_calls, content: msg.content ?? "" });
-        let replyResult = null;
-        for (const call of msg.tool_calls) {
-          const name = call.function?.name;
-          const args = safeParse(call.function?.arguments);
-          const exec = executors[name];
-          if (name) {
-            const argsKeys = args && typeof args === "object" && !Array.isArray(args) ? Object.keys(args) : [];
-            trace.push({
-              type: "tool",
-              name,
-              argsKeys,
-            });
-          }
-          if (!exec) {
-            const content = JSON.stringify({ error: `Unknown tool ${name}` });
-            messages.push({ role: "tool", tool_call_id: call.id, content });
-            continue;
-          }
-          try {
-            const result = await exec(args ?? {});
-            const content = JSON.stringify(result ?? {});
-            messages.push({ role: "tool", tool_call_id: call.id, content });
-            if (name === "set_context") {
-              // also reflect context locally
-              this.setContext(chatId, result ?? args ?? {});
-            }
-            if (name === "reply") {
-              replyResult = result ?? {};
-              state.lastReply = replyResult;
+        if (msg.tool_calls?.length) {
+          messages.push({ role: "assistant", tool_calls: msg.tool_calls, content: msg.content ?? "" });
+          let replyResult = null;
+          for (const call of msg.tool_calls) {
+            const name = call.function?.name;
+            const args = safeParse(call.function?.arguments);
+            const exec = executors[name];
+            if (name) {
+              const argsKeys = args && typeof args === "object" && !Array.isArray(args) ? Object.keys(args) : [];
               trace.push({
-                type: "reply",
-                status: replyResult.status ?? null,
+                type: "tool",
+                name,
+                argsKeys,
               });
             }
-          } catch (error) {
-            const content = JSON.stringify({ error: String(error?.message || error) });
-            messages.push({ role: "tool", tool_call_id: call.id, content });
+            if (!exec) {
+              const content = JSON.stringify({ error: `Unknown tool ${name}` });
+              messages.push({ role: "tool", tool_call_id: call.id, content });
+              continue;
+            }
+            try {
+              const result = await exec(args ?? {});
+              const content = JSON.stringify(result ?? {});
+              messages.push({ role: "tool", tool_call_id: call.id, content });
+              if (name === "set_context") {
+                // also reflect context locally
+                this.setContext(chatId, result ?? args ?? {});
+              }
+              if (name === "reply") {
+                replyResult = result ?? {};
+
+                const existingOptions = Array.isArray(replyResult.options)
+                  ? replyResult.options
+                  : [];
+                if (!existingOptions.length && typeof replyResult.message === "string") {
+                  const quickOptions = extractQuickActionOptionsFromMessage(replyResult.message);
+                  if (quickOptions.length) {
+                    replyResult.options = quickOptions;
+                    const existingContext = replyResult.context ?? {};
+                    replyResult.context = { ...existingContext, options: quickOptions };
+                  }
+                }
+
+                state.lastReply = replyResult;
+                trace.push({
+                  type: "reply",
+                  status: replyResult.status ?? null,
+                });
+              }
+            } catch (error) {
+              const content = JSON.stringify({ error: String(error?.message || error) });
+              messages.push({ role: "tool", tool_call_id: call.id, content });
+            }
           }
+          if (replyResult) {
+            final = replyResult;
+            break;
+          }
+          // Continue next LLM step
+          continue;
         }
-        if (replyResult) {
-          final = replyResult;
+
+        // No tool calls. Fallback: direct content.
+        const text = msg.content?.trim();
+        if (text) {
+          const options = extractQuickActionOptionsFromMessage(text);
+          final = { status: "message", message: text };
+          if (options.length) {
+            final.options = options;
+            const existingContext = final.context ?? {};
+            final.context = { ...existingContext, options };
+          }
           break;
         }
-        // Continue next LLM step
-        continue;
-      }
-
-      // No tool calls. Fallback: direct content.
-      const text = msg.content?.trim();
-      if (text) {
-        final = { status: "message", message: text };
         break;
       }
-      break;
+    } catch (error) {
+      llmError = error;
+    }
+
+    if (llmError) {
+      const statusCode = llmError?.status ?? llmError?.statusCode;
+      const messageText = String(llmError?.message || "");
+      const isRateLimit = statusCode === 429 || /rate limit/i.test(messageText);
+      
+      // Debug logging
+      this.logger.error("LLM Error Details", {
+        chatId,
+        statusCode,
+        message: messageText,
+        isRateLimit,
+        errorType: llmError?.type,
+        code: llmError?.code
+      });
+
+      if (isRateLimit) {
+        final = {
+          status: "rate_limited",
+          message:
+            "Der KI-Dienst ist kurz ausgelastet (Rate Limit der KI-API). Bitte versuche es in ein bis zwei Sekunden erneut.",
+        };
+      } else {
+        throw llmError;
+      }
     }
 
     // Save limited history
@@ -1583,7 +1904,21 @@ export class LLMOrchestrator {
         final = fallback;
         state.lastReply = fallback;
       } else if (!final) {
-        final = { status: "unknown", message: "Ich konnte keine Antwort erzeugen." };
+        final = {
+          status: "unknown",
+          message:
+            [
+              "Ich konnte deine Angaben nicht sicher interpretieren.",
+              "Bitte gib Kunden- oder Objektdaten strukturiert an, z.B.:",
+              "Kunde: AMAG AG",
+              "Objekt: Wohnüberbauung Sonnengarten",
+              "Adresse: Wässerwiesenstrasse 70",
+              "PLZ/Ort: 8408 Winterthur",
+              "Projektleiter: Pascal Nägele",
+              "Bauleiter: Fritz Amacher",
+              "Objekttyp: MFH Einfach",
+            ].join("\n"),
+        };
         state.lastReply = final;
       }
     }

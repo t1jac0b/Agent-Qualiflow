@@ -31,38 +31,36 @@ function getAssetDataUri(filename) {
 
 }
 
+function resolveStorageUrl(relPath) {
+  const rel = relPath.replace(/^\/+/, "");
+  const hasHttpBase = process.env.PUBLIC_BASE_URL || process.env.CHAT_SERVER_PORT;
+  if (hasHttpBase) {
+    const base = (process.env.PUBLIC_BASE_URL ?? `http://localhost:${process.env.CHAT_SERVER_PORT ?? 3001}`)
+      .replace(/\/+$/, "");
+    return `${base}/${rel}`;
+  }
+
+  const abs = path.join(process.cwd(), rel);
+  return pathToFileURL(abs).href;
+}
+
 function normalizeImageUrl(value) {
   if (!value) return null;
   const raw = String(value).trim();
   if (!raw) return null;
   if (/^data:/i.test(raw)) return raw;
-  if (/^https?:\/\//i.test(raw)) {
-    try {
-      const parsed = new URL(raw);
-      if (/^\/storage\//i.test(parsed.pathname)) {
-        const rel = parsed.pathname.replace(/^\/+/, "");
-        const abs = path.join(process.cwd(), rel);
-        return pathToFileURL(abs).href;
-      }
-    } catch (error) {
-      console.warn("[ReportHtmlRenderer] Konnte URL nicht normalisieren", error?.message ?? error);
-    }
-    return raw;
-  }
+  if (/^https?:\/\//i.test(raw)) return raw;
 
   // If it starts with /storage/, map to local absolute path and then to file:// URL
   if (/^\/?storage\//i.test(raw)) {
-    const rel = raw.replace(/^\/+/, "");
-    const abs = path.join(process.cwd(), rel);
-    return pathToFileURL(abs).href;
+    return resolveStorageUrl(raw);
   }
 
   // If it contains a 'storage' segment, rebuild from that segment
   const ix = raw.toLowerCase().lastIndexOf("storage");
   if (ix >= 0) {
     const relFromStorage = raw.slice(ix).replace(/\\+/g, "/");
-    const abs = path.join(process.cwd(), relFromStorage);
-    return pathToFileURL(abs).href;
+    return resolveStorageUrl(relFromStorage);
   }
 
   // Absolute filesystem path

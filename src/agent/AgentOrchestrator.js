@@ -17,8 +17,17 @@ function parseYesNo(input) {
 }
 
 function isNumericSelection(input, optionsLength) {
-  const value = Number.parseInt(input, 10);
-  if (Number.isNaN(value)) return null;
+  if (!input) return null;
+  // Zuerst direkter Parse (z.B. "1", "2")
+  let value = Number.parseInt(input, 10);
+  if (Number.isNaN(value)) {
+    // Fallback: erste Ganzzahl im Text finden (z.B. "die nummer 1", "Nummer 2 bitte")
+    const match = String(input).match(/\b(\d+)\b/);
+    if (!match) return null;
+    value = Number.parseInt(match[1], 10);
+    if (Number.isNaN(value)) return null;
+  }
+
   if (value < 1 || value > optionsLength) return null;
   return value - 1;
 }
@@ -1081,6 +1090,13 @@ export class QualiFlowAgent {
           this.setConversation(chatId, { ...session, phase: "completed", options: null });
           return this.beginCaptureFlow({ chatId, session: { ...session, phase: "completed", path: currentPath }, initialNote: extractInitialNote(trimmed) });
         }
+        return this.routeIntent({
+          chatId,
+          intent,
+          message: trimmed,
+          session,
+          database,
+        });
         return this.routeIntent({ chatId, intent, message: trimmed, session, database });
       }
       if (isCancelCommand(lower)) {
@@ -1572,7 +1588,10 @@ export class QualiFlowAgent {
 
       return {
         status: "completed",
-        message: "Setup ist bereits abgeschlossen. Was möchtest du als Nächstes tun?",
+        message:
+          "Setup ist bereits abgeschlossen. Du kannst z.B. weitere Positionen erfassen (z.B. \"Position erfassen\" oder ein Foto senden), " +
+          "dir Rückmeldungen anzeigen lassen (z.B. \"Welche Rückmeldungen fallen an?\") oder den QS-Report ansehen (z.B. \"QS Report ansehen\"). " +
+          "Was möchtest du als Nächstes tun?",
         context: { selection: session.path },
       };
     }
@@ -2235,9 +2254,15 @@ Zur Sicherheit erfolgt eine Löschung nur nach expliziter Freigabe durch den Adm
       throw new Error("handleQueryIntent: database tool nicht verfügbar.");
     }
 
+    const lower = message.toLowerCase();
+    const isReportOverviewQuery =
+      (lower.includes("wo") || lower.includes("welche") || lower.includes("welcher") || lower.includes("welchen")) &&
+      (lower.includes("qs report") || lower.includes("qs-report") || lower.includes("bericht") || lower.includes("report"));
+
     if (!skipEnsure) {
       const ensured = await this.ensureSetupContext(chatId, {
         database,
+        requireBaurundgang: !isReportOverviewQuery,
         intent: INTENTS.QUERY,
         originalMessage: message,
       });
@@ -2246,69 +2271,56 @@ Zur Sicherheit erfolgt eine Löschung nur nach expliziter Freigabe durch den Adm
       }
     }
 
-    const lower = message.toLowerCase();
     const path = session.path ?? this.getConversation(chatId)?.path;
 
-    if (/(baurundgänge|baurundgaenge|baurundgang|rundgänge|rundgaenge)/.test(lower)) {
+    if (isReportOverviewQuery) {
       if (!path?.objekt?.id) {
         return {
           status: "query_missing_context",
-          message: "Bitte wähle zuerst Kunde und Objekt aus, bevor du Baurundgänge anzeigen lässt.",
+          message: "Bitte wähle zuerst Kunde und Objekt aus, bevor du nach vorhandenen QS-Reports fragst.",
         };
       }
 
       try {
-        const baurundgaenge = await database.actions.listBaurundgaengeByObjekt(path.objekt.id);
-        if (!baurundgaenge?.length) {
+        const reports = await database.actions.listQSReportsByObjekt(path.objekt.id);
+        if (!reports?.length) {
           return {
-            status: "query_baurundgaenge_empty",
-            message: "Für dieses Objekt wurden keine Baurundgänge gefunden.",
+            status: "query_qsreports_empty",
+            message: "Für dieses Objekt liegen noch keine QS-Reports vor.",
             context: { selection: path },
           };
         }
 
-        const options = baurundgaenge.map((item) => {
-          const nummer = item.typ?.nummer;
-          const baseName = item.typ?.name ?? (item.id ? `Baurundgang ${item.id}` : "Baurundgang");
+        const lines = reports.map((report, index) => {
+          const br = report.baurundgang ?? {};
+          const nummer = br.typ?.nummer;
+          const baseName = br.typ?.name ?? (br.id ? `Baurundgang ${br.id}` : `Baurundgang ${report.baurundgangId}`);
           const label = nummer ? `BR ${nummer} ${baseName}` : baseName;
-          return {
-            ...item,
-            label,
-            // Send label to avoid confusing numeric IDs in user input
-            inputValue: label,
-          };
+          const datumRaw = br.datumDurchgefuehrt ?? br.datumGeplant ?? report.erstelltAm;
+          const datum = datumRaw ? new Date(datumRaw).toISOString().slice(0, 10) : "kein Datum";
+          return `${index + 1}. ${label} – QS-Report #${report.id} (erstellt am ${datum})`;
         });
 
-        const lines = options.map((option, index) => `${index + 1}. ${option.label}`);
         const header = composeSelectionSummary(path);
-
-        this.setConversation(chatId, {
-          ...session,
-          phase: "select-baurundgang",
-          options,
-          path: { ...path },
-        });
-
         return {
-          status: "awaiting_baurundgang",
+          status: "query_qsreports_overview",
           message: [
             header ? `Kontext: ${header}` : null,
-            "Hier sind alle geplanten Baurundgänge:",
+            "Vorhandene QS-Reports für dieses Objekt:",
             ...lines,
-            "Bitte wähle einen Baurundgang (Button anklicken oder Nummer eingeben).",
           ]
             .filter(Boolean)
             .join("\n"),
-          context: { selection: path, options, phase: "select-baurundgang" },
+          context: { selection: path },
         };
       } catch (error) {
-        this.logger.error("handleQueryIntent: Baurundgänge konnten nicht geladen werden", {
+        this.logger.error("handleQueryIntent: QS-Report-Übersicht fehlgeschlagen", {
           error,
           objektId: path.objekt.id,
         });
         return {
           status: "query_error",
-          message: "Die Baurundgänge konnten nicht geladen werden. Bitte versuche es erneut.",
+          message: "Die QS-Reports konnten nicht geladen werden. Bitte versuche es erneut.",
         };
       }
     }
@@ -2318,6 +2330,60 @@ Zur Sicherheit erfolgt eine Löschung nur nach expliziter Freigabe durch den Adm
         status: "query_missing_context",
         message: "Bitte wähle zuerst Kunde, Objekt und Baurundgang aus, bevor du Auswertungen abfragst.",
       };
+    }
+
+    // Rueckmeldungsübersicht bevorzugt behandeln, auch wenn der Text gleichzeitig "Bericht" enthält
+    if (lower.includes("rückmeldung") || lower.includes("rueckmeldung")) {
+      try {
+        const summary = await database.actions.summarizeRueckmeldungen({ baurundgangId: path.baurundgang.id });
+        if (!summary.length) {
+          return {
+            status: "query_rueckmeldungen_empty",
+            message: "Es wurden noch keine Rückmeldungen erfasst.",
+            context: { selection: path },
+          };
+        }
+
+        const items = summary.map((entry) =>
+          `• ${entry.rueckmeldung}: ${entry.offen} offen, ${entry.erledigt} erledigt (gesamt ${entry.gesamt})`,
+        );
+        const header = composeSelectionSummary(path);
+
+        const options = [
+          {
+            id: "view-report",
+            label: "Report ansehen",
+            inputValue: "Report anzeigen",
+          },
+          {
+            id: "show-pruefpunkte",
+            label: "Prüfpunkte anzeigen",
+            inputValue: "Prüfpunkte anzeigen",
+          },
+          {
+            id: "start-capture",
+            label: "Neue Position erfassen",
+            inputValue: "Position erfassen",
+          },
+        ];
+
+        return {
+          status: "query_rueckmeldungen",
+          message: [header ? `Kontext: ${header}` : null, "Rückmeldungsübersicht:", ...items]
+            .filter(Boolean)
+            .join("\n"),
+          context: { selection: path, options },
+        };
+      } catch (error) {
+        this.logger.error("handleQueryIntent: Rueckmeldungs-Abfrage fehlgeschlagen", {
+          error,
+          baurundgangId: path.baurundgang.id,
+        });
+        return {
+          status: "query_error",
+          message: "Die Rückmeldungen konnten nicht geladen werden. Bitte versuche es erneut.",
+        };
+      }
     }
 
     // QS-Report anzeigen/erstellen/generieren
@@ -2426,59 +2492,6 @@ Zur Sicherheit erfolgt eine Löschung nur nach expliziter Freigabe durch den Adm
         return {
           status: "query_error",
           message: "Die Prüfpunkte konnten nicht geladen werden. Bitte versuche es erneut.",
-        };
-      }
-    }
-
-    if (lower.includes("rückmeldung") || lower.includes("rueckmeldung")) {
-      try {
-        const summary = await database.actions.summarizeRueckmeldungen({ baurundgangId: path.baurundgang.id });
-        if (!summary.length) {
-          return {
-            status: "query_rueckmeldungen_empty",
-            message: "Es wurden noch keine Rückmeldungen erfasst.",
-            context: { selection: path },
-          };
-        }
-
-        const items = summary.map((entry) =>
-          `• ${entry.rueckmeldung}: ${entry.offen} offen, ${entry.erledigt} erledigt (gesamt ${entry.gesamt})`,
-        );
-        const header = composeSelectionSummary(path);
-
-        const options = [
-          {
-            id: "view-report",
-            label: "Report ansehen",
-            inputValue: "Report anzeigen",
-          },
-          {
-            id: "show-pruefpunkte",
-            label: "Prüfpunkte anzeigen",
-            inputValue: "Prüfpunkte anzeigen",
-          },
-          {
-            id: "start-capture",
-            label: "Neue Position erfassen",
-            inputValue: "Position erfassen",
-          },
-        ];
-
-        return {
-          status: "query_rueckmeldungen",
-          message: [header ? `Kontext: ${header}` : null, "Rückmeldungsübersicht:", ...items]
-            .filter(Boolean)
-            .join("\n"),
-          context: { selection: path, options },
-        };
-      } catch (error) {
-        this.logger.error("handleQueryIntent: Rueckmeldungs-Abfrage fehlgeschlagen", {
-          error,
-          baurundgangId: path.baurundgang.id,
-        });
-        return {
-          status: "query_error",
-          message: "Die Rückmeldungen konnten nicht geladen werden. Bitte versuche es erneut.",
         };
       }
     }

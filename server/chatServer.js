@@ -1,8 +1,12 @@
-import "dotenv/config";
 import express from "express";
 import multer from "multer";
 import process from "node:process";
 import path from "node:path";
+import "dotenv/config";
+import { config } from "dotenv";
+
+// Explizite .env Konfiguration sicherstellen
+config({ path: path.join(process.cwd(), ".env") });
 
 import { beginQualiFlowConversation, getAgentOrchestrator, getChatOrchestrator, handleQualiFlowMessage } from "../src/agent/index.js";
 import { DatabaseTool } from "../src/tools/DatabaseTool.js";
@@ -356,8 +360,17 @@ app.post("/chat/upload", chatUpload, async (req, res) => {
 });
 
 app.post("/chat/message", async (req, res) => {
+  console.log("DEBUG: /chat/message endpoint called", {
+    body: req.body,
+    hasMessage: !!req.body?.message,
+    messageLength: req.body?.message?.length
+  });
+  
   const { chatId: requestedChatId, message, uploadedBy, attachmentId } = req.body ?? {};
   const chatId = normalizeChatId(requestedChatId);
+  
+  console.log("DEBUG: normalized chatId and entering try block", { chatId, requestedChatId });
+  
   try {
     const trimmed = typeof message === "string" ? message.trim() : "";
 

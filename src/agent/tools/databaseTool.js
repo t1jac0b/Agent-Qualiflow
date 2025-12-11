@@ -53,6 +53,8 @@ export const databaseTool = defineTool({
       LegacyDatabaseTool.listBauteileByBaurundgang(payload?.baurundgangId ?? payload),
     addFoto: (payload) => LegacyDatabaseTool.addFoto(payload),
     linkPositionFoto: (positionId, fotoId) => LegacyDatabaseTool.linkPositionFoto(positionId, fotoId),
+    updatePositionFields: (payload) => LegacyDatabaseTool.updatePositionFields(payload),
+    setPositionRueckmeldungen: (payload) => LegacyDatabaseTool.setPositionRueckmeldungen(payload),
     rawClient: () => LegacyDatabaseTool.client,
   },
 });
